@@ -4,6 +4,14 @@ A tool for Claude Code that makes better-looking websites. It splits the work in
 
 **[See the live site →](https://george-rd.github.io/design-studio/)**
 
+<p align="center">
+  <video controls autoplay muted loop playsinline width="720">
+    <source src="https://george-rd.github.io/design-studio/video-720p.mp4" type="video/mp4" />
+  </video>
+  <br/>
+  <em>23-second overview — how Design Studio defeats code-anchoring bias</em>
+</p>
+
 ## The Problem
 
 When you ask AI to build a website, it usually makes the same thing every time: a centered headline, a button, some cards in a grid. It looks fine, but it's boring. Every AI site starts to look the same.
