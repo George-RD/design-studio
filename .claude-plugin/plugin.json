@@ -2,6 +2,7 @@
   "name": "design-studio",
   "version": "1.0.0",
   "description": "4-agent design-evaluate-iterate harness for distinctive frontend creation that defeats code-anchoring bias. Chrome MCP evaluation with zone-based scoring and adversarial testing gate.",
+  "author": { "name": "Design Studio" },
   "keywords": [
     "frontend",
     "design",

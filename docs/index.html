@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Design Studio — Better Frontends for Claude Code</title>
+  <meta name="description" content="A 4-agent tool for Claude Code that makes better-looking websites. It splits the work into planning, design, building, and checking — so you get original designs, not boring templates." />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0a0a0f;
+      color: #f0f0f5;
+      line-height: 1.6;
+    }
+    .container { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
+    h1 { font-size: 2.5em; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 8px; }
+    h2 { font-size: 1.5em; font-weight: 700; margin-top: 48px; margin-bottom: 16px; color: #6c5ce7; }
+    h3 { font-size: 1.2em; font-weight: 600; margin-top: 32px; margin-bottom: 8px; }
+    p { margin-bottom: 16px; font-size: 1.1em; color: #c0c0d0; }
+    .subtitle { font-size: 1.2em; color: #6c5ce7; font-weight: 600; margin-bottom: 32px; }
+    .tagline { font-size: 1.1em; color: #8888a0; margin-bottom: 40px; }
+    .hero { padding: 60px 0; text-align: center; }
+    .hero h1 { font-size: 3em; }
+    .btn {
+      display: inline-block;
+      padding: 14px 28px;
+      background: #6c5ce7;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 1.1em;
+      margin: 8px;
+    }
+    .btn-outline {
+      background: transparent;
+      border: 2px solid #6c5ce7;
+    }
+    .card {
+      background: #14141f;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 16px;
+      border: 1px solid #1e1e30;
+    }
+    .card h3 { color: #00cec9; }
+    code {
+      background: #1e1e30;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.9em;
+      color: #fdcb6e;
+    }
+    pre {
+      background: #1e1e30;
+      padding: 16px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 16px 0;
+    }
+    pre code { background: none; padding: 0; color: #f0f0f5; }
+    ul { margin-bottom: 16px; padding-left: 20px; }
+    li { margin-bottom: 8px; color: #c0c0d0; font-size: 1.05em; }
+    .steps { display: grid; gap: 12px; margin: 24px 0; }
+    .step {
+      background: #14141f;
+      border-radius: 12px;
+      padding: 20px;
+      border-left: 4px solid #6c5ce7;
+    }
+    .step-num {
+      font-size: 0.85em;
+      color: #6c5ce7;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .step-title { font-weight: 600; font-size: 1.1em; margin-bottom: 4px; }
+    .step-desc { color: #8888a0; font-size: 0.95em; }
+    .footer { margin-top: 60px; padding-top: 24px; border-top: 1px solid #1e1e30; text-align: center; color: #555; font-size: 0.9em; }
+    .video-container {
+      position: relative;
+      width: 100%;
+      padding-bottom: 56.25%;
+      margin: 32px 0;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #000;
+    }
+    .video-container video {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+    @media (max-width: 600px) {
+      .container { padding: 20px 16px; }
+      h1 { font-size: 1.8em; }
+      .hero h1 { font-size: 2em; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="hero">
+      <h1>Design Studio</h1>
+      <div class="subtitle">A 4-Agent Frontend Tool for Claude Code</div>
+      <p class="tagline">
+        Makes websites that look original, not like every other AI template.
+        Works inside Claude Code with no extra setup.
+      </p>
+      <a href="https://github.com/George-RD/design-studio" class="btn">View on GitHub</a>
+      <a href="#install" class="btn btn-outline">Install</a>
+    </div>
+
+    <div class="video-container">
+      <video controls poster="poster.jpg">
+        <source src="video-720p.mp4" type="video/mp4" />
+      </video>
+    </div>
+
+    <h2>What's the Problem?</h2>
+    <p>
+      When you ask an AI to build a website, it usually makes the same thing over and over:
+      a centered headline, a button, some cards in a grid. It looks fine, but it's boring.
+      Every AI site starts to look the same.
+    </p>
+    <p>
+      The reason is <strong>code-anchoring bias</strong>. When the AI reads its own code
+      before making changes, it just tweaks what's already there. It never stops to think
+      "what should this really look like?"
+    </p>
+
+    <h2>How Design Studio Fixes This</h2>
+    <p>
+      Design Studio splits the work into four separate jobs. Each job is done by a different
+      agent that only sees what it needs to see. This is how real design studios work —
+      the art director never writes code, and the developer never makes creative choices.
+    </p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">Step 1 — Plan</div>
+        <div class="step-title">The Planner</div>
+        <div class="step-desc">Takes your idea and turns it into a full plan. It picks a look and feel, lists what the page needs, and sets a creative direction.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">Step 2 — Design</div>
+        <div class="step-title">The Design Agent</div>
+        <div class="step-desc">Describes what the page should look like in plain words. It never sees any code — only screenshots and feedback. This stops it from copying old ideas.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">Step 3 — Build</div>
+        <div class="step-title">The Implementation Agent</div>
+        <div class="step-desc">Takes the design description and builds real code from it. It follows the design exactly — no shortcuts, no "I think this looks better."</div>
+      </div>
+      <div class="step">
+        <div class="step-num">Step 4 — Check</div>
+        <div class="step-title">The Evaluator</div>
+        <div class="step-desc">Opens the page in a real browser, clicks around, takes screenshots, and scores the design. It checks for broken layouts, hard-to-read text, and boring patterns.</div>
+      </div>
+    </div>
+
+    <p>
+      Then the loop repeats. The design gets better each time. When the scores are high enough,
+      the tool ships the best version.
+    </p>
+
+    <h2>What Makes It Different</h2>
+    <div class="card">
+      <h3>No more template websites</h3>
+      <p>Most AI tools make the same centered-hero-with-card-grid layout. Design Studio pushes past that by separating the person who dreams up the design from the person who writes the code.</p>
+    </div>
+    <div class="card">
+      <h3>Real browser testing</h3>
+      <p>The evaluator opens your page in Chrome, clicks buttons, scrolls, and checks for bugs. It doesn't just read the code — it uses the page like a real person would.</p>
+    </div>
+    <div class="card">
+      <h3>Zone-by-zone scoring</h3>
+      <p>Instead of giving the whole page one score, it checks each section separately. A broken footer can't hide behind a pretty hero section.</p>
+    </div>
+    <div class="card">
+      <h3>Adversarial testing</h3>
+      <p>Before scoring, the evaluator tries to break things. It checks for text that overflows, buttons that don't work, and layouts that fall apart on mobile. If something breaks, the score gets capped.</p>
+    </div>
+
+    <h2 id="install">Install</h2>
+    <p>You need Claude Code and Chrome with the claude-in-chrome MCP server running.</p>
+
+    <pre><code># Install from GitHub
+claude plugin install https://github.com/George-RD/design-studio
+
+# Or load it for one session
+claude --plugin-dir ./design-studio</code></pre>
+
+    <p>After installing, run <code>/reload-plugins</code> in Claude Code.</p>
+
+    <h2>Quick Start</h2>
+    <p>In Claude Code, type:</p>
+    <pre><code>/design-studio:create a landing page for a small coffee shop</code></pre>
+    <p>
+      The tool will plan, design, build, and check your page. It runs several rounds
+      to make the design better each time. All the work is saved in a folder called
+      <code>harness-output/</code>.
+    </p>
+
+    <h2>How Scoring Works</h2>
+    <p>The evaluator scores your page on four things:</p>
+    <ul>
+      <li><strong>Design Quality</strong> (2x weight) — Does it look good together?</li>
+      <li><strong>Originality</strong> (2x weight) — Does it look like every other site?</li>
+      <li><strong>Craft</strong> (1x weight) — Is the code clean and polished?</li>
+      <li><strong>Functionality</strong> (1x weight) — Can people use it?</li>
+    </ul>
+    <p>
+      Design quality and originality matter most. That's because AI is already good at
+      making things that work. The hard part is making things that stand out.
+    </p>
+
+    <h2>Commands</h2>
+    <div class="card">
+      <code>/design-studio:create &lt;your prompt&gt;</code>
+      <p style="margin-top: 8px;">Run the full design loop. Give it a short description of what you want to build.</p>
+    </div>
+
+    <h2>Who Made This</h2>
+    <p>
+      Based on research from Anthropic Labs about "harness design for long-running
+      application development." The key insight: separating the creative eye from the
+      code writer produces much better results than a single agent doing everything.
+    </p>
+
+    <div class="footer">
+      <p>MIT License — Built for the Claude Code community</p>
+    </div>
+  </div>
+</body>
+</html>

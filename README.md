@@ -1,123 +1,94 @@
 # Design Studio
 
-A 4-agent design-evaluate-iterate harness for Claude Code that produces distinctive, production-grade frontends by defeating code-anchoring bias.
+A tool for Claude Code that makes better-looking websites. It splits the work into four jobs — planning, design, building, and checking — so you get original designs, not boring templates.
+
+**[See the live site →](https://george-rd.github.io/design-studio/)**
+
+## The Problem
+
+When you ask AI to build a website, it usually makes the same thing every time: a centered headline, a button, some cards in a grid. It looks fine, but it's boring. Every AI site starts to look the same.
+
+The reason is **code-anchoring bias**. When the AI reads its own code before making changes, it just tweaks what's already there. It never stops to think "what should this really look like?"
 
 ## How It Works
 
-Design Studio splits frontend creation into four isolated agents, mirroring how real design studios work:
+Design Studio splits the work into four separate jobs. Each job is done by a different agent that only sees what it needs to see.
 
-| Agent | Role | Why Separated |
-|-------|------|---------------|
-| **Planner** | Expands your prompt into a full spec with creative tensions | Prevents cascading errors from vague requirements |
-| **Design Agent** | Creates visual direction from screenshots + critique — never sees code | Code-anchoring bias: seeing existing code constrains creative vision |
-| **Implementation Agent** | Faithfully translates design descriptions into working code | Executes the vision without second-guessing creative direction |
-| **Evaluator** | Interacts with the live rendered page via Chrome MCP, scores against 4 weighted criteria | Cannot be "captured" by implementation confidence; judges only the user experience |
+| Agent | Job | Why It's Separate |
+|-------|-----|-------------------|
+| **Planner** | Turns your idea into a full plan | Stops vague requests from causing bad results |
+| **Design Agent** | Describes what the page should look like — in words, not code | Never sees code, so it can't copy old ideas |
+| **Implementation Agent** | Builds real code from the design description | Follows the design exactly — no shortcuts |
+| **Evaluator** | Opens the page in Chrome, clicks around, and scores it | Judges only what users see, not how hard the code was to write |
 
-The loop: **Plan → Design → Implement → Evaluate → Decide (REFINE/PIVOT/SHIP) → Loop**.
+The loop: **Plan → Design → Build → Check → Decide → Repeat**.
 
-Each iteration pushes past safe AI defaults. The evaluator uses zone-based scoring and an adversarial testing gate to catch subsystem defects that whole-page scoring averages away.
+Each round makes the design better. The evaluator checks each section of the page separately and tries to break things on purpose. When the scores are high enough, it ships the best version.
 
-## Prerequisites
+## What You Need
 
-- **Claude Code** installed and authenticated
-- **Chrome browser** with the `claude-in-chrome` MCP server running (required for live visual evaluation)
+- **Claude Code** installed and logged in
+- **Chrome** with the claude-in-chrome MCP server running
 
-## Installation
-
-### From the Community Marketplace
+## Install
 
 ```bash
-claude plugin marketplace add anthropics/claude-plugins-community
-claude plugin install design-studio
-```
-
-### From GitHub (direct)
-
-```bash
+# From GitHub
 claude plugin install https://github.com/George-RD/design-studio
-```
 
-### From a local directory (for development)
-
-```bash
+# Or load it for one session
 claude --plugin-dir ./design-studio
 ```
 
-After installing, run `/reload-plugins` in Claude Code to load the plugin.
+After installing, run `/reload-plugins` in Claude Code.
 
 ## Quick Start
 
+In Claude Code, type:
+
 ```
-/design-studio:create a landing page for a boutique coffee roastery
+/design-studio:create a landing page for a small coffee shop
 ```
 
-The harness will:
-1. **Plan** — Expand your prompt into a full spec with aesthetic direction and creative tension
-2. **Design** — The Design Agent creates a prose design description (never sees code)
-3. **Implement** — The Implementation Agent builds the frontend from the design description
-4. **Evaluate** — The Evaluator interacts with the live page via Chrome MCP, scores against 4 criteria, and writes structured critique
-5. **Decide** — REFINE (improve current direction), PIVOT (abandon and reimagine), or SHIP (quality threshold met)
-6. **Loop** — Repeat until convergence (typically 5-8 iterations)
+The tool will:
+1. **Plan** — Turn your idea into a full spec with a look and feel
+2. **Design** — The Design Agent describes what the page should look like (no code)
+3. **Build** — The Implementation Agent builds it from the description
+4. **Check** — The Evaluator opens the page in Chrome, takes screenshots, and scores it
+5. **Decide** — Keep improving, start over, or ship it
+6. **Loop** — Repeat until the design is good enough
 
-All artifacts write to `harness-output/` in your working directory.
+All the work is saved in a folder called `harness-output/`.
 
 ## Commands
 
-| Command | Description |
+| Command | What It Does |
 |---------|-------------|
-| `/design-studio:create <prompt>` | Run the full harness loop to build a frontend |
+| `/design-studio:create <your prompt>` | Run the full design loop |
 
-## Architecture
+## How Scoring Works
 
-```
-USER PROMPT
-  │
-  ▼
-┌─────────┐     spec + sprint contract + creative tensions
-│ PLANNER │ ───────────────────────────────────────────────►
-└─────────┘
-  │
-  ▼
-┌────────────────┐  screenshots + critique  ┌───────────┐
-│ IMPLEMENTATION │ ◄──── design desc. ───── │  DESIGN   │
-│     AGENT      │                          │   AGENT   │
-│  (sees code)   │                          │ (no code) │
-└────────────────┘                          └───────────┘
-  │          ▲                                    ▲
-  │          │                                    │
-  │    rendered page                     screenshots + critique
-  │    (Chrome MCP)                               │
-  │          │                              ┌───────────┐
-  │          └───────────────────────────── │ EVALUATOR │
-  │                                         │ (separate │
-  │          iterate (refine or pivot)       │  agent)   │
-  │          ◄──────────────────────────── └───────────┘
-  │
-  ▼
-FINAL OUTPUT + evaluation report
-```
+The evaluator scores your page on four things:
 
-## Scoring Criteria
+| What It Checks | Weight | What It Means |
+|----------------|--------|---------------|
+| Design Quality | 2x | Does it look good together? |
+| Originality | 2x | Does it look like every other site? |
+| Craft | 1x | Is the code clean and polished? |
+| Functionality | 1x | Can people use it? |
 
-The evaluator scores on 4 criteria with weighted averages:
+Design quality and originality matter most. AI is already good at making things that work. The hard part is making things that stand out.
 
-| Criterion | Weight | What It Measures |
-|-----------|--------|------------------|
-| Design Quality | 2x | Cohesion, mood, intentionality |
-| Originality | 2x | Custom decisions vs template defaults |
-| Craft | 1x | Typography, spacing, alignment, responsive |
-| Functionality | 1x | Can users accomplish their goals? |
+## What Makes It Different
 
-Design quality and originality are weighted higher because Claude already performs well on technical competence by default.
+- **No more template websites.** Most AI tools make the same layout over and over. Design Studio stops that by separating the person who dreams up the design from the person who writes the code.
+- **Real browser testing.** The evaluator opens your page in Chrome, clicks buttons, scrolls, and checks for bugs. It doesn't just read the code.
+- **Zone-by-zone scoring.** Instead of giving the whole page one score, it checks each section separately. A broken footer can't hide behind a pretty hero section.
+- **Tries to break things.** Before scoring, the evaluator checks for text that overflows, buttons that don't work, and layouts that fall apart on mobile.
 
-## Methodology
+## Where It Comes From
 
-Based on the Anthropic Labs blog post "Harness design for long-running application development" (Rajasekaran, March 2026), extended with:
-
-- **4-agent architecture** — Splits the original Generator into a Design Agent (visual-only, never sees code) and Implementation Agent (faithful executor), defeating code-anchoring bias
-- **Zone-based evaluation** — Per-visual-component scoring at 2x zoom prevents subsystem defects from hiding behind a passing whole-page score
-- **Adversarial testing gate** — Mandatory pre-scoring technical checks (overflow, readability, interactions, responsive) that hard-cap scores on failure
-- **Section decomposition** — Per-section creative isolation for multi-section pages, protecting each section's creative freedom
+Based on research from Anthropic Labs about "harness design for long-running application development." The key insight: separating the creative eye from the code writer produces much better results than a single agent doing everything.
 
 ## License
 
