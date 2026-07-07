@@ -3,237 +3,977 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Design Studio — Better Frontends for Claude Code</title>
-  <meta name="description" content="A 4-agent tool for Claude Code that makes better-looking websites. It splits the work into planning, design, building, and checking — so you get original designs, not boring templates." />
+  <title>Design Studio</title>
+  <meta name="description" content="A four-agent design studio that generates production frontends by separating planning, design, implementation, and evaluation into isolated agents." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;800&family=Manrope:wght@400;600;700&family=Space+Mono:wght@400&display=swap" rel="stylesheet" />
   <style>
+    :root {
+      --paper: #FAFAFA;
+      --warm-paper: #F0F0F0;
+      --ink: #0A0A0A;
+      --muted: #555452;
+      --accent: #FF3D00;
+      --rule: #E0E0E0;
+      --deep: #111111;
+      --hover-charcoal: #2A2A2A;
+      --surface-dark: #111111;
+    }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #0a0a0f;
-      color: #f0f0f5;
-      line-height: 1.6;
+      font-family: 'Manrope', sans-serif;
+      font-weight: 400;
+      font-size: 17px;
+      line-height: 1.65;
+      color: var(--ink);
+      background: var(--paper);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
-    .container { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
-    h1 { font-size: 2.5em; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 8px; }
-    h2 { font-size: 1.5em; font-weight: 700; margin-top: 48px; margin-bottom: 16px; color: #6c5ce7; }
-    h3 { font-size: 1.2em; font-weight: 600; margin-top: 32px; margin-bottom: 8px; }
-    p { margin-bottom: 16px; font-size: 1.1em; color: #c0c0d0; }
-    .subtitle { font-size: 1.2em; color: #6c5ce7; font-weight: 600; margin-bottom: 32px; }
-    .tagline { font-size: 1.1em; color: #8888a0; margin-bottom: 40px; }
-    .hero { padding: 60px 0; text-align: center; }
-    .hero h1 { font-size: 3em; }
-    .btn {
-      display: inline-block;
-      padding: 14px 28px;
-      background: #6c5ce7;
-      color: #fff;
-      text-decoration: none;
-      border-radius: 8px;
-      font-weight: 700;
-      font-size: 1.1em;
-      margin: 8px;
-    }
-    .btn-outline {
-      background: transparent;
-      border: 2px solid #6c5ce7;
-    }
-    .card {
-      background: #14141f;
-      border-radius: 12px;
-      padding: 24px;
-      margin-bottom: 16px;
-      border: 1px solid #1e1e30;
-    }
-    .card h3 { color: #00cec9; }
-    code {
-      background: #1e1e30;
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-size: 0.9em;
-      color: #fdcb6e;
-    }
-    pre {
-      background: #1e1e30;
-      padding: 16px;
-      border-radius: 8px;
-      overflow-x: auto;
-      margin: 16px 0;
-    }
-    pre code { background: none; padding: 0; color: #f0f0f5; }
-    ul { margin-bottom: 16px; padding-left: 20px; }
-    li { margin-bottom: 8px; color: #c0c0d0; font-size: 1.05em; }
-    .steps { display: grid; gap: 12px; margin: 24px 0; }
-    .step {
-      background: #14141f;
-      border-radius: 12px;
-      padding: 20px;
-      border-left: 4px solid #6c5ce7;
-    }
-    .step-num {
-      font-size: 0.85em;
-      color: #6c5ce7;
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-    .step-title { font-weight: 600; font-size: 1.1em; margin-bottom: 4px; }
-    .step-desc { color: #8888a0; font-size: 0.95em; }
-    .footer { margin-top: 60px; padding-top: 24px; border-top: 1px solid #1e1e30; text-align: center; color: #555; font-size: 0.9em; }
-    .video-container {
-      position: relative;
+
+.grid-wrap {
       width: 100%;
-      padding-bottom: 56.25%;
-      margin: 32px 0;
-      border-radius: 12px;
-      overflow: hidden;
-      background: #000;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 8vw;
+      position: relative;
     }
-    .video-container video {
-      position: absolute;
-      top: 0;
-      left: 0;
+
+    /* Header */
+    .site-header {
+      height: 80px;
+      border-bottom: 1px solid var(--rule);
+    }
+    .site-header .grid-wrap {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .wordmark {
+      font-family: 'Manrope', sans-serif;
+      font-weight: 600;
+      font-size: 18px;
+      letter-spacing: 0.02em;
+      color: var(--ink);
+      text-decoration: none;
+    }
+    .header-meta {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+    .version {
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1.4px;
+      color: var(--muted);
+    }
+    .header-rule {
+      width: 1px;
+      height: 24px;
+      background: var(--rule);
+    }
+    .header-link {
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1.4px;
+      color: var(--ink);
+      text-decoration: none;
+    }
+    .header-link:hover { color: var(--accent); }
+
+    /* Reveal animations */
+    .reveal {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 700ms ease-out, transform 700ms ease-out;
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    .section-reveal {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 600ms ease-out, transform 600ms ease-out;
+    }
+    .section-reveal.visible { opacity: 1; transform: translateY(0); }
+
+    .hero-title.reveal { transition-delay: 0ms; }
+    .artifact-frame.reveal { transition-delay: 0ms; }
+    .hero-manifesto.reveal { transition-delay: 200ms; }
+    .hero-rule.reveal { transition-delay: 400ms; }
+    .hero-command.reveal { transition-delay: 600ms; }
+
+    /* Hero */
+    .hero {
+      min-height: calc(100vh - 80px);
+      position: relative;
+      display: flex;
+      padding: 48px 0 120px;
+    }
+    .hero-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 24px;
+      align-items: stretch;
+      width: 100%;
+      min-height: calc(100vh - 80px - 48px - 120px);
+    }
+    .hero-left {
+      grid-column: 1 / span 7;
+      display: flex;
+      flex-direction: column;
+      padding-bottom: 8px;
+    }
+    .hero-title {
+      font-family: 'Fraunces', serif;
+      font-weight: 800;
+      font-size: clamp(56px, 11vw, 170px);
+      line-height: 0.88;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+    }
+    .hero-manifesto {
+      font-family: 'Manrope', sans-serif;
+      font-weight: 400;
+      font-size: 20px;
+      line-height: 1.5;
+      max-width: 60%;
+      margin-top: 40px;
+    }
+    .hero-rule {
+      width: 80px;
+      height: 1px;
+      background: var(--rule);
+      margin-top: auto;
+      margin-bottom: 24px;
+    }
+    .hero-command {
+      font-family: 'Space Mono', monospace;
+      font-size: 16px;
+      line-height: 1.4;
+      color: var(--muted);
+      word-break: break-all;
+    }
+    .hero-command .prompt { color: var(--accent); margin-right: 8px; }
+
+    .hero-right {
+      grid-column: 9 / span 4;
+      align-self: stretch;
+    }
+    .hero-artifact {
+      height: 100%;
+      margin: 0;
+    }
+    .artifact-frame {
+      position: relative;
+      height: 100%;
+      min-height: 60vh;
+      border: 1px solid var(--rule);
+      overflow: hidden;
+      background: var(--warm-paper);
+    }
+    .artifact-frame img {
       width: 100%;
       height: 100%;
+      object-fit: cover;
+      display: block;
     }
-    @media (max-width: 600px) {
-      .container { padding: 20px 16px; }
-      h1 { font-size: 1.8em; }
-      .hero h1 { font-size: 2em; }
+    .artifact-caption {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      writing-mode: vertical-rl;
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1.4px;
+      color: var(--muted);
+    }
+
+    /* Faint 12-column grid overlay in the hero only */
+    .hero-grid-lines {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 8vw;
+      opacity: 0.04;
+      z-index: 0;
+    }
+    .hero-grid-lines span {
+      border-left: 1px solid var(--rule);
+    }
+    .hero-grid-lines span:first-child { border-left: none; }
+
+    /* Clip-reveal animation for editorial moments */
+    .clip-reveal {
+      overflow: hidden;
+    }
+    .clip-reveal > * {
+      transform: translateY(100%);
+      transition: transform 600ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .clip-reveal.visible > * {
+      transform: translateY(0);
+    }
+
+    /* Problem statement */
+    .problem {
+      background: var(--warm-paper);
+      padding: 140px 0;
+    }
+    .problem-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 24px;
+      align-items: start;
+    }
+    .problem-left {
+      grid-column: 1 / span 8;
+      position: relative;
+      overflow: hidden;
+    }
+    .quote-mark {
+      font-family: 'Fraunces', serif;
+      font-weight: 700;
+      font-size: 280px;
+      line-height: 0.8;
+      color: var(--accent);
+      opacity: 0.2;
+      position: absolute;
+      top: -40px;
+      left: -28px;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .problem blockquote {
+      font-family: 'Fraunces', serif;
+      font-weight: 700;
+      font-size: 42px;
+      line-height: 1.12;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      position: relative;
+      z-index: 1;
+    }
+    .problem-right {
+      grid-column: 9 / span 4;
+      padding-top: 120px;
+    }
+    .problem-right p {
+      font-size: 17px;
+      line-height: 1.65;
+      color: var(--muted);
+    }
+
+    /* Shared section title */
+    .section-title {
+      font-family: 'Fraunces', serif;
+      font-weight: 700;
+      font-size: 56px;
+      line-height: 1.05;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+    }
+
+    .section-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    /* Process */
+    .process {
+      padding: 140px 0;
+      border-top: 1px solid var(--rule);
+    }
+    .process .section-title { margin-bottom: 80px; }
+    .process-diagram {
+      position: relative;
+      padding: 80px 0;
+    }
+    .process-line {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: var(--ink);
+      transform: translateY(-50%) scaleX(0);
+      transform-origin: left;
+      transition: transform 800ms ease-out;
+    }
+    .process-diagram.visible .process-line { transform: translateY(-50%) scaleX(1); }
+    .process-nodes {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+      position: relative;
+    }
+    .node {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    .node-circle {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: 1px solid var(--ink);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1.4px;
+      background: var(--paper);
+      flex-shrink: 0;
+    }
+    .node-label { max-width: 220px; }
+    .node-label strong {
+      display: block;
+      font-family: 'Manrope', sans-serif;
+      font-weight: 700;
+      font-size: 18px;
+      line-height: 1.25;
+      margin-bottom: 4px;
+    }
+    .node-label span {
+      display: block;
+      font-family: 'Manrope', sans-serif;
+      font-weight: 400;
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--muted);
+    }
+    .node-up .node-label { order: -1; margin-bottom: 16px; }
+    .node-down .node-label { order: 1; margin-top: 16px; }
+
+    /* Video */
+    .video {
+      padding: 140px 0;
+      border-top: 1px solid var(--rule);
+    }
+    .video .section-title { margin-bottom: 80px; }
+    .video-frame {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: var(--deep);
+      border: 1px solid var(--rule);
+      overflow: hidden;
+      box-shadow: 0 24px 64px rgba(26, 26, 26, 0.12);
+    }
+    .video-frame video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .video-play {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 200ms ease;
+    }
+    .video-frame:hover .video-play { transform: translate(-50%, -50%) scale(1.05); }
+    .video-play svg {
+      width: 24px;
+      height: 24px;
+      fill: var(--off-white);
+      margin-left: 4px;
+    }
+    .video-caption {
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1.4px;
+      color: var(--muted);
+      margin-top: 16px;
+    }
+
+    /* Differentiators */
+    .differentiators {
+      padding: 140px 0;
+      border-top: 1px solid var(--rule);
+    }
+    .differentiators .section-title { margin-bottom: 80px; }
+    .index-list {
+      list-style: none;
+    }
+    .index-list li {
+      display: grid;
+      grid-template-columns: 80px 1fr;
+      gap: 24px;
+      padding: 32px 0;
+      border-top: 1px solid var(--rule);
+    }
+    .index-list li:last-child { border-bottom: 1px solid var(--rule); }
+    .index-num {
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1.4px;
+      color: var(--muted);
+    }
+    .index-body {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .index-body strong {
+      font-family: 'Manrope', sans-serif;
+      font-weight: 700;
+      font-size: 24px;
+      line-height: 1.25;
+    }
+    .index-body span {
+      font-family: 'Manrope', sans-serif;
+      font-weight: 400;
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--muted);
+      max-width: 65ch;
+    }
+
+    /* Scoring */
+    .scoring {
+      padding: 140px 0;
+      border-top: 1px solid var(--rule);
+    }
+    .scoring .section-title { margin-bottom: 80px; }
+    .scorecard {
+      border: 1px solid var(--rule);
+      padding: 48px;
+      background: var(--paper);
+      box-shadow: 0 16px 48px rgba(26, 26, 26, 0.08);
+    }
+    .formula {
+      font-family: 'Fraunces', serif;
+      font-weight: 700;
+      font-size: 48px;
+      line-height: 1.1;
+      letter-spacing: -0.01em;
+      margin-bottom: 48px;
+    }
+    .score-bars {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .bar {
+      display: grid;
+      grid-template-columns: 180px 1fr 40px;
+      gap: 24px;
+      align-items: center;
+    }
+    .bar-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1.4px;
+      color: var(--muted);
+    }
+    .bar-fill {
+      height: 12px;
+      background: var(--ink);
+      width: 100%;
+    }
+    .bar-accent .bar-fill { height: 24px; background: var(--accent); }
+    .bar-weight {
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1.4px;
+      color: var(--muted);
+      text-align: right;
+    }
+
+    .scoring[style*="surface-dark"] .bar-label,
+    .scoring[style*="surface-dark"] .bar-weight {
+      color: #888;
+    }
+    .scoring[style*="surface-dark"] .bar-fill {
+      background: #333;
+    }
+    .scoring[style*="surface-dark"] .bar-accent .bar-fill {
+      background: var(--accent);
+    }
+
+    /* Install */
+    .install {
+      padding: 140px 0 160px;
+      border-top: 1px solid var(--rule);
+    }
+    .install .section-title { font-size: 42px; margin-bottom: 40px; }
+    .command-block {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      background: var(--deep);
+      color: var(--off-white);
+      padding: 24px 32px;
+      font-family: 'Space Mono', monospace;
+      font-size: 16px;
+      line-height: 1.4;
+      cursor: pointer;
+      transition: background 200ms ease;
+      overflow-x: auto;
+    }
+    .command-block:hover { background: var(--hover-charcoal); }
+    .command-block .prompt { color: var(--accent); user-select: none; }
+    .command-block code {
+      font-family: inherit;
+      background: transparent;
+      color: inherit;
+      white-space: normal;
+      word-break: break-all;
+      overflow-wrap: break-word;
+      flex: 1;
+      min-width: 0;
+    }
+    .copy-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1.4px;
+      color: var(--muted);
+      margin-left: 16px;
+      flex-shrink: 0;
+    }
+    .install-note code {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.9em;
+      background: var(--charcoal);
+      color: var(--paper);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .install-note {
+      margin-top: 32px;
+      font-size: 17px;
+    }
+    .cta-link {
+      color: var(--accent);
+      text-decoration: underline;
+      text-underline-offset: 4px;
+      text-decoration-thickness: 1px;
+    }
+
+    /* Commands */
+    .commands {
+      padding: 140px 0;
+      border-top: 1px solid var(--rule);
+    }
+    .commands .section-title { margin-bottom: 40px; }
+    .command-entry {
+      padding: 24px 0;
+      border-top: 1px solid var(--rule);
+      border-bottom: 1px solid var(--rule);
+    }
+    .command-entry code {
+      font-family: 'Space Mono', monospace;
+      font-size: 16px;
+      line-height: 1.4;
+      background: transparent;
+      color: var(--ink);
+      display: block;
+      margin-bottom: 8px;
+    }
+    .command-entry span {
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--muted);
+    }
+
+    /* Footer */
+    .site-footer {
+      padding: 24px 0 80px;
+      border-top: 1px solid var(--rule);
+    }
+    .footer-rule {
+      height: 1px;
+      background: var(--rule);
+      margin-bottom: 24px;
+    }
+    .site-footer p {
+      font-family: 'Space Mono', monospace;
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--muted);
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .grid-wrap { padding: 0 6vw; }
+      .site-header { height: 64px; }
+      .hero { min-height: auto; padding: 32px 0 80px; }
+      .hero-grid {
+        grid-template-columns: 1fr;
+        min-height: auto;
+      }
+      .hero-left, .hero-right { grid-column: 1; }
+      .hero-right { margin-top: 48px; }
+      .hero-artifact { height: auto; }
+      .artifact-frame { min-height: 60vh; }
+      .hero-manifesto { max-width: 100%; font-size: 18px; }
+      .hero-command { font-size: 16px; }
+      .section-title { font-size: 40px; }
+      .problem { padding: 100px 0; }
+      .problem-grid { grid-template-columns: 1fr; }
+      .problem-left, .problem-right { grid-column: 1; }
+      .problem-right { padding-top: 32px; }
+      .problem blockquote { font-size: 28px; }
+      .quote-mark { font-size: 160px; top: -24px; left: -16px; }
+      .process-nodes { grid-template-columns: 1fr 1fr; gap: 48px 24px; }
+      .formula { font-size: 28px; }
+      .bar { grid-template-columns: 120px 1fr 40px; }
+      .install { padding: 100px 0 120px; }
+      .install .section-title { font-size: 32px; }
+      .command-block { padding: 20px 24px; }
+      .scoring { padding: 100px 0; }
+      .scorecard { padding: 32px; }
+      .differentiators { padding: 100px 0; }
+      .video { padding: 100px 0; }
+      .process { padding: 100px 0; }
+      .commands { padding: 100px 0; }
+      .node-label { max-width: 160px; }
+    }
+
+    @media (max-width: 480px) {
+      .header-meta { gap: 16px; }
+      .version { font-size: 10px; }
+      .header-link { font-size: 10px; }
+      .process-nodes { grid-template-columns: 1fr; }
+      .process-line { top: 0; bottom: 0; left: 50%; right: auto; width: 1px; height: 100%; transform: translateX(-50%) scaleY(0); transform-origin: top; }
+      .process-diagram.visible .process-line { transform: translateX(-50%) scaleY(1); }
+      .node { flex-direction: row; align-items: center; text-align: left; gap: 16px; }
+      .node-up .node-label, .node-down .node-label { order: 0; margin: 0; }
+      .node-label strong { font-size: 16px; }
+      .node-label span { font-size: 14px; }
+      .index-list li { grid-template-columns: 48px 1fr; gap: 16px; padding: 24px 0; }
+      .index-body strong { font-size: 20px; }
+      .bar { grid-template-columns: 1fr; gap: 8px; }
+      .bar-fill { order: 1; }
+      .bar-weight { order: 2; text-align: left; }
+      .formula { font-size: 24px; }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="hero">
-      <h1>Design Studio</h1>
-      <div class="subtitle">A 4-Agent Frontend Tool for Claude Code</div>
-      <p class="tagline">
-        Makes websites that look original, not like every other AI template.
-        Works inside Claude Code with no extra setup.
-      </p>
-      <a href="https://george-rd.github.io/design-studio" class="btn">View the Site</a>
-      <a href="#install" class="btn btn-outline">Install</a>
-    </div>
-
-    <div class="video-container">
-      <video controls autoplay muted loop playsinline poster="poster.jpg">
-        <source src="video-720p.mp4" type="video/mp4" />
-      </video>
-    </div>
-
-    <h2>What's the Problem?</h2>
-    <p>
-      When you ask an AI to build a website, it usually makes the same thing over and over:
-      a centered headline, a button, some cards in a grid. It looks fine, but it's boring.
-      Every AI site starts to look the same.
-    </p>
-    <p>
-      The reason is <strong>code-anchoring bias</strong>. When the AI reads its own code
-      before making changes, it just tweaks what's already there. It never stops to think
-      "what should this really look like?"
-    </p>
-
-    <h2>How Design Studio Fixes This</h2>
-    <p>
-      Design Studio splits the work into four separate jobs. Each job is done by a different
-      agent that only sees what it needs to see. This is how real design studios work —
-      the art director never writes code, and the developer never makes creative choices.
-    </p>
-
-    <div class="steps">
-      <div class="step">
-        <div class="step-num">Step 1 — Plan</div>
-        <div class="step-title">The Planner</div>
-        <div class="step-desc">Takes your idea and turns it into a full plan. It picks a look and feel, lists what the page needs, and sets a creative direction.</div>
-      </div>
-      <div class="step">
-        <div class="step-num">Step 2 — Design</div>
-        <div class="step-title">The Design Agent</div>
-        <div class="step-desc">Describes what the page should look like in plain words. It never sees any code — only screenshots and feedback. This stops it from copying old ideas.</div>
-      </div>
-      <div class="step">
-        <div class="step-num">Step 3 — Build</div>
-        <div class="step-title">The Implementation Agent</div>
-        <div class="step-desc">Takes the design description and builds real code from it. It follows the design exactly — no shortcuts, no "I think this looks better."</div>
-      </div>
-      <div class="step">
-        <div class="step-num">Step 4 — Check</div>
-        <div class="step-title">The Evaluator</div>
-        <div class="step-desc">Opens the page in a real browser, clicks around, takes screenshots, and scores the design. It checks for broken layouts, hard-to-read text, and boring patterns.</div>
+<header class="site-header">
+    <div class="grid-wrap">
+      <a class="wordmark" href="/" style="font-family: 'Fraunces', serif; font-weight: 700; font-size: 20px; letter-spacing: -0.01em;">Design Studio</a>
+      <div class="header-meta">
+        <span class="version">v1</span>
+        <span class="header-rule" aria-hidden="true"></span>
+        <a class="header-link" href="#install">Install</a>
       </div>
     </div>
+  </header>
 
-    <p>
-      Then the loop repeats. The design gets better each time. When the scores are high enough,
-      the tool ships the best version.
-    </p>
+  <main>
+    <section class="hero">
+      <div class="grid-wrap">
+        <div class="hero-grid">
+          <div class="hero-left">
+            <h1 class="hero-title reveal">Design Studio</h1>
+            <p class="hero-manifesto reveal">Give it a brief. Get a production frontend that looks like a studio designed it. Four agents — planner, designer, builder, evaluator — working in isolation so the design never compromises to the code.</p>
+            <div class="hero-rule reveal" aria-hidden="true"></div>
+            <div class="hero-command reveal">
+              <span class="prompt">›</span>
+              <code>claude plugin install https://github.com/George-RD/design-studio</code>
+            </div>
+          </div>
+          <div class="hero-right">
+            <figure class="hero-artifact">
+              <div class="artifact-frame reveal">
+                <img src="poster.jpg" alt="Design Studio overview poster" loading="eager" />
+                <span class="artifact-caption">Overview</span>
+              </div>
+            </figure>
+          </div>
+        </div>
+      </div>
+      <div class="hero-grid-lines" aria-hidden="true">
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+    </section>
 
-    <h2>What Makes It Different</h2>
-    <div class="card">
-      <h3>No more template websites</h3>
-      <p>Most AI tools make the same centered-hero-with-card-grid layout. Design Studio pushes past that by separating the person who dreams up the design from the person who writes the code.</p>
+    <section class="problem">
+      <div class="grid-wrap">
+        <div class="problem-grid">
+          <div class="problem-left">
+            <span class="quote-mark" aria-hidden="true">“</span>
+            <div class="clip-reveal"><blockquote class="section-reveal">Most tools make the same page over and over: a centred headline, a button, a grid of cards. It looks safe. It is also forgettable.</blockquote></div>
+          </div>
+          <div class="problem-right">
+            <p class="section-reveal">The trap is code-anchoring bias. When the maker reads the existing code before imagining what could be, it can only tweak what already exists. It never stops to ask what the page should feel like. Design Studio breaks that loop by keeping the brief, the design, the build, and the evaluation in separate rooms. The result looks like it came from a studio — because it did.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="process">
+      <div class="grid-wrap">
+        <p class="section-label section-reveal">How it works</p>
+        <h2 class="section-title section-reveal">Process</h2>
+        <div class="process-diagram">
+          <div class="process-line process-line-animated" aria-hidden="true"></div>
+          <div class="process-nodes">
+            <div class="node node-up">
+              <div class="node-circle" style="background: var(--accent); color: #fff; border-color: var(--accent);"><span>01</span></div>
+              <div class="node-label">
+                <strong>Plan</strong>
+                <span>Take a brief and turn it into a creative direction.</span>
+              </div>
+            </div>
+            <div class="node node-down">
+              <div class="node-circle" style="border-width: 2px;"><span>02</span></div>
+              <div class="node-label">
+                <strong>Design</strong>
+                <span>Describe the page in words, not code.</span>
+              </div>
+            </div>
+            <div class="node node-up">
+              <div class="node-circle" style="background: var(--ink); color: var(--paper); border-color: var(--ink);"><span>03</span></div>
+              <div class="node-label">
+                <strong>Build</strong>
+                <span>Translate the description into production code.</span>
+              </div>
+            </div>
+            <div class="node node-down">
+              <div class="node-circle" style="border-style: dashed;"><span>04</span></div>
+              <div class="node-label">
+                <strong>Evaluate</strong>
+                <span>Open the page, use it, score it, and feed back.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="video">
+      <div class="grid-wrap">
+        <p class="section-label section-reveal">See the work</p>
+        <h2 class="section-title section-reveal">Proof</h2>
+        <div class="video-frame section-reveal">
+          <video poster="poster.jpg" playsinline>
+            <source src="video-720p.mp4" type="video/mp4" />
+          </video>
+          <button class="video-play" aria-label="Play overview video">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <polygon points="8,5 19,12 8,19" />
+            </svg>
+          </button>
+        </div>
+        <p class="video-caption section-reveal">Two-minute overview</p>
+      </div>
+    </section>
+
+    <section class="differentiators">
+      <div class="grid-wrap">
+        <p class="section-label section-reveal">The studio difference</p>
+        <h2 class="section-title section-reveal">What Makes It Different</h2>
+        <ul class="index-list">
+          <li class="section-reveal">
+            <span class="index-num">01</span>
+            <div class="index-body">
+              <strong>Originality by separation</strong>
+              <span>The creative eye never reads the code. The builder never sees the brief. This isolation is what stops the work from drifting back to the default.</span>
+            </div>
+          </li>
+          <li class="section-reveal">
+            <span class="index-num">02</span>
+            <div class="index-body">
+              <strong>Real browser proof</strong>
+              <span>The evaluator opens the result in a browser, clicks, scrolls, and reads it. A page that works only in theory is not good enough.</span>
+            </div>
+          </li>
+          <li class="section-reveal">
+            <span class="index-num">03</span>
+            <div class="index-body">
+              <strong>Zone-by-zone judgement</strong>
+              <span>Every section is scored on its own. A strong hero cannot hide a broken footer.</span>
+            </div>
+          </li>
+          <li class="section-reveal">
+            <span class="index-num">04</span>
+            <div class="index-body">
+              <strong>Adversarial testing</strong>
+              <span>Before the final score, the evaluator tries to break the layout. Overflow, dead buttons, and mobile collapse are caught early.</span>
+            </div>
+          </li>
+          <li class="section-reveal">
+            <span class="index-num">05</span>
+            <div class="index-body">
+              <strong>Taste as a constraint</strong>
+              <span>Design Studio refuses to ship work that looks like a template. Originality and design quality are weighted above everything else.</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="scoring" style="background: var(--surface-dark); color: var(--paper);">
+      <div class="grid-wrap">
+        <p class="section-label section-reveal" style="color: #888;">The rubric</p>
+        <h2 class="section-title section-reveal" style="color: var(--paper);">How Scoring Works</h2>
+        <div class="scorecard section-reveal" style="background: var(--deep); border-color: #333;">
+          <p class="formula" style="color: var(--paper);">Score = (Design × 2 + Originality × 2 + Craft + Functionality) ÷ 6</p>
+          <div class="score-bars">
+            <div class="bar bar-accent">
+              <span class="bar-label">Design Quality</span>
+              <span class="bar-fill" aria-hidden="true"></span>
+              <span class="bar-weight">2x</span>
+            </div>
+            <div class="bar bar-accent">
+              <span class="bar-label">Originality</span>
+              <span class="bar-fill" aria-hidden="true"></span>
+              <span class="bar-weight">2x</span>
+            </div>
+            <div class="bar">
+              <span class="bar-label">Craft</span>
+              <span class="bar-fill" aria-hidden="true"></span>
+              <span class="bar-weight">1x</span>
+            </div>
+            <div class="bar">
+              <span class="bar-label">Functionality</span>
+              <span class="bar-fill" aria-hidden="true"></span>
+              <span class="bar-weight">1x</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="install" id="install">
+      <div class="grid-wrap">
+        <p class="section-label section-reveal">Get started</p>
+        <h2 class="section-title section-reveal">Install.</h2>
+        <p class="install-note section-reveal">You need Claude Code and Chrome with the claude-in-chrome MCP server running.</p>
+        <div class="command-block section-reveal" role="button" tabindex="0" aria-label="Copy install command">
+          <span class="prompt">›</span>
+          <code>claude plugin install https://github.com/George-RD/design-studio</code>
+          <span class="copy-label">copy</span>
+        </div>
+        <p class="install-note section-reveal">Or load it for one session: <code>claude --plugin-dir ./design-studio</code></p>
+        <p class="install-note section-reveal">After installing, run <code>/reload-plugins</code> in Claude Code.</p>
+      </div>
+    </section>
+
+    <section class="commands">
+      <div class="grid-wrap">
+        <p class="section-label section-reveal">Reference</p>
+        <h2 class="section-title section-reveal">Commands</h2>
+        <div class="command-entry section-reveal">
+          <code>/design-studio:create &lt;your brief&gt;</code>
+          <span>Run the full design loop from a short description.</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="grid-wrap">
+      <div class="footer-rule" aria-hidden="true"></div>
+      <p>MIT License</p>
+      <p>Built for the design-engineering community</p>
     </div>
-    <div class="card">
-      <h3>Real browser testing</h3>
-      <p>The evaluator opens your page in Chrome, clicks buttons, scrolls, and checks for bugs. It doesn't just read the code — it uses the page like a real person would.</p>
-    </div>
-    <div class="card">
-      <h3>Zone-by-zone scoring</h3>
-      <p>Instead of giving the whole page one score, it checks each section separately. A broken footer can't hide behind a pretty hero section.</p>
-    </div>
-    <div class="card">
-      <h3>Adversarial testing</h3>
-      <p>Before scoring, the evaluator tries to break things. It checks for text that overflows, buttons that don't work, and layouts that fall apart on mobile. If something breaks, the score gets capped.</p>
-    </div>
+  </footer>
 
-    <h2 id="install">Install</h2>
-    <p>You need Claude Code and Chrome with the claude-in-chrome MCP server running.</p>
+  <script>
+    (function() {
+      // Hero entry animation
+      document.querySelectorAll('.hero .reveal').forEach(function(el) {
+        el.classList.add('visible');
+      });
 
-    <pre><code># Install from GitHub
-claude plugin install https://github.com/George-RD/design-studio
+      // Scroll-triggered section reveals
+      var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.3 });
 
-# Or load it for one session
-claude --plugin-dir ./design-studio</code></pre>
+      document.querySelectorAll('.section-reveal, .process-diagram').forEach(function(el) {
+        observer.observe(el);
+      });
 
-    <p>After installing, run <code>/reload-plugins</code> in Claude Code.</p>
+      // Video play
+      var frame = document.querySelector('.video-frame');
+      var video = frame ? frame.querySelector('video') : null;
+      var playBtn = frame ? frame.querySelector('.video-play') : null;
 
-    <h2>Quick Start</h2>
-    <p>In Claude Code, type:</p>
-    <pre><code>/design-studio:create a landing page for a small coffee shop</code></pre>
-    <p>
-      The tool will plan, design, build, and check your page. It runs several rounds
-      to make the design better each time. All the work is saved in a folder called
-      <code>harness-output/</code>.
-    </p>
+      if (playBtn && video) {
+        playBtn.addEventListener('click', function() {
+          video.setAttribute('controls', '');
+          video.play();
+          playBtn.style.display = 'none';
+        });
+      }
 
-    <h2>How Scoring Works</h2>
-    <p>The evaluator scores your page on four things:</p>
-    <ul>
-      <li><strong>Design Quality</strong> (2x weight) — Does it look good together?</li>
-      <li><strong>Originality</strong> (2x weight) — Does it look like every other site?</li>
-      <li><strong>Craft</strong> (1x weight) — Is the code clean and polished?</li>
-      <li><strong>Functionality</strong> (1x weight) — Can people use it?</li>
-    </ul>
-    <p>
-      Design quality and originality matter most. That's because AI is already good at
-      making things that work. The hard part is making things that stand out.
-    </p>
+      // Copy command
+      var commandBlock = document.querySelector('.command-block');
+      if (commandBlock) {
+        var copyLabel = commandBlock.querySelector('.copy-label');
+        var code = commandBlock.querySelector('code');
 
-    <h2>Commands</h2>
-    <div class="card">
-      <code>/design-studio:create &lt;your prompt&gt;</code>
-      <p style="margin-top: 8px;">Run the full design loop. Give it a short description of what you want to build.</p>
-    </div>
+        var doCopy = function() {
+          if (!code || !copyLabel) return;
+          var text = code.textContent;
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function() {
+              var original = copyLabel.textContent;
+              copyLabel.textContent = 'copied';
+              setTimeout(function() { copyLabel.textContent = original; }, 1500);
+            });
+          }
+        };
 
-    <h2>Who Made This</h2>
-    <p>
-      Based on research from Anthropic Labs about "harness design for long-running
-      application development." The key insight: separating the creative eye from the
-      code writer produces much better results than a single agent doing everything.
-    </p>
-
-    <div class="footer">
-      <p>MIT License — Built for the Claude Code community</p>
-    </div>
-  </div>
+        commandBlock.addEventListener('click', doCopy);
+        commandBlock.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            doCopy();
+          }
+        });
+      }
+    })();
+  </script>
 </body>
 </html>

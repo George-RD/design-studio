@@ -158,6 +158,23 @@ Gate failures impose hard score caps, making it impossible to ship technically b
 
 **Diagnostic sign:** If you see high design quality and originality scores (7+) paired with user-reported bugs after shipping, the adversarial gate checks are insufficient. Add more destructive test patterns.
 
+## Lesson 10: Viewport-Lock Verification and Fallbacks
+
+In certain sandbox or containerized environments, the browser automation tool's window size may be locked (e.g., to a fixed 800×600 resolution), causing resize requests to fail silently while still returning success.
+
+**The risk of silent lock:**
+When the resize commands return successfully but the browser remains at its fixed size, the evaluator saves byte-identical screenshots for both desktop (e.g., 1440px) and mobile (e.g., 390px) viewports. This leads to two critical failures:
+1. **Visual Misdiagnosis:** A visual-only evaluator will analyze the desktop-width content inside the locked width and mistake it for broken mobile layout, or vice-versa (such as mistaking a poster image's naturally cropped cover text for a DOM text overflow/clipping defect).
+2. **False Passes/Fails:** The adversarial gate will evaluate mobile responsiveness against a desktop viewport, creating false results.
+
+**How to address viewport lock:**
+- **Validation check:** The evaluation script must verify if a resize request actually succeeded by querying `window.innerWidth` afterwards, or by performing a byte-level comparison of the generated screenshots.
+- **Durable fallback:** If a viewport lock is detected, the evaluator must:
+  - Document the lock as a critical harness limitation.
+  - Fail or mark as "UNEVALUABLE" all responsive/mobile checks rather than silently evaluating them from desktop screenshots.
+  - Reject visual assessments of text overlaps when they are inside images (like `poster.jpg` with `object-fit: cover`) by verifying their element tags.
+
+
 ## Applying Meta-Learnings
 
 When tuning this harness:

@@ -114,7 +114,7 @@ These are **complementary**: zone-based evaluation runs within every evaluation 
 
 A PIVOT is a complete aesthetic restart. This is the harness's most powerful tool — it's what produces the breakthrough designs (like the blog's Dutch art museum example where iteration 10 abandoned a dark landing page for a 3D spatial gallery experience).
 
-In the 3-agent architecture, PIVOT means:
+In the 4-agent architecture, PIVOT means:
 - The **Design Agent** receives a fresh creative brief with explicit instruction to abandon the current visual direction
 - The **Implementation Agent** receives a completely new design description — no code is carried forward
 - The **Evaluator** scores the new direction from scratch but retains awareness of prior direction failures

@@ -147,6 +147,13 @@ Check with: `mcp__claude-in-chrome__javascript_tool(tabId: <EVAL_TAB_ID>, action
 
 Use `mcp__claude-in-chrome__read_page(tabId: <EVAL_TAB_ID>, filter: "interactive")` to enumerate all interactive elements, then test each.
 
+#### 5. Viewport-Lock Verification and Fallback
+In sandbox or containerized environments where the browser window size is locked (e.g., to 800×600), resizing commands will fail silently. The evaluator must:
+- Verify viewport resize succeeded by checking `window.innerWidth`.
+- Run a byte-level/hash check on generated screenshots.
+- If locked, document the lock, mark responsive/mobile checks as "FAIL" or "UNEVALUABLE", and avoid evaluating mobile layouts using desktop screenshots.
+- Verify element tags before claiming visual text overlap: do not flag text cropped inside images (e.g. `<img src="poster.jpg">` with `object-fit: cover`) as DOM text clipping.
+
 #### 4. Overflow Stress Test
 Resize to 390px mobile width. Check for:
 - **Horizontal overflow** — any horizontal scrollbar at mobile width
