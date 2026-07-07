@@ -1,6 +1,6 @@
 # Design Studio
 
-A design harness that makes better-looking websites. It works great with Claude Code and can run in other agent harnesses too. It splits the work into four jobs — planning, design, building, and checking — so you get original designs, not boring templates.
+A design harness that makes better-looking websites. It works great with Claude Code and can run in other agent harnesses too. It splits the work into four jobs (planning, design, building, and checking) so you get original designs, not boring templates.
 
 **[See how it works →](https://george-rd.github.io/design-studio/)**
 
@@ -9,7 +9,7 @@ A design harness that makes better-looking websites. It works great with Claude 
     <source src="https://george-rd.github.io/design-studio/video-720p.mp4" type="video/mp4" />
   </video>
   <br/>
-  <em>23-second overview — how Design Studio defeats code-anchoring bias</em>
+<em>23-second overview: how Design Studio defeats code-anchoring bias</em>
 </p>
 
 ## The Problem
@@ -25,8 +25,8 @@ Design Studio splits the work into four separate jobs. Each job is done by a dif
 | Agent | Job | Why It's Separate |
 |-------|-----|-------------------|
 | **Planner** | Turns your idea into a full plan | Stops vague requests from causing bad results |
-| **Design Agent** | Describes what the page should look like — in words, not code | Never sees code, so it can't copy old ideas |
-| **Implementation Agent** | Builds real code from the design description | Follows the design exactly — no shortcuts |
+| **Design Agent** | Describes what the page should look like, in words, not code | Never sees code, so it can't copy old ideas |
+| **Implementation Agent** | Builds real code from the design description | Follows the design exactly, no shortcuts |
 | **Evaluator** | Opens the page in a real browser, clicks around, and scores it | Judges only what users see, not how hard the code was to write |
 
 The loop: **Plan → Design → Build → Check → Decide → Repeat**.
@@ -59,13 +59,13 @@ In Claude Code, type:
 ```
 
 The tool will:
-1. **Plan** — Turn your idea into a full spec with a look and feel
-2. **Design** — The Design Agent describes what the page should look like (no code)
-3. **Build** — The Implementation Agent builds it from the description
-4. **Check** — The Evaluator opens the page in a browser, takes screenshots, and scores it
-5. **Decide** — Keep improving, start over, or ship it
-6. **Loop** — Repeat until the design is good enough
-7. **Codify** — Turn the winning direction into a reusable design system: `harness-output/design-system/design-dna.md`, `tokens.css`, and an installable skill template
+1. **Plan**: Turn your idea into a full spec with a look and feel
+2. **Design**: The Design Agent describes what the page should look like (no code)
+3. **Build**: The Implementation Agent builds it from the description
+4. **Check**: The Evaluator opens the page in a browser, takes screenshots, and scores it
+5. **Decide**: Keep improving, start over, or ship it
+6. **Loop**: Repeat until the design is good enough
+7. **Codify**: Turn the winning direction into a reusable design system: `harness-output/design-system/design-dna.md`, `tokens.css`, and an installable skill template
 
 All the work is saved in a folder called `harness-output/`. The final design system lives in `harness-output/design-system/`.
 
