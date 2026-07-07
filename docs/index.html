@@ -228,10 +228,10 @@
       font-size: 280px;
       line-height: 0.8;
       color: var(--accent);
-      opacity: 0.2;
+      opacity: 0.14;
       position: absolute;
-      top: -40px;
-      left: -28px;
+      top: -72px;
+      left: -36px;
       pointer-events: none;
       z-index: 0;
     }
@@ -279,7 +279,7 @@
       padding: 140px 0;
       border-top: 1px solid var(--rule);
     }
-    .process .section-title { margin-bottom: 80px; }
+    .process .section-title { margin-bottom: 24px; }
     .process-diagram {
       position: relative;
       padding: 80px 0;
@@ -350,6 +350,23 @@
       line-height: 1.6;
       color: var(--muted);
     }
+    .process-lead {
+      max-width: 620px;
+      font-family: 'Manrope', sans-serif;
+      font-size: 20px;
+      line-height: 1.5;
+      color: var(--ink);
+      margin-bottom: 72px;
+    }
+    .process-loop {
+      margin-top: 56px;
+      max-width: 620px;
+      font-family: 'Manrope', sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--muted);
+    }
+    .process-loop strong { color: var(--ink); font-weight: 700; }
 
     /* Video */
     .video {
@@ -721,6 +738,7 @@
       <div class="grid-wrap">
         <p class="section-label section-reveal">How it works</p>
         <h2 class="section-title section-reveal">Process</h2>
+        <p class="process-lead section-reveal">Four jobs. Four agents. One loop. Each agent only sees what it needs. That gap is the point: the designer never gets anchored to the code.</p>
         <div class="process-diagram">
           <div class="process-line process-line-animated" aria-hidden="true"></div>
           <div class="process-nodes">
@@ -754,6 +772,7 @@
             </div>
           </div>
         </div>
+        <p class="process-loop section-reveal"><strong>Then it loops.</strong> Each round scores the page and feeds the notes back. It stops when the design is good enough to ship.</p>
       </div>
     </section>
 
