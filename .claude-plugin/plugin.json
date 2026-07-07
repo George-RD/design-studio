@@ -1,0 +1,16 @@
+{
+  "name": "design-studio",
+  "version": "1.0.0",
+  "description": "4-agent design-evaluate-iterate harness for distinctive frontend creation that defeats code-anchoring bias. Chrome MCP evaluation with zone-based scoring and adversarial testing gate.",
+  "keywords": [
+    "frontend",
+    "design",
+    "harness",
+    "evaluation",
+    "iteration",
+    "claude-in-chrome",
+    "chrome-mcp",
+    "GAN-inspired"
+  ],
+  "repository": "https://github.com/George-RD/design-studio"
+}
