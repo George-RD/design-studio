@@ -688,7 +688,7 @@
         <div class="hero-grid">
           <div class="hero-left">
             <h1 class="hero-title reveal">Design Studio</h1>
-            <p class="hero-manifesto reveal">Give it a brief. Get a production frontend that looks like a studio designed it. Four agents — planner, designer, builder, evaluator — working in isolation so the design never compromises to the code.</p>
+            <p class="hero-manifesto reveal">Give it a brief. Get a website that looks like a real studio made it. Four agents split the work: one plans, one designs, one builds, one checks. They work apart. So the design never bends to fit the code.</p>
             <div class="hero-rule reveal" aria-hidden="true"></div>
             <div class="hero-command reveal">
               <span class="prompt">›</span>
@@ -711,7 +711,7 @@
             <div class="clip-reveal"><blockquote class="section-reveal">Most tools make the same page over and over: a centred headline, a button, a grid of cards. It looks safe. It is also forgettable.</blockquote></div>
           </div>
           <div class="problem-right">
-            <p class="section-reveal">The trap is code-anchoring bias. When the maker reads the existing code before imagining what could be, it can only tweak what already exists. It never stops to ask what the page should feel like. Design Studio breaks that loop by keeping the brief, the design, the build, and the evaluation in separate rooms. The result looks like it came from a studio — because it did.</p>
+            <p class="section-reveal">The trap is code-anchoring bias. When AI reads its own code first, it just tweaks what is already there. It never asks what the page should feel like. Design Studio breaks the loop. The brief, the design, the build, and the check each happen in a separate room. The result looks like a studio made it. Because one did.</p>
           </div>
         </div>
       </div>
@@ -903,7 +903,7 @@
         });
       }, { threshold: 0.3 });
 
-      document.querySelectorAll('.section-reveal, .process-diagram').forEach(function(el) {
+      document.querySelectorAll('.section-reveal, .process-diagram, .clip-reveal').forEach(function(el) {
         observer.observe(el);
       });
 
