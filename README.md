@@ -7,11 +7,9 @@ A design harness that makes better-looking websites. It works great with Claude 
 [![Support on Ko-fi](https://img.shields.io/badge/Ko--fi-Support-ff5e5b?style=flat-square&logo=ko-fi&logoColor=white)](https://ko-fi.com/george_builds)
 
 <p align="center">
-  <video controls autoplay muted loop playsinline width="720">
-    <source src="https://george-rd.github.io/design-studio/video-720p.mp4" type="video/mp4" />
-  </video>
+  <img src="docs/video-1080p.gif" width="720" alt="Design Studio 23-second overview" />
   <br/>
-<em>23-second overview: how Design Studio defeats code-anchoring bias</em>
+  <em>23-second overview: how Design Studio defeats code-anchoring bias</em>
 </p>
 
 ## The Problem
