@@ -4,6 +4,8 @@ A design harness that makes better-looking websites. It works great with Claude 
 
 **[See how it works →](https://george-rd.github.io/design-studio/)**
 
+[![Support on Ko-fi](https://img.shields.io/badge/Ko--fi-Support-ff5e5b?style=flat-square&logo=ko-fi&logoColor=white)](https://ko-fi.com/george_builds)
+
 <p align="center">
   <video controls autoplay muted loop playsinline width="720">
     <source src="https://george-rd.github.io/design-studio/video-720p.mp4" type="video/mp4" />
