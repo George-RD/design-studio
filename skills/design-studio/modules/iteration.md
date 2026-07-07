@@ -59,7 +59,7 @@ A well-executed generic design (craft 8, originality 4) is worse than a rough di
 Before applying the decision table, validate `harness-output/scores.json`:
 1. File exists and parses as valid JSON
 2. All four score fields present: `designQuality`, `originality`, `craft`, `functionality`
-3. All scores are numbers in the 0-10 range
+3. All scores are numbers in the 1-10 range
 4. `weightedAverage` matches the formula: `(designQuality*2 + originality*2 + craft + functionality) / 6`
 5. If validation fails, the orchestrator must re-run the evaluator rather than making a decision on bad data
 
@@ -129,7 +129,7 @@ Before a PIVOT, the orchestrator MUST preserve the current best iteration's arti
 3. **Commit all `harness-output/` artifacts** before starting the pivot — this creates a VCS checkpoint that survives branch/change switches and can be restored if the pivot direction is worse
 4. On SHIP, the orchestrator delivers the files from the best-scoring iteration, which may be a pre-pivot version
 
-This prevents the "overwrite and regress" failure where a pivot produces worse results than the prior direction and the best work is lost. The VCS commit in step 3 is especially critical — without it, jj working-copy switches or git branch operations can wipe the pre-pivot state entirely.
+This prevents the "overwrite and regress" failure where a pivot produces worse results than the prior direction and the best work is lost. The VCS commit in step 3 is especially critical — without it, working-copy switches or branch operations (e.g. in jj, git) can wipe the pre-pivot state entirely.
 
 ### What Changes on PIVOT
 
@@ -199,20 +199,21 @@ The most common failure during refinement is regressing previously-good elements
 
 ### Loop Automation
 
-When using `/loop` to automate iteration cycles, the loop must be canceled when:
+If your harness has a recurring-loop command (e.g. Claude Code `/loop`), use it to automate iteration cycles. Otherwise, the orchestrator repeats Design → Implement → Evaluate inline until a termination condition is met. The loop must be canceled when:
 - Decision framework returns **SHIP** (quality threshold met or acceptable convergence)
 - **maxIterations** reached — ship the best-scoring iteration
 - **pivotBudget** exhausted — ship the best-scoring iteration across all pivots
 
-Each iteration's output should include the current iteration number, weighted average, decision, and whether the loop should continue. The orchestrator (or `/loop` body) is responsible for calling `/loop cancel` or stopping execution when a termination condition is met.
+Each iteration's output should include the current iteration number, weighted average, decision, and whether the loop should continue. The orchestrator (or recurring-loop body) is responsible for canceling the loop or stopping execution when a termination condition is met.
 
 ### Cost Awareness
 
-Each iteration involves:
-- Design Agent: ~$1-3 per iteration
-- Implementation Agent: ~$5-12 depending on complexity
-- Evaluator agent: ~$2-5
-- Total harness run (6 iterations): ~$50-120
+Each iteration involves three agent calls (Design, Implement, Evaluate). **The figures below are illustrative; actual cost varies by model, provider, and region.** Use them for rough budgeting, not precise forecasting.
+
+- Design Agent: ~$1–3 per iteration (frontier model, USD, circa 2026)
+- Implementation Agent: ~$5–12 depending on complexity
+- Evaluator agent: ~$2–5
+- Total harness run (6 iterations): ~$50–120
 
 For simple components, reduce maxIterations to 4. For full-page ambitious designs, allow up to 12.
 

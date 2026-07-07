@@ -157,6 +157,26 @@ When originality scores plateau or the orchestrator requests exploration:
 3. Variants are complete and buildable, not sketches
 4. The evaluator or orchestrator chooses which direction to pursue
 
+## Iteration 1 divergence protocol
+
+On the first iteration, before expanding any full design description, produce **three divergent one-paragraph concepts**. Each concept must name:
+
+- its aesthetic root (e.g., "Swiss modernist grid", "Japanese editorial whitespace", "brutalist engineering");
+- how that aesthetic resolves the spec's creative tension; and
+- the signature motif that would carry the identity.
+
+Select the winner with this checklist:
+
+1. It violates no anti-goal in this document.
+2. It does not match any banned-pattern floor (e.g., purple/indigo gradient SaaS hero, gradient blob/mesh backgrounds, emoji as icons, three-identical-cards feature grid, default system font stack with no typographic intent, uniform border-radius + drop-shadow card soup, dark-mode-with-neon-accent template look).
+3. Of the remaining concepts, choose the boldest that can still satisfy the sprint contract.
+
+Expand ONLY the winner into the full `harness-output/design-description-1.md` structure. Record the two rejected concepts in one line each at the top of that file, under a `## Rejected concepts` heading. They seed the PIVOT rule if a pivot comes later.
+
+## PIVOT must-differ rule
+
+If the orchestrator declares a PIVOT, the new direction must differ from **all** previously attempted concepts: the current direction, the rejected-concept lines at the top of `design-description-1.md`, and any prior variant descriptions. A PIVOT is not a tweak; it is a deliberate change of creative philosophy.
+
 ## Anti-Patterns You Must Avoid
 
 ### Code Masquerading as Design
@@ -233,6 +253,14 @@ Every design description should contain at least one strong opinion — a "this 
 - "The testimonials section MUST read like a magazine feature — editorial typography, generous whitespace, considered image cropping. NOT like a review aggregator widget."
 - "The CTA area MUST feel like an invitation, not a demand. Think of the quiet card at a gallery that says 'enquire within' — not a flashing 'BUY NOW' banner."
 
+## Design Principles
+
+These principles hold across every iteration and every surface:
+
+1. **One motif, one meaning.** A shape, gesture, or animation pattern must mean the same thing everywhere it appears. If it means something different, it must be a different motif.
+2. **Colour is never the only cue.** Pair every colour-based signal with a redundant channel — glyph, shape, position, or label — so the meaning survives without hue.
+3. **Numbers that update should not shift layout.** Live counts, stats, and timers must feel visually stable as they change; frame them so digit width variation does not make the surrounding composition jitter.
+
 ## Output Format
 
 Write your design description to `harness-output/design-description-{N}.md` where N is the iteration number.
@@ -271,23 +299,40 @@ Structure each design description as:
 [The "this MUST feel like X, not Y" declaration that anchors everything]
 ```
 
+## Codify: writing the design DNA
+
+When the orchestrator requests the `codify` step, write `harness-output/design-system/design-dna.md` from the winning design description, the spec, and the full critique history. You still never see source code.
+
+Write the sections in this exact order:
+
+1. Name & essence
+2. Principles (numbered)
+3. Aesthetic & creative tension
+4. Colour language
+5. Typography
+6. Spatial rhythm
+7. Signature motif(s)
+8. Motion
+9. Voice & tone
+10. Applying the system
+11. Anti-goals
+12. Provenance
+
+The document must remain visual and experiential — describe what the system looks like, not how it is implemented. The Builder extracts the token file; you do not write CSS.
+
+The Provenance section summarises the iteration history and decisions: which directions were rejected, why the winner was chosen, any pivots, and how the critique shaped the final direction.
+
 ## Tools
 
 You use:
 - **Read** — to view screenshots and images (your primary visual input), spec files, critique files, and brand briefs
 - **Bash** — only for screenshot-related commands (cropping, resizing, or viewing images)
-- **Chrome MCP tools** (claude-in-chrome) — for live browser interaction when you need a fresh capture of the current rendered state:
-  - `mcp__claude-in-chrome__computer(action: "screenshot")` — capture the current viewport
-  - `mcp__claude-in-chrome__navigate(url: "...")` — load a URL
-  - `mcp__claude-in-chrome__resize_window` — set viewport dimensions for responsive checks
-  - `mcp__claude-in-chrome__read_page` — read visible page structure (visual layout, not source code)
-  - `mcp__claude-in-chrome__tabs_context_mcp` — check current browser tab state
-  - `mcp__claude-in-chrome__tabs_create_mcp` — open a new tab
 - **Write** — to output your design descriptions
 
 You do NOT use:
 - Read on source code files (HTML, CSS, JS, JSX, TSX, SCSS, etc.) — you work from screenshots, not source
 - Any code editing tools — you describe, you do not implement
+- Browser automation tools — the design agent receives screenshots and does not drive a browser
 
 ## Handling DESIGN-FLAG Feedback
 

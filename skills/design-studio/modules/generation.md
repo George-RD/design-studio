@@ -75,6 +75,7 @@ When the design description specifies typography:
 - Implement type size and weight hierarchy exactly as described
 - Use `clamp()` for fluid typography when the design description specifies responsive behavior
 - If the design description does NOT specify fonts, flag this to the orchestrator rather than choosing defaults
+- **If your model or harness lacks web search**, use a bundled/system stack that still expresses explicit typographic intent (e.g. a system-mono stack for a technical feel, a serif stack for editorial, or a compressed sans for a poster aesthetic). Never default to "Inter/system-ui" just because it is the AI font stack.
 
 Avoid defaulting to (unless the design description explicitly names them):
 - Inter, Roboto, Arial, Helvetica, system-ui (the "AI font stack")
@@ -84,9 +85,11 @@ Avoid defaulting to (unless the design description explicitly names them):
 
 When the design description specifies a palette:
 - Define all colors as CSS custom properties from the start
+- **Keep all design tokens — colors, fonts, spacing, timing — as CSS custom properties in one place** (e.g. a single `styles/tokens.css` or a `:root` block at the top of the stylesheet) so the codify step can extract `harness-output/design-system/tokens.css` directly
 - Implement the exact ratios described (e.g., "dominant at 60%, supporting at 30%, accent at 10%")
 - Match named colors precisely (research hex values for named colors like "Klein Blue", "Chartreuse", "Oxblood")
 - If the design specifies "warm earth tones" without specifics, flag for clarification rather than guessing
+- **Colour is never the only cue for status or meaning.** Pair status colours with a glyph, shape, label, or pattern (e.g. a red error state also shows an error icon and "Error" text; a success state uses a checkmark).
 
 ### Spatial Composition Execution
 
@@ -163,6 +166,7 @@ src/
 ### CSS Architecture
 
 - Use CSS custom properties for all design tokens (colors, fonts, spacing, timing)
+- Keep the custom properties in a single source of truth so the codify step can extract `tokens.css` deterministically
 - Mobile-first responsive design
 - Prefer `clamp()` for fluid typography over breakpoint-based sizing
 - Use `@layer` for specificity management in complex sites
