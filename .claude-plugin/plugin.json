@@ -1,7 +1,7 @@
 {
   "name": "design-studio",
   "version": "1.0.0",
-  "description": "4-agent design-evaluate-iterate harness for distinctive frontend creation that defeats code-anchoring bias. Chrome MCP evaluation with zone-based scoring and adversarial testing gate.",
+  "description": "4-agent design-evaluate-iterate harness for distinctive frontend creation that defeats code-anchoring bias. Produces a reusable design system (design-dna.md + tokens.css + skill template) and runs on any harness with portable browser automation and subagent support.",
   "author": { "name": "Design Studio" },
   "keywords": [
     "frontend",
@@ -9,6 +9,9 @@
     "harness",
     "evaluation",
     "iteration",
+    "design-system",
+    "design-tokens",
+    "portable",
     "claude-in-chrome",
     "chrome-mcp",
     "GAN-inspired"

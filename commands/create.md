@@ -34,7 +34,7 @@ Expand the user's prompt into a full specification. Write:
 
 Be ambitious in the spec. Identify opportunities for distinctive design choices, unexpected interactions, and memorable moments. Do not play it safe.
 
-### Phase 2-6: Design-Implement-Evaluate Loop
+### Phase 2-5: Design-Implement-Evaluate Loop
 
 For each iteration:
 
@@ -44,7 +44,7 @@ For each iteration:
    - Produce a **prose design description** (`harness-output/design-description-{N}.md`) specifying layout geometry, typography direction, color relationships, spatial rhythm, motion intent, and atmospheric qualities
    - The Design Agent never sees code — this isolation defeats code-anchoring bias
 
-2. **Implement**: Spawn an implementation agent (`run_in_background: false`) to build/update the frontend. The implementation agent receives:
+2. **Implement**: Spawn an implementation agent via your harness's subagent mechanism (e.g. Claude Code Agent tool, OMP task tool) to build/update the frontend. The implementation agent receives:
    - The Design Agent's prose design description (from step 1)
    - The existing code (or empty on first pass)
    - The spec and sprint contract
@@ -71,11 +71,11 @@ For each iteration:
      The orchestrator reads this manifest after implementation completes and passes the flags to the Design Agent as explicit implementation constraints in the next iteration's input (step 1). This keeps the evaluator free from scanning source code — it remains visual-only.
 
 3. **Evaluate**: Spawn the `evaluator` agent (from this plugin's agents/) to:
-   - Serve the page and take Chrome MCP screenshots (`mcp__claude-in-chrome__computer`, `mcp__claude-in-chrome__navigate`, `mcp__claude-in-chrome__resize_window`)
+   - Serve the page and capture live browser screenshots per the Browser Operations Contract (see `modules/evaluation.md`). The evaluator uses whichever browser-automation adapter the harness provides (e.g. Claude Code's `claude-in-chrome` MCP tools, OMP's `browser` tool, Playwright MCP, or a headless Chrome CDP fallback).
    - **Full-page screenshot** at 1440px and 390px widths
    - **Zone identification** — identify visual zones (header, hero, content sections, graphs/charts, sidebar, footer)
    - **Per-zone zoomed screenshots** — capture each zone at 2x zoom for detailed evaluation
-   - **Adversarial gate** — run mandatory pre-scoring technical checks: text overflow/clipping, element overlap, responsive breakage, console errors (`mcp__claude-in-chrome__read_console_messages`), broken interactions. Gate failures hard-cap scores.
+   - **Adversarial gate** — run mandatory pre-scoring technical checks: text overflow/clipping, element overlap, responsive breakage, console errors, broken interactions. Gate failures hard-cap scores.
    - **Per-zone scoring** — score each zone against the 4 criteria. Zones scoring below 6 on any criterion trigger mandatory critique entries.
    - **Whole-page scoring** — score the full page, then apply zone minimums: craft and functionality use min(whole-page, worst-zone).
    - Interact with the live page — click, scroll, hover, test navigation
@@ -83,7 +83,7 @@ For each iteration:
    - Write scores to `harness-output/scores.json`
    - The evaluator does NOT scan source code or extract DESIGN-FLAGs — that responsibility belongs to the Implementation Agent (see step 2 output contract). The evaluator judges only the rendered visual experience.
 
-   The evaluator agent has Chrome MCP tool access via its agent definition (`agents/evaluator.md`) — it uses `claude-in-chrome` MCP tools directly for all browser interaction (screenshots, navigation, resize, interaction testing, console checking). The orchestrator spawns the evaluator via the Agent tool; the evaluator's own tool access includes all `mcp__claude-in-chrome__*` tools.
+   The evaluator agent's own definition (`agents/evaluator.md`) carries the full Browser Operations Contract so it can run in any harness that supports the abstract operations.
 
 4. **Decide**: Apply the iteration decision framework from `iteration.md`:
    - REFINE if scores are improving
@@ -92,17 +92,19 @@ For each iteration:
 
    Because Evaluate (step 3) scores the code JUST BUILT in Implement (step 2), the decision always reflects the current state. SHIP means the evaluated version met the threshold — no untested changes exist.
 
-5. **Loop** back to Design, or proceed to Finalize.
+5. **Loop** back to Design, or proceed to the Codify and Finalize phases.
 
-### Automated Iteration with /loop
+### Automated Iteration with a Recurring-Loop Command
 
-For hands-off iteration, use the `/loop` command to run the Design-Implement-Evaluate cycle on a recurring interval:
+If your harness has a recurring-loop command (e.g. Claude Code `/loop 3m ...`), use it to run the Design-Implement-Evaluate cycle on a recurring interval:
 
 ```bash
 /loop 3m Design the next iteration using the design-agent with the critique, implement the design description, evaluate the current build at harness-output/site, then apply the decision framework. Report the iteration number, weighted score, and decision (REFINE/PIVOT/SHIP).
 ```
 
-**Cancel conditions** — the loop MUST be canceled (`/loop cancel` or Ctrl+C) when any of these criteria are met:
+If your harness does not provide a recurring-loop command, repeat the cycle inline: run one complete Design → Implement → Evaluate pass, apply the decision framework, and either continue or stop.
+
+**Cancel conditions** — the loop MUST be canceled (`/loop cancel` or Ctrl+C, or by halting inline repetition) when any of these criteria are met:
 - **SHIP**: All 4 criteria ≥ 7.0, or converged at weighted avg ≥ 6.5
 - **Max iterations reached**: Default 8 (12 for ambitious designs)
 - **Pivot budget exhausted**: Default 2 full pivots — ship the best-scoring iteration
@@ -114,7 +116,6 @@ For hands-off iteration, use the `/loop` command to run the Design-Implement-Eva
 | Full-page iteration | 3-5m | Each cycle involves 3 agent spawns |
 | Section decomposition (per section) | 2-3m | Smaller scope, faster cycles |
 | Integration pass | 3m | Full-page evaluation but lighter design pass |
-| CodeRabbit review polling | 2m | Waiting for external review |
 
 **Loop body should always:**
 1. Read `harness-output/scores.json` for the current state
@@ -122,6 +123,14 @@ For hands-off iteration, use the `/loop` command to run the Design-Implement-Eva
 3. Apply the decision framework from `iteration.md`
 4. Report: iteration N, weighted avg, decision, and whether to continue or cancel
 5. If decision is SHIP → cancel the loop and proceed to Finalize
+
+### Phase 6: Codify
+
+When the decision framework returns **SHIP** or the iteration budget exhausts, run the codify step BEFORE finalizing. It captures the winning direction as a reusable design system.
+
+1. **DesignAgent** writes `harness-output/design-system/design-dna.md` from the winning design description, spec, and critique history. It still never sees code. Required sections, in order: Name & essence; Principles (numbered); Aesthetic & creative tension; Colour language; Typography; Spatial rhythm; Signature motif(s); Motion; Voice & tone; Applying the system; Anti-goals; Provenance.
+2. **Builder** extracts `harness-output/design-system/tokens.css` from the shipped site's CSS custom properties. All design tokens must already be defined as CSS custom properties (see `generation.md`), so the extracted file is the canonical master.
+3. **Orchestrator** instantiates `templates/design-system-skill/` into `harness-output/design-system/skill/<project>-design/` by filling the template placeholders and copying `design-dna.md` and `tokens.css` into it. This produces an installable, harness-portable design-system skill (Claude Code skill, OMP skill, or plain context doc).
 
 ### Phase 7: Finalize
 
@@ -131,12 +140,13 @@ Write `harness-output/report.md` summarizing:
 - Key decisions (pivots, refinements)
 - Final scores
 - What made the final design distinctive
+- The generated design-system deliverables: `harness-output/design-system/design-dna.md`, `harness-output/design-system/tokens.css`, and `harness-output/design-system/skill/<project>-design/`
 
 Present the final output to the user with a brief summary of the journey.
 
 ## Version Control
 
-`harness-output/` MUST be tracked by version control (git/jj), NOT gitignored. This serves two purposes:
+`harness-output/` MUST be tracked by version control (e.g. git, jj), NOT gitignored. This serves two purposes:
 
 1. **Survives VCS operations.** When jj switches working copies or git switches branches, tracked files are preserved in each change/branch. Gitignored files get wiped — losing all iteration state mid-loop.
 2. **Tracks progression.** Committed artifacts let you review the design journey: how scores evolved, what pivots looked like, which iteration produced the best work.
@@ -164,7 +174,9 @@ The shipped frontend code (the final `harness-output/site/` contents) should be 
 
 - **Never skip the evaluator.** The entire point of this harness is separated evaluation.
 - **Never pass code to the Design Agent.** The entire point of the 4-agent split is defeating code-anchoring bias. If the Design Agent sees code, it will anchor to implementation details instead of thinking visually.
-- **The evaluator must use Chrome browser automation** (claude-in-chrome MCP) to interact with the live page. Code review alone cannot judge design quality. The evaluator needs access to: `mcp__claude-in-chrome__computer`, `mcp__claude-in-chrome__navigate`, `mcp__claude-in-chrome__resize_window`, `mcp__claude-in-chrome__read_page`, `mcp__claude-in-chrome__javascript_tool`, `mcp__claude-in-chrome__read_console_messages`, `mcp__claude-in-chrome__tabs_context_mcp`, `mcp__claude-in-chrome__tabs_create_mcp`.
+- **The evaluator must use live browser automation** per the Browser Operations Contract (`modules/evaluation.md`). Code review alone cannot judge design quality. Never fall back to code-only review.
+- **The orchestrator spawns agents via your harness's subagent mechanism** (e.g. Claude Code Agent tool, OMP task tool). Agents in this plugin's `agents/` directory are written as portable system prompts; any harness that can spawn isolated agents with per-agent context can run them.
+- **serve.json is authoritative.** The default example uses `npx serve ./harness-output/site -l 3333`, but the evaluator must read `serve.json` to discover the actual server command and port.
 - **Zone evaluation is mandatory.** The evaluator must identify zones and score per-zone, not just whole-page. The adversarial gate must run before scoring.
 - **Respect pivot decisions.** When the framework says pivot, the Design Agent must abandon the current visual approach entirely — not make incremental tweaks. The Implementation Agent starts from scratch.
 - **Track scores across iterations.** The decision framework depends on score trends, not individual scores.

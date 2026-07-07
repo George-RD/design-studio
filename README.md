@@ -1,6 +1,6 @@
 # Design Studio
 
-A tool for Claude Code that makes better-looking websites. It splits the work into four jobs — planning, design, building, and checking — so you get original designs, not boring templates.
+A design harness that makes better-looking websites. It works great with Claude Code and can run in other agent harnesses too. It splits the work into four jobs — planning, design, building, and checking — so you get original designs, not boring templates.
 
 **[See the live site →](https://george-rd.github.io/design-studio/)**
 
@@ -27,7 +27,7 @@ Design Studio splits the work into four separate jobs. Each job is done by a dif
 | **Planner** | Turns your idea into a full plan | Stops vague requests from causing bad results |
 | **Design Agent** | Describes what the page should look like — in words, not code | Never sees code, so it can't copy old ideas |
 | **Implementation Agent** | Builds real code from the design description | Follows the design exactly — no shortcuts |
-| **Evaluator** | Opens the page in Chrome, clicks around, and scores it | Judges only what users see, not how hard the code was to write |
+| **Evaluator** | Opens the page in a real browser, clicks around, and scores it | Judges only what users see, not how hard the code was to write |
 
 The loop: **Plan → Design → Build → Check → Decide → Repeat**.
 
@@ -35,8 +35,8 @@ Each round makes the design better. The evaluator checks each section of the pag
 
 ## What You Need
 
-- **Claude Code** installed and logged in
-- **Chrome** with the claude-in-chrome MCP server running
+- **Primary path:** Claude Code installed and logged in, with a way to open pages in a real browser (Claude Code's claude-in-chrome MCP, or another browser tool).
+- **Portable path:** Any agent harness that can run the workflow file and the helper agent prompts in `agents/`. That includes OMP, Codex, Cursor, and similar tools. You just need a browser tool and a way to run helper agents.
 
 ## Install
 
@@ -62,11 +62,12 @@ The tool will:
 1. **Plan** — Turn your idea into a full spec with a look and feel
 2. **Design** — The Design Agent describes what the page should look like (no code)
 3. **Build** — The Implementation Agent builds it from the description
-4. **Check** — The Evaluator opens the page in Chrome, takes screenshots, and scores it
+4. **Check** — The Evaluator opens the page in a browser, takes screenshots, and scores it
 5. **Decide** — Keep improving, start over, or ship it
 6. **Loop** — Repeat until the design is good enough
+7. **Codify** — Turn the winning direction into a reusable design system: `harness-output/design-system/design-dna.md`, `tokens.css`, and an installable skill template
 
-All the work is saved in a folder called `harness-output/`.
+All the work is saved in a folder called `harness-output/`. The final design system lives in `harness-output/design-system/`.
 
 ## Commands
 

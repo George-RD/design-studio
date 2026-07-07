@@ -70,7 +70,7 @@ The blog's key architectural lesson: systematically remove components one at a t
 
 | Component | Removed? | Why |
 |-----------|----------|-----|
-| Sprint decomposition | Yes (with Opus 4.6) | Model can sustain coherent long builds without decomposition |
+| Sprint decomposition | Yes (on a frontier model, e.g. circa 2026) | Model can sustain coherent long builds without decomposition |
 | Multiple build rounds | No | Single builds still miss issues the evaluator catches |
 | Planner agent | No | Specs prevent cascading errors from vague prompts |
 | Evaluator agent | No | Separated evaluation is the core innovation — always load-bearing |
@@ -85,13 +85,13 @@ The blog's key architectural lesson: systematically remove components one at a t
 
 Do this on every major model upgrade. What was load-bearing on one model version may be unnecessary on the next.
 
-### Current recommendations (Opus 4.6 era)
+### Current recommendations (model era example: a frontier model circa 2026)
 
-> **Maintenance note:** These recommendations are model-era-specific and should be re-evaluated on each major model upgrade. What is load-bearing on Opus 4.6 may be unnecessary or insufficient on future models.
+> **Maintenance note:** These recommendations are model-era-specific and should be re-evaluated when a materially stronger model ships. What is load-bearing on one model generation may be unnecessary or insufficient on the next.
 
-- **Keep:** Planner, separated evaluator, live Chrome browser interaction (claude-in-chrome MCP), scoring rubric, zone-based evaluation, adversarial gate, iteration loop
+- **Keep:** Planner, separated evaluator, live browser interaction per the Browser Operations Contract, scoring rubric, zone-based evaluation, adversarial gate, iteration loop
 - **Optional:** Sprint contracts (can simplify to just the spec for simple pages)
-- **Remove:** Sprint decomposition within the Implementation Agent (Opus 4.6 sustains coherent long builds)
+- **Remove:** Sprint decomposition within the Implementation Agent (stronger models can sustain coherent long builds)
 
 ## Lesson 4: Match Evaluator Investment to Task Difficulty
 
@@ -133,11 +133,11 @@ The most impactful discovery from real-world testing: reading existing code befo
 
 **Fix:** Separate creative decisions (Design Agent, works from screenshots only) from implementation (Implementation Agent, executes design descriptions into code). This mirrors how design studios actually work: art director creates the vision without caring about current CSS, developer implements it.
 
-**Why this is load-bearing:** Unlike sprint decomposition (which Opus 4.6 made optional), the design/implementation split addresses a fundamental cognitive limitation, not a context-window limitation. Anchoring bias does not shrink with larger context windows — it gets worse because more code means more anchor material. This separation should be maintained regardless of model improvements.
+**Why this is load-bearing:** Unlike sprint decomposition (which stronger models made optional), the design/implementation split addresses a fundamental cognitive limitation, not a context-window limitation. Anchoring bias does not shrink with larger context windows — it gets worse because more code means more anchor material. This separation should be maintained regardless of model improvements.
 
 ## Lesson 7: Decomposition Serves Different Purposes for Code vs Design
 
-The blog post simplified decomposition for Opus 4.6 because the model could hold more context. But for design work, decomposition is not about context management — it is about protecting creative freedom.
+The blog post simplified decomposition for stronger models because they could hold more context. But for design work, decomposition is not about context management — it is about protecting creative freedom.
 
 When a Design Agent sees the full page (all sections already built), it anchors to the existing visual pattern. Each subsequent section becomes a variation of what came before. This produces coherent but monotonous pages where every section shares the same rhythm.
 

@@ -2,7 +2,7 @@
 
 The scoring rubric, live evaluation protocol, zone-based evaluation system, adversarial testing gate, and common evaluator failure modes.
 
-> **Sync note:** The scoring rubric, calibration anchors, and failure modes in this module mirror those in `agents/evaluator.md`. This duplication is intentional — the evaluator agent runs in isolation and needs self-contained scoring context, while this module gives the orchestrator the same information for decision-making. **Keep both files in sync when editing scoring criteria.**
+> **Sync note:** The scoring rubric, calibration anchors, gate checks, Browser Operations Contract, and failure modes in this module mirror those in `agents/evaluator.md`. This duplication is intentional — the evaluator agent runs in isolation and needs self-contained scoring context, while this module gives the orchestrator the same information for decision-making. **Keep both files in sync when editing scoring criteria.**
 
 ## Why Separated Evaluation
 
@@ -17,6 +17,47 @@ Separated evaluation fixes this by ensuring the evaluator:
 - Has no knowledge of implementation effort
 - Judges purely from the user's perspective
 - Uses an explicit rubric that resists rationalization
+
+## Browser Operations Contract
+
+All live evaluation uses portable browser operations. The harness resolves the concrete adapter at runtime.
+
+### Abstract operations
+- `open(url)` — navigate the evaluation tab/page to a URL
+- `set_viewport(width, height)` — resize window OR emulate device metrics
+- `screenshot()` — capture the current viewport (scroll+stitch for full page if needed)
+- `exec_js(expression) -> result` — evaluate JavaScript in the page
+- `read_console()` — collect console errors/warnings and failed resource loads
+- `read_page(filter)` — collect page elements/accessibility tree
+- `click(target)` / `hover(target)` / `scroll(x, y)` / `key(text)` — user interaction
+- `create_tab(url)` — open a dedicated evaluation tab
+
+### Adapter table
+
+| Operation | claude-in-chrome MCP | chrome-devtools MCP | Playwright MCP | Headless Chrome CDP fallback |
+|---|---|---|---|---|
+| `create_tab(url)` | `mcp__claude-in-chrome__tabs_create_mcp(url: "about:blank")` | `create_page(url)` | `browser_new_page(url)` | `Page.navigate` after launching `chrome --headless=new --remote-debugging-port=<port>` |
+| `open(url)` | `mcp__claude-in-chrome__navigate(tabId: <EVAL_TAB_ID>, url: "http://localhost:3333")` | `navigate_page(url)` | `browser_navigate(url)` | `Page.navigate` |
+| `set_viewport(width, height)` | `mcp__claude-in-chrome__resize_window(tabId: <EVAL_TAB_ID>, width: 1440, height: 900)` | `resize_page(width, height)` | `browser_resize(width, height)` | `Emulation.setDeviceMetricsOverride` |
+| `screenshot()` | `mcp__claude-in-chrome__computer(tabId: <EVAL_TAB_ID>, action: "screenshot")` | `take_screenshot()` | `browser_take_screenshot()` | `Page.captureScreenshot` |
+| `exec_js(expression)` | `mcp__claude-in-chrome__javascript_tool(tabId: <EVAL_TAB_ID>, action: "javascript_exec", text: expression)` | `evaluate_script(expression)` | `browser_evaluate(expression)` | `Runtime.evaluate` |
+| `read_console()` | `mcp__claude-in-chrome__read_console_messages(tabId: <EVAL_TAB_ID>, pattern: "error\|warn")` | `list_console_messages()` | `browser_console_messages()` | `Log.entryAdded` via websocket |
+| `read_page(filter)` | `mcp__claude-in-chrome__read_page(tabId: <EVAL_TAB_ID>, filter: "interactive")` | `query_ax_tree(filter)` | `browser_accessibility(filter)` | `Accessibility.queryAXTree` |
+| `click(target)` / `hover(target)` / `scroll(x, y)` / `key(text)` | `mcp__claude-in-chrome__computer(tabId: <EVAL_TAB_ID>, action: "left_click" \| "hover" \| "scroll" \| "key", ...)` | `click(target)` / `hover(target)` / `scroll(x, y)` / `key(text)` | `browser_click(target)` / `browser_hover(target)` / `browser_scroll(x, y)` / `browser_key(text)` | `Input.dispatchMouseEvent` / `Input.dispatchKeyEvent` |
+
+Harness-native browser tools (e.g. OMP's `browser` tool) map the same operations 1:1 — consult the harness tool list.
+
+### Adapter resolution rule
+1. At evaluation start, detect ANY available adapter (probe availability with a harmless call, e.g. tab-context/list).
+2. Use the first available adapter for the whole pass; never mix adapters mid-pass.
+3. HALT only if NO browser automation exists at all. The existing rule stands: NEVER fall back to code-only review.
+
+### Viewport adaptation rule
+After `set_viewport`, verify via `exec_js("window.innerWidth")`.
+- If the reported width matches the target, proceed.
+- If locked (e.g., sandboxed 800×600), try device-metrics emulation (`Emulation.setDeviceMetricsOverride` or the active adapter's equivalent).
+- If still locked: evaluate at the actual width, record it in `scores.json` `actualViewports`, and mark width-dependent checks (mobile overflow, touch targets) as **NOT-EVALUATED** in the critique. Never fabricate results for an unreached width, and never screenshot-duplicate one width as another.
+
 
 ## The Four Criteria
 
@@ -58,6 +99,13 @@ The following patterns MUST score **4 or below** on originality, regardless of e
 - Generic hover effects (scale-up, opacity fades, color-only transitions)
 - Symmetrical centered layouts throughout
 - Stock illustration/icon grid sections
+- Purple/indigo gradient SaaS hero
+- Gradient blob or mesh backgrounds
+- Emoji used as icons
+- Three-identical-cards feature grid
+- Default system font stack with no typographic intent
+- Uniform border-radius + drop-shadow card soup
+- Dark-mode-with-neon-accent template look
 
 Do not rationalize these upward for polish.
 
@@ -127,7 +175,7 @@ Scroll the full page at 1440px width. Flag:
 - Elements cut off or unreachable
 - Fixed/sticky elements that overlap content
 
-Check with: `mcp__claude-in-chrome__javascript_tool(tabId: <EVAL_TAB_ID>, action: "javascript_exec", text: "document.documentElement.scrollWidth > document.documentElement.clientWidth")`
+Check with: `exec_js("document.documentElement.scrollWidth > document.documentElement.clientWidth")`
 
 #### 2. Text Readability Sweep
 Check all text zones for:
@@ -137,7 +185,7 @@ Check all text zones for:
 - **Insufficient contrast** — text/background pairs below WCAG AA (4.5:1 normal, 3:1 large)
 - **Text-image collisions** — text running into or overlapping with images
 
-Check with: `mcp__claude-in-chrome__javascript_tool(tabId: <EVAL_TAB_ID>, action: "javascript_exec", text: "[...document.querySelectorAll('*')].filter(el => { const s = getComputedStyle(el); return s.fontSize && parseFloat(s.fontSize) < 12 && el.textContent.trim().length > 0; }).map(el => el.tagName + ': ' + el.textContent.trim().slice(0,40))")`
+Check with: `exec_js("[...document.querySelectorAll('*')].filter(el => { const s = getComputedStyle(el); return s.fontSize && parseFloat(s.fontSize) < 12 && el.textContent.trim().length > 0; }).map(el => el.tagName + ': ' + el.textContent.trim().slice(0,40))")`
 
 #### 3. Interaction Completeness
 - Every hover effect must have a corresponding click action or be purely decorative
@@ -145,14 +193,7 @@ Check with: `mcp__claude-in-chrome__javascript_tool(tabId: <EVAL_TAB_ID>, action
 - Forms must have submit paths
 - Links must have valid destinations (no `href="#"` on functional navigation)
 
-Use `mcp__claude-in-chrome__read_page(tabId: <EVAL_TAB_ID>, filter: "interactive")` to enumerate all interactive elements, then test each.
-
-#### 5. Viewport-Lock Verification and Fallback
-In sandbox or containerized environments where the browser window size is locked (e.g., to 800×600), resizing commands will fail silently. The evaluator must:
-- Verify viewport resize succeeded by checking `window.innerWidth`.
-- Run a byte-level/hash check on generated screenshots.
-- If locked, document the lock, mark responsive/mobile checks as "FAIL" or "UNEVALUABLE", and avoid evaluating mobile layouts using desktop screenshots.
-- Verify element tags before claiming visual text overlap: do not flag text cropped inside images (e.g. `<img src="poster.jpg">` with `object-fit: cover`) as DOM text clipping.
+Use `read_page("interactive")` to enumerate all interactive elements, then test each.
 
 #### 4. Overflow Stress Test
 Resize to 390px mobile width. Check for:
@@ -161,8 +202,14 @@ Resize to 390px mobile width. Check for:
 - **Meaningful text truncation** — text cut off in a way that loses meaning (not just ellipsis on a preview)
 - **Touch targets too small** — interactive elements below 44x44px
 
-Check touch targets with: `mcp__claude-in-chrome__javascript_tool(tabId: <EVAL_TAB_ID>, action: "javascript_exec", text: "[...document.querySelectorAll('a, button, input, select, [role=button]')].filter(el => { const r = el.getBoundingClientRect(); return r.width < 44 || r.height < 44; }).map(el => el.tagName + ': ' + el.textContent.slice(0,30) + ' (' + Math.round(el.getBoundingClientRect().width) + 'x' + Math.round(el.getBoundingClientRect().height) + ')')")`
+Check touch targets with: `exec_js("[...document.querySelectorAll('a, button, input, select, [role=button]')].filter(el => { const r = el.getBoundingClientRect(); return r.width < 44 || r.height < 44; }).map(el => el.tagName + ': ' + el.textContent.slice(0,30) + ' (' + Math.round(el.getBoundingClientRect().width) + 'x' + Math.round(el.getBoundingClientRect().height) + ')')")`
 
+#### 5. Viewport-Lock Verification and Fallback
+After `set_viewport`, verify via `exec_js("window.innerWidth")`.
+- If the reported width matches the target, proceed.
+- If locked (e.g., sandboxed 800×600), try device-metrics emulation (`Emulation.setDeviceMetricsOverride` or the active adapter's equivalent).
+- If still locked: evaluate at the actual width, record it in `scores.json` `actualViewports`, and mark width-dependent checks (mobile overflow, touch targets) as **NOT-EVALUATED** in the critique. Never fabricate results for an unreached width, and never screenshot-duplicate one width as another.
+- Verify element tags before claiming visual text overlap: do not flag text cropped inside images (e.g. `<img src="poster.jpg">` with `object-fit: cover`) as DOM text clipping.
 ### Gate Enforcement Rules
 
 - Any gate failure **hard-caps Craft at 5/10 and Functionality at 5/10** for the affected zone (or whole page if the failure is page-wide)
@@ -187,7 +234,7 @@ After full-page screenshots, the evaluator identifies all distinct visual zones:
 
 Use JavaScript to map zone bounding boxes:
 ```javascript
-// Run via mcp__claude-in-chrome__javascript_tool(tabId: <EVAL_TAB_ID>, ...)
+// Run via exec_js(...)
 [...document.querySelectorAll('header, nav, main > section, main > div, footer, aside, [role=banner], [role=main], [role=contentinfo]')].map(el => {
   const r = el.getBoundingClientRect();
   return {
@@ -204,11 +251,11 @@ Use JavaScript to map zone bounding boxes:
 ### Zone Screenshot Capture
 
 For each zone:
-1. Scroll to center the zone: `mcp__claude-in-chrome__javascript_tool(tabId: <EVAL_TAB_ID>, action: "javascript_exec", text: "window.scrollTo(0, ZONE_TOP - 100)")`
-2. Take a screenshot: `mcp__claude-in-chrome__computer(tabId: <EVAL_TAB_ID>, action: "screenshot")`
+1. Scroll to center the zone: `exec_js("window.scrollTo(0, ZONE_TOP - 100)")`
+2. Take a screenshot: `screenshot()`
 3. For every zone, MUST resize the viewport to 2x zoom (halve the viewport width to isolate the zone area) for a closer view — this catches fine-grained defects invisible in full-page screenshots:
-   - Resize to 2x zoom: `mcp__claude-in-chrome__resize_window(tabId: <EVAL_TAB_ID>, width: <ZONE_WIDTH>, height: <ZONE_HEIGHT>)`
-   - Take zoomed screenshot: `mcp__claude-in-chrome__computer(tabId: <EVAL_TAB_ID>, action: "screenshot")`
+   - Resize to 2x zoom: `set_viewport(<ZONE_WIDTH>, <ZONE_HEIGHT>)`
+   - Take zoomed screenshot: `screenshot()`
 
 ### Zone Scoring
 
@@ -259,15 +306,15 @@ npx serve ./harness-output/site -l 3333 &
 cd harness-output/site && npm run dev &
 ```
 
-**Health check (required):** After starting the server, verify it is responding before proceeding. Create a dedicated evaluation tab via `mcp__claude-in-chrome__tabs_create_mcp()` and store the returned `tabId` as `<EVAL_TAB_ID>` for all subsequent tool calls in this evaluation pass. Navigate to the URL via `mcp__claude-in-chrome__navigate(tabId: <EVAL_TAB_ID>, url: "http://localhost:3333")` — retry up to 3 times with 2-second delays. If the server fails to respond after all retries (port conflict, build error, missing dependencies), HALT with a clear error rather than attempting to screenshot a blank page.
+**Health check (required):** After starting the server, verify it is responding before proceeding. Create a dedicated evaluation tab via `create_tab("about:blank")` and store the returned `tabId` as `<EVAL_TAB_ID>` for all subsequent tool calls in this evaluation pass. Navigate to the URL via `open("http://localhost:3333")` — retry up to 3 times with 2-second delays. If the server fails to respond after all retries (port conflict, build error, missing dependencies), HALT with a clear error rather than attempting to screenshot a blank page.
 
 **Cleanup (required):** After completing all screenshots and interactions for this iteration, kill the server process (`kill %1` or equivalent). Do not leave background processes running across iterations — this causes port conflicts and zombie processes.
 
 ### Step 2: Full-Page Screenshot
 
-Use Chrome MCP to capture:
-- Full-page screenshot at 1440px width: `mcp__claude-in-chrome__resize_window(tabId: <EVAL_TAB_ID>, width: 1440, height: 900)` then `mcp__claude-in-chrome__computer(tabId: <EVAL_TAB_ID>, action: "screenshot")`
-- Full-page screenshot at 390px width: `mcp__claude-in-chrome__resize_window(tabId: <EVAL_TAB_ID>, width: 390, height: 844)` then `mcp__claude-in-chrome__computer(tabId: <EVAL_TAB_ID>, action: "screenshot")`
+Capture:
+- Full-page screenshot at 1440px width: `set_viewport(1440, 900)` then `screenshot()`
+- Full-page screenshot at 390px width: `set_viewport(390, 844)` then `screenshot()`
 - Above-the-fold screenshot (viewport-only, no scroll) at both widths
 - Key interaction states (expanded nav, hover effects, modal open)
 
@@ -281,16 +328,16 @@ Identify all visual zones, capture per-zone screenshots, and score each zone ind
 
 ### Step 5: Interact and Evaluate UX Patterns
 
-Use Chrome MCP to test:
+Test using the browser adapter selected by the Browser Operations Contract:
 All tool calls below use the `<EVAL_TAB_ID>` obtained during Step 1:
 ```text
-- Read interactive elements via read_page(tabId: <EVAL_TAB_ID>, filter: "interactive")
-- Click every visible link/button via computer(tabId: <EVAL_TAB_ID>, action: "left_click", ...)
-- Scroll to bottom via computer(tabId: <EVAL_TAB_ID>, action: "scroll", ...) — check scroll-triggered animations
-- Hover over interactive elements via computer(tabId: <EVAL_TAB_ID>, action: "hover", ...)
-- Test keyboard navigation via computer(tabId: <EVAL_TAB_ID>, action: "key", text: "Tab") through focusable elements
-- Resize viewport from 1440 to 390 via resize_window(tabId: <EVAL_TAB_ID>) — check responsive transitions
-- Check console for errors via read_console_messages(tabId: <EVAL_TAB_ID>, pattern: "error|warn")
+- Read interactive elements via read_page("interactive")
+- Click every visible link/button via click([x, y])
+- Scroll to bottom via scroll([cx, cy]) — check scroll-triggered animations
+- Hover over interactive elements via hover([x, y])
+- Test keyboard navigation via key("Tab") through focusable elements
+- Resize viewport from 1440 to 390 via set_viewport(390, 844) — check responsive transitions
+- Check console for errors via read_console("error|warn")
 ```
 
 Evaluate UX patterns during interaction testing:
@@ -394,3 +441,29 @@ This applies to all sections of the critique: What Works, What Fails, Direction,
 **Example:** A detail panel opens but appears at the top of the page, visually disconnected from the card that triggered it. Evaluator scores Functionality 8 because "the panel opens correctly."
 
 **Fix:** Evaluate the UX PATTERN, not just the mechanism. A detail panel disconnected from its source = bad UX. Hover-to-reveal on critical navigation = bad UX. Score Functionality no higher than 6 when UX patterns are confused, even if every button technically works.
+
+
+## Output Schema
+
+Write critique to `harness-output/critique-{N}.md` using the template above.
+
+Update `harness-output/scores.json` with structured data matching the exact schema below:
+
+```json
+{
+  "iterations": [
+    {
+      "iteration": 1,
+      "scores": {"designQuality": 0, "originality": 0, "craft": 0, "functionality": 0},
+      "weightedAverage": 0.0,
+      "decision": "REFINE | PIVOT | SHIP",
+      "gateFailures": ["string, empty array if none"],
+      "actualViewports": [1440, 390],
+      "keyIssues": ["string"]
+    }
+  ],
+  "bestIteration": 1
+}
+```
+
+`weightedAverage` = (2*designQuality + 2*originality + craft + functionality) / 6, rounded to one decimal. Scores are integers 1-10. The decision table reads ONLY this file. `actualViewports` records the widths that were actually achieved during evaluation; if a viewport lock prevented reaching 390px, record the actual width and mark width-dependent checks as NOT-EVALUATED in the critique. `gateFailures` lists every gate failure as a human-readable string, or an empty array if all gate checks passed.

@@ -5,6 +5,20 @@ workflow:
     4-agent design-evaluate-iterate harness for distinctive frontend creation.
     Separates planning, visual design, implementation, and live evaluation so
     each step runs deterministically and code-anchoring bias is eliminated.
+    Each run codifies the winning direction into a reusable design system
+    (design-dna.md, tokens.css, and an installable skill template).
+
+  capabilities:
+    required:
+      - file_io: read and write local files
+      - subagents: spawn agents with per-agent context isolation
+      - shell: run a static file server
+      - browser_automation: >
+          satisfy the Browser Operations Contract, including the resolution rule:
+          detect any available adapter at evaluation start, use one adapter for the
+          whole pass, and HALT only if no browser automation is available.
+    optional:
+      - recurring_loop: schedule recurring loop iterations
 
   defaults:
     maxIterations: 8
@@ -17,6 +31,67 @@ workflow:
     zoneEvaluation: true
     adversarialGate: true
     humanReview: false
+
+  schemas:
+    scores:
+      path: harness-output/scores.json
+      description: Per-iteration structured scores consumed by the decision framework.
+      schema:
+        type: object
+        required: [iterations, bestIteration]
+        properties:
+          iterations:
+            type: array
+            items:
+              type: object
+              required: [iteration, scores, weightedAverage, decision, gateFailures, actualViewports, keyIssues]
+              properties:
+                iteration:
+                  type: integer
+                scores:
+                  type: object
+                  required: [designQuality, originality, craft, functionality]
+                  properties:
+                    designQuality:
+                      type: integer
+                      minimum: 1
+                      maximum: 10
+                    originality:
+                      type: integer
+                      minimum: 1
+                      maximum: 10
+                    craft:
+                      type: integer
+                      minimum: 1
+                      maximum: 10
+                    functionality:
+                      type: integer
+                      minimum: 1
+                      maximum: 10
+                weightedAverage:
+                  type: number
+                  description: (2*designQuality + 2*originality + craft + functionality) / 6, one decimal
+                decision:
+                  type: string
+                  enum: [REFINE, PIVOT, SHIP]
+                gateFailures:
+                  type: array
+                  items:
+                    type: string
+                  description: Empty array if no gate failures occurred.
+                actualViewports:
+                  type: array
+                  items:
+                    type: integer
+                  description: Widths actually reached during evaluation.
+                keyIssues:
+                  type: array
+                  items:
+                    type: string
+          bestIteration:
+            type: integer
+      computed:
+        weightedAverage: (2*designQuality + 2*originality + craft + functionality) / 6, rounded to one decimal
 
   agents:
     - role: Planner
@@ -149,6 +224,9 @@ workflow:
     serveConfig: harness-output/serve.json
     scores: harness-output/scores.json
     critique: harness-output/critique-{N}.md
+    designDna: harness-output/design-system/design-dna.md
+    tokens: harness-output/design-system/tokens.css
+    designSystemSkill: harness-output/design-system/skill/
     report: harness-output/report.md
 
   steps:
@@ -217,9 +295,15 @@ workflow:
         - (if N > 1) the previous design description, evaluator critique, and screenshots
         - (if N > 1) a decision: REFINE the current direction or PIVOT to a new aesthetic
 
-        On iteration 1, create the initial design description from the spec's creative tension.
+        On iteration 1, produce THREE divergent one-paragraph concept directions
+        (each: named aesthetic + how it resolves the creative tension + signature motif),
+        select by checklist (violates no anti-goal, matches no banned-pattern floor, boldest
+        that can satisfy the sprint contract), and expand ONLY the winner into the full
+        description. Record the two rejected concepts in one line each at the top of
+        design-description-1.md.
         On REFINE, revise the design description to address the critique while preserving what worked.
-        On PIVOT, abandon the previous visual direction entirely and invent a fresh aesthetic.
+        On PIVOT, invent a fresh aesthetic that differs from ALL previously attempted concepts
+        (check the rejected-concepts lines and all prior descriptions).
 
         Write harness-output/design-description-{N}.md as a prose art-director brief covering:
         - Layout geometry and proportions
@@ -298,7 +382,7 @@ workflow:
 
         Steps:
         1. Start the server using harness-output/serve.json and verify it responds.
-        2. Capture full-page screenshots at 1440px and 390px.
+        2. Capture full-page screenshots at 1440px and 390px using browser automation per the Browser Operations Contract.
         3. Identify visual zones from the full-page screenshot and capture each at 2x zoom.
         4. Run the adversarial gate BEFORE scoring:
            - scroll all containers and check for hidden/clipped text
@@ -314,7 +398,7 @@ workflow:
         6. Apply zone minimums: craft and functionality are the minimum of whole-page and worst-zone scores.
         7. Apply the craft penalty: if originality <= 4 and craft >= 6, subtract 1-2 craft points.
         8. Write structured visual critique to harness-output/critique-{N}.md with specific references and actionable fixes.
-        9. Write harness-output/scores.json with the four scores, weightedAverage, decision, bestIteration, and keyIssues.
+        9. Write harness-output/scores.json with iteration, scores, weightedAverage, decision, bestIteration, gateFailures, actualViewports, and keyIssues.
 
         Constraints:
         - You do NOT see code. If you identify a problem, it IS a problem; do not rationalize it away.
@@ -376,7 +460,7 @@ workflow:
           enum: [REFINE, PIVOT, SHIP]
       termination:
         - if: decision == SHIP
-          next: finalize
+          next: codify
         - if: decision in [REFINE, PIVOT]
           next: design
 
@@ -393,7 +477,7 @@ workflow:
         increment: N = N + 1
         continueWhen: decision in [REFINE, PIVOT] and N <= maxIterations
         terminateWhen: decision == SHIP or N > maxIterations
-        onTerminate: finalize with the best-scoring iteration across all iterations and pivots
+        onTerminate: codify then finalize with the best-scoring iteration across all iterations and pivots
       outputs:
         - name: iteration_counter
           type: integer
@@ -401,20 +485,72 @@ workflow:
         - if: continueWhen is true
           next: design
         - if: terminateWhen is true
-          next: finalize
+          next: codify
+
+    - id: codify
+      name: Codify
+      agent: orchestrator
+      iteration: N
+      inputs:
+        - scores
+        - all design descriptions
+        - all critiques
+        - spec
+        - sprint_contract
+        - site
+      outputs:
+        - designDna
+        - tokens
+        - designSystemSkill
+      prompt: |
+        Run the Codify step when decision == SHIP or iteration budget is exhausted.
+        Identify the best-scoring iteration from harness-output/scores.json.
+        Perform three isolated sub-actions:
+
+        1. DesignAgent: from the winning design description, spec, and critique history
+           (still never seeing code), write harness-output/design-system/design-dna.md.
+           Required sections in order:
+           - Name & essence
+           - Principles (numbered)
+           - Aesthetic & creative tension
+           - Colour language
+           - Typography
+           - Spatial rhythm
+           - Signature motif(s)
+           - Motion
+           - Voice & tone
+           - Applying the system
+           - Anti-goals
+           - Provenance
+
+        2. Builder: extract harness-output/design-system/tokens.css from the shipped site.
+           This is the canonical design-token file; the site references the same values,
+           and any repo copy is a vendored consumer synced from this master.
+
+        3. Orchestrator: instantiate templates/design-system-skill/ into
+           harness-output/design-system/skill/<project>-design/ by filling placeholders
+           and copying design-dna.md + tokens.css in, producing an installable,
+           harness-portable design-system skill.
+      termination:
+        completed_when: all three artifacts are written
+        next: finalize
 
   finalize:
     agent: orchestrator
     inputs:
       - scores
       - all_iteration_artifacts
+      - designDna
+      - tokens
+      - designSystemSkill
     outputs:
       - harness-output/report.md
       - best_scoring_frontend_code
+      - harness-output/design-system/
     prompt: |
       Identify the best-scoring iteration from harness-output/scores.json.
       Copy its harness-output/site/ files to the final deliverable location.
-      Write harness-output/report.md with iteration history, decisions, pivots, and final scores.
+      Write harness-output/report.md with iteration history, decisions, pivots, final scores, and design-system deliverable summary.
       If the best iteration is not the latest, explain why in the report.
 
   notes:
