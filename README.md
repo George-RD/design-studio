@@ -2,7 +2,7 @@
 
 A design harness that makes better-looking websites. It works great with Claude Code and can run in other agent harnesses too. It splits the work into four jobs — planning, design, building, and checking — so you get original designs, not boring templates.
 
-**[See the live site →](https://george-rd.github.io/design-studio/)**
+**[See how it works →](https://george-rd.github.io/design-studio/)**
 
 <p align="center">
   <video controls autoplay muted loop playsinline width="720">
