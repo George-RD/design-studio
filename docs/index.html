@@ -132,18 +132,16 @@
       padding: 48px 0 120px;
     }
     .hero-grid {
-      display: grid;
-      grid-template-columns: repeat(12, 1fr);
-      gap: 24px;
-      align-items: stretch;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
       width: 100%;
       min-height: calc(100vh - 80px - 48px - 120px);
     }
     .hero-left {
-      grid-column: 1 / span 7;
+      max-width: 720px;
       display: flex;
       flex-direction: column;
-      padding-bottom: 8px;
     }
     .hero-title {
       font-family: 'Fraunces', serif;
@@ -158,7 +156,7 @@
       font-weight: 400;
       font-size: 20px;
       line-height: 1.5;
-      max-width: 60%;
+      max-width: 520px;
       margin-top: 40px;
     }
     .hero-rule {
@@ -177,40 +175,6 @@
     }
     .hero-command .prompt { color: var(--accent); margin-right: 8px; }
 
-    .hero-right {
-      grid-column: 9 / span 4;
-      align-self: stretch;
-    }
-    .hero-artifact {
-      height: 100%;
-      margin: 0;
-    }
-    .artifact-frame {
-      position: relative;
-      height: 100%;
-      min-height: 60vh;
-      border: 1px solid var(--rule);
-      overflow: hidden;
-      background: var(--warm-paper);
-    }
-    .artifact-frame img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-    .artifact-caption {
-      position: absolute;
-      right: 12px;
-      top: 50%;
-      transform: translateY(-50%);
-      writing-mode: vertical-rl;
-      font-family: 'Space Mono', monospace;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 1.4px;
-      color: var(--muted);
-    }
 
     /* Faint 12-column grid overlay in the hero only */
     .hero-grid-lines {
@@ -257,7 +221,6 @@
     .problem-left {
       grid-column: 1 / span 8;
       position: relative;
-      overflow: hidden;
     }
     .quote-mark {
       font-family: 'Fraunces', serif;
@@ -660,13 +623,8 @@
       .site-header { height: 64px; }
       .hero { min-height: auto; padding: 32px 0 80px; }
       .hero-grid {
-        grid-template-columns: 1fr;
         min-height: auto;
       }
-      .hero-left, .hero-right { grid-column: 1; }
-      .hero-right { margin-top: 48px; }
-      .hero-artifact { height: auto; }
-      .artifact-frame { min-height: 60vh; }
       .hero-manifesto { max-width: 100%; font-size: 18px; }
       .hero-command { font-size: 16px; }
       .section-title { font-size: 40px; }
@@ -736,14 +694,6 @@
               <span class="prompt">›</span>
               <code>claude plugin install https://github.com/George-RD/design-studio</code>
             </div>
-          </div>
-          <div class="hero-right">
-            <figure class="hero-artifact">
-              <div class="artifact-frame reveal">
-                <img src="poster.jpg" alt="Design Studio overview poster" loading="eager" />
-                <span class="artifact-caption">Overview</span>
-              </div>
-            </figure>
           </div>
         </div>
       </div>
@@ -998,14 +948,20 @@
       }
     })();
   </script>
-  <script src='https://storage.ko-fi.com/cdn/scripts/overlay-widget.js'></script>
-  <script>
-    kofiWidgetOverlay.draw('george_builds', {
-      'type': 'floating-chat',
-      'floating-chat.donateButton.text': 'Buy me a coffee ☕',
-      'floating-chat.donateButton.background-color': '#FF3D00',
-      'floating-chat.donateButton.text-color': '#fff'
-    });
-  </script>
+  <style>
+    .kofi-fixed {
+      position: fixed; left: 24px; bottom: 24px; z-index: 9999;
+      display: inline-flex; align-items: center; gap: 8px;
+      font-family: 'Space Mono', monospace; font-size: 12px;
+      text-transform: uppercase; letter-spacing: 1.4px;
+      text-decoration: none; padding: 12px 18px;
+      background: var(--accent); color: #fff; border-radius: 4px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+      transition: transform 200ms ease, box-shadow 200ms ease;
+    }
+    .kofi-fixed:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(0,0,0,0.24); }
+    @media (max-width: 520px) { .kofi-fixed { font-size: 11px; padding: 10px 14px; left: 14px; bottom: 14px; } }
+  </style>
+  <a class="kofi-fixed" href="https://ko-fi.com/george_builds" target="_blank" rel="noopener">☕ Buy me a coffee</a>
 </body>
 </html>
