@@ -19,6 +19,8 @@
       --deep: #111111;
       --hover-charcoal: #2A2A2A;
       --surface-dark: #111111;
+      --off-white: #FAFAFA;
+      --charcoal: #1A1A1A;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -62,6 +64,9 @@
       letter-spacing: 0.02em;
       color: var(--ink);
       text-decoration: none;
+      display: inline-flex;
+      padding: 12px 16px;
+      margin-left: -16px;
     }
     .header-meta {
       display: flex;
@@ -85,10 +90,18 @@
       font-size: 12px;
       text-transform: uppercase;
       letter-spacing: 1.4px;
-      color: var(--ink);
+      color: var(--paper);
       text-decoration: none;
+      background: var(--ink);
+      padding: 12px 20px;
+      height: 44px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 200ms ease, color 200ms ease;
     }
-    .header-link:hover { color: var(--accent); }
+    .header-link:hover { background: var(--charcoal); color: var(--paper); }
 
     /* Reveal animations */
     .reveal {
@@ -310,7 +323,7 @@
     }
     .process-line {
       position: absolute;
-      top: 50%;
+      top: calc(80px + 28px);
       left: 0;
       right: 0;
       height: 1px;
@@ -331,6 +344,7 @@
       flex-direction: column;
       align-items: center;
       text-align: center;
+      gap: 16px;
     }
     .node-circle {
       width: 56px;
@@ -342,12 +356,21 @@
       justify-content: center;
       font-family: 'Space Mono', monospace;
       font-size: 12px;
+      font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 1.4px;
       background: var(--paper);
+      color: var(--ink);
       flex-shrink: 0;
+      transition: transform 200ms ease, background 200ms ease, color 200ms ease;
+      cursor: default;
     }
-    .node-label { max-width: 220px; }
+    .node:hover .node-circle {
+      transform: scale(1.08);
+      background: var(--ink);
+      color: var(--paper);
+    }
+    .node-label { max-width: 220px; margin-top: 0; }
     .node-label strong {
       display: block;
       font-family: 'Manrope', sans-serif;
@@ -364,8 +387,6 @@
       line-height: 1.6;
       color: var(--muted);
     }
-    .node-up .node-label { order: -1; margin-bottom: 16px; }
-    .node-down .node-label { order: 1; margin-top: 16px; }
 
     /* Video */
     .video {
@@ -390,11 +411,10 @@
     }
     .video-play {
       position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 72px;
-      height: 72px;
+      bottom: 24px;
+      left: 24px;
+      width: 56px;
+      height: 56px;
       border-radius: 50%;
       background: var(--accent);
       border: none;
@@ -402,21 +422,23 @@
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: transform 200ms ease;
+      transition: transform 200ms ease, background 200ms ease;
     }
-    .video-frame:hover .video-play { transform: translate(-50%, -50%) scale(1.05); }
+    .video-frame:hover .video-play { transform: scale(1.05); background: var(--paper); }
+    .video-frame:hover .video-play svg { fill: var(--accent); }
     .video-play svg {
       width: 24px;
       height: 24px;
       fill: var(--off-white);
       margin-left: 4px;
+      transition: fill 200ms ease;
     }
     .video-caption {
       font-family: 'Space Mono', monospace;
       font-size: 12px;
       text-transform: uppercase;
       letter-spacing: 1.4px;
-      color: var(--muted);
+      color: var(--ink);
       margin-top: 16px;
     }
 
@@ -539,7 +561,7 @@
       align-items: center;
       gap: 12px;
       width: 100%;
-      background: var(--deep);
+      background: var(--charcoal);
       color: var(--off-white);
       padding: 24px 32px;
       font-family: 'Space Mono', monospace;
@@ -574,7 +596,7 @@
       font-family: 'Space Mono', monospace;
       font-size: 0.9em;
       background: var(--charcoal);
-      color: var(--paper);
+      color: var(--off-white);
       padding: 2px 6px;
       border-radius: 4px;
     }
@@ -667,6 +689,7 @@
       .process { padding: 100px 0; }
       .commands { padding: 100px 0; }
       .node-label { max-width: 160px; }
+      .process-line { display: none; }
     }
 
     @media (max-width: 480px) {
@@ -674,10 +697,10 @@
       .version { font-size: 10px; }
       .header-link { font-size: 10px; }
       .process-nodes { grid-template-columns: 1fr; }
-      .process-line { top: 0; bottom: 0; left: 50%; right: auto; width: 1px; height: 100%; transform: translateX(-50%) scaleY(0); transform-origin: top; }
+      .process-line { display: block; top: 0; bottom: 0; left: 50%; right: auto; width: 1px; height: 100%; transform: translateX(-50%) scaleY(0); transform-origin: top; }
       .process-diagram.visible .process-line { transform: translateX(-50%) scaleY(1); }
-      .node { flex-direction: row; align-items: center; text-align: left; gap: 16px; }
-      .node-up .node-label, .node-down .node-label { order: 0; margin: 0; }
+      .node { flex-direction: column; align-items: center; text-align: center; gap: 16px; }
+      .node-label { order: 1; margin-top: 0; }
       .node-label strong { font-size: 16px; }
       .node-label span { font-size: 14px; }
       .index-list li { grid-template-columns: 48px 1fr; gap: 16px; padding: 24px 0; }
@@ -751,29 +774,29 @@
         <div class="process-diagram">
           <div class="process-line process-line-animated" aria-hidden="true"></div>
           <div class="process-nodes">
-            <div class="node node-up">
-              <div class="node-circle" style="background: var(--accent); color: #fff; border-color: var(--accent);"><span>01</span></div>
+            <div class="node">
+              <div class="node-circle"><span>01</span></div>
               <div class="node-label">
                 <strong>Plan</strong>
                 <span>Take a brief and turn it into a creative direction.</span>
               </div>
             </div>
-            <div class="node node-down">
-              <div class="node-circle" style="border-width: 2px;"><span>02</span></div>
+            <div class="node">
+              <div class="node-circle"><span>02</span></div>
               <div class="node-label">
                 <strong>Design</strong>
                 <span>Describe the page in words, not code.</span>
               </div>
             </div>
-            <div class="node node-up">
-              <div class="node-circle" style="background: var(--ink); color: var(--paper); border-color: var(--ink);"><span>03</span></div>
+            <div class="node">
+              <div class="node-circle"><span>03</span></div>
               <div class="node-label">
                 <strong>Build</strong>
                 <span>Translate the description into production code.</span>
               </div>
             </div>
-            <div class="node node-down">
-              <div class="node-circle" style="border-style: dashed;"><span>04</span></div>
+            <div class="node">
+              <div class="node-circle"><span>04</span></div>
               <div class="node-label">
                 <strong>Evaluate</strong>
                 <span>Open the page, use it, score it, and feed back.</span>

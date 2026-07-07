@@ -8,6 +8,16 @@ How to improve the harness itself. Lessons from the Anthropic blog on tuning, re
 
 The harness is not a fixed system. It should be periodically re-evaluated: which components are still load-bearing? Which can be removed? What new capabilities can be added?
 
+## Workflow Definition as a Living Artifact
+
+The machine-readable iteration loop is now encoded in `../workflow.yaml`. It is load-bearing: it fixes the agent roster, prompt contracts, input/output boundaries, transition graph, decision table, and loop constraints.
+
+When tuning the harness:
+
+- Update `../workflow.yaml` whenever you change thresholds, prompts, agent isolation, or transition logic.
+- Treat `modules/iteration.md` and `../workflow.yaml` as a single source of truth; divergence makes deterministic execution impossible.
+- When testing component removal, run the change through the workflow definition to confirm that the orchestration still terminates correctly and that agent boundaries remain intact.
+
 ## Lesson 1: Criteria Wording Steers Generation
 
 The specific language in the scoring rubric shapes what gets created. This is both a tool and a risk.

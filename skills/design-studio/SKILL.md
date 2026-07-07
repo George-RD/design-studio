@@ -74,6 +74,8 @@ Four agents, each with a distinct role:
 | **Design Agent** | Receives screenshots + critique + spec, outputs design description (prose, not code). Never sees code. | Code-anchoring bias: seeing existing code constrains creative vision (stronger models are MORE affected) |
 | **Implementation Agent** | Receives design description + existing code, outputs working frontend | Faithfully executes the design vision without second-guessing creative direction |
 
+In `workflow.yaml` the Implementation Agent is referred to as `Builder`, the Design Agent as `DesignAgent`, and the other two agents as `Planner` and `Evaluator`. This keeps the machine-readable definition aligned with the architecture while giving orchestrators a deterministic role roster.
+
 ## The Workflow
 
 ```text
@@ -87,6 +89,25 @@ STEP  PHASE           AGENT            OUTPUT                                   
  6    Loop            → step 2         (up to N iterations)                          iteration.md
  7    Finalize        Orchestr.        harness-output/report.md                      —
 ```
+
+### Machine-readable workflow definition
+
+The full iteration loop is also encoded in `skills/design-studio/workflow.yaml`. It defines, for each step:
+
+- The responsible agent (`Planner`, `DesignAgent`, `Builder`, `Evaluator`, or `orchestrator`).
+- Required inputs and expected outputs, including file paths and isolation rules.
+- Prompt templates and context requirements (e.g., what the Design Agent must NOT see).
+- The ordered transition graph and termination/loop constraints.
+
+An OMP or any other harness can run this workflow deterministically by:
+
+1. **Parsing** `workflow.yaml` to load the agent roster, default thresholds (`shipThreshold`, `convergenceThreshold`, `slowProgressThreshold`, `maxIterations`), and step list.
+2. **Invoking** only the agent named for the current step, passing exactly the declared inputs and context. No agent receives extra context that would break isolation.
+3. **Checking** the `termination` block for the current step to select the next step.
+4. **Applying** the `decide` decision table from `harness-output/scores.json` to route to `design`, `finalize`, or stop.
+5. **Enforcing** `loopControl` rules: increment the iteration counter, stop at `maxIterations`, and stop when the decision is `SHIP`.
+
+Because the prompts, agent boundaries, and decision rules are all declared in one file, every compliant harness produces the same sequence of steps and the same decision outcomes for the same inputs.
 
 ### Step 1: Plan
 
@@ -297,9 +318,11 @@ Gate failures impose hard score caps (e.g., text clipping caps craft at 5, conso
 
 ## Modules
 
-Detailed knowledge is in `modules/`:
+Detailed knowledge is in `modules/`, and the executable workflow is encoded in `workflow.yaml`:
+
 - **planning.md** — Prompt expansion, spec structure, sprint contract format, creative tensions
 - **evaluation.md** — Scoring rubric, live evaluation protocol, zone-based evaluation, adversarial gate, evaluator failure modes
 - **iteration.md** — Decision framework, convergence detection, pivot mechanics, score tracking
 - **generation.md** — Implementation agent principles, design description execution, anti-patterns
 - **meta.md** — How to improve the harness itself, lessons from real-world tuning
+- **workflow.yaml** — Machine-readable workflow definition: agents, prompts, inputs/outputs, transitions, and loop constraints

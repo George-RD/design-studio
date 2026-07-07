@@ -1,10 +1,10 @@
 # Iteration Module
 
-The refine/pivot/ship decision framework, convergence detection, and iteration management.
+The refine/pivot/ship decision framework, convergence detection, and iteration management. **This logic is also encoded in `../workflow.yaml`; keep the two files in sync so OMP and other harnesses can run the loop deterministically.**
 
 ## Decision Framework
 
-After each evaluation, the orchestrator must decide: **REFINE**, **PIVOT**, or **SHIP**.
+After each evaluation, the orchestrator must decide: **REFINE**, **PIVOT**, or **SHIP**. The orchestrator applies these rules by reading `harness-output/scores.json` and following the ordered decision table in `../workflow.yaml`.
 
 This is a mechanical decision based on score data, not a judgment call. The framework removes ambiguity.
 
@@ -13,6 +13,8 @@ This is a mechanical decision based on score data, not a judgment call. The fram
 | Condition | Decision | Rationale |
 |-----------|----------|-----------|
 | Originality ≤ 4 after iteration 2 | **PIVOT** | Template pattern detected early — CSS refinement won't fix a structural problem |
+| Originality ≤ 5 after iteration 4 | **PIVOT** | Direction is fundamentally conventional |
+| Originality stagnant (±0.5) for 2 iterations while below 6 | **PIVOT** | Refinement is not reaching originality |
 | All 4 criteria ≥ 7.0 | **SHIP** | Quality threshold met |
 | Weighted average improved ≥ 0.5 from last iteration | **REFINE** | Trajectory is positive |
 | Weighted average within ±0.5 for 2 consecutive iterations AND weighted avg ≥ 6.5 | **SHIP** | Converged at acceptable quality |
@@ -24,7 +26,7 @@ This is a mechanical decision based on score data, not a judgment call. The fram
 
 ### Rule Priority
 
-Rules are evaluated top-to-bottom. The first matching rule wins. The early pivot trigger (originality ≤ 4 after iteration 2) is checked first because it catches structural problems before the harness wastes iterations on CSS polish. The quality threshold (all 4 criteria ≥ 7.0 → SHIP) is checked second and overrides all remaining rules, including the iteration 1 default.
+Rules are evaluated top-to-bottom. The first matching rule wins. The three originality pivot triggers (originality ≤ 4 after iteration 2, originality ≤ 5 after iteration 4, and originality stagnant ±0.5 for 2 iterations while below 6) run first because they catch structural unoriginality before the harness wastes iterations on CSS polish. The quality threshold (all 4 criteria ≥ 7.0 → SHIP) is checked after them and overrides all remaining rules, including the iteration 1 default.
 
 ### Tie-Breaking
 

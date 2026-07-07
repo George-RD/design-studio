@@ -1,0 +1,423 @@
+workflow:
+  name: design-studio
+  version: 1.0.0
+  description: >
+    4-agent design-evaluate-iterate harness for distinctive frontend creation.
+    Separates planning, visual design, implementation, and live evaluation so
+    each step runs deterministically and code-anchoring bias is eliminated.
+
+  defaults:
+    maxIterations: 8
+    maxIterationsAmbitious: 12
+    shipThreshold: 7.0
+    convergenceThreshold: 6.5
+    slowProgressThreshold: 5.0
+    pivotBudget: 2
+    viewports: [1440, 390]
+    zoneEvaluation: true
+    adversarialGate: true
+    humanReview: false
+
+  agents:
+    - role: Planner
+      alias: planner
+      responsibilities:
+        - Expand the terse user prompt into a full product specification.
+        - Define a creative tension and explicit anti-goals.
+        - Identify expected visual zones and high-risk sections.
+        - Set a technical stack and prioritized feature set.
+      isolation: []
+      inputs:
+        - name: user_prompt
+          type: string
+          description: 1-4 sentence natural-language request from the user.
+        - name: brand_brief
+          type: file
+          optional: true
+          description: Optional brand toolkit or voice/tone guidelines.
+      outputs:
+        - name: spec
+          path: harness-output/spec.md
+          description: Full product specification with creative tension.
+        - name: sprint_contract
+          path: harness-output/sprint-contract.md
+          description: Negotiated, testable success criteria for evaluation.
+
+    - role: DesignAgent
+      alias: design_agent
+      responsibilities:
+        - Produce a prose design description for each iteration.
+        - Refine the current direction or pivot to a new aesthetic based on critique.
+        - Make visual decisions without reasoning about implementation.
+      isolation:
+        - Must NOT receive any source code (HTML, CSS, JS, JSX, Vue, etc.).
+        - Must NOT receive implementation-flavored instructions (e.g., "add padding", "change z-index").
+      inputs:
+        - name: spec
+          path: harness-output/spec.md
+        - name: sprint_contract
+          path: harness-output/sprint-contract.md
+        - name: previous_design
+          path: harness-output/design-description-{N-1}.md
+          optional: true
+          condition: N > 1
+        - name: critique
+          path: harness-output/critique-{N-1}.md
+          optional: true
+          condition: N > 1
+        - name: screenshots
+          type: images
+          optional: true
+          condition: N > 1
+          description: Desktop + mobile + per-zone captures from the evaluator.
+        - name: decision
+          type: string
+          optional: true
+          condition: N > 1
+          enum: [REFINE, PIVOT]
+          description: Instruction from the Decide step on whether to refine or pivot.
+      outputs:
+        - name: design_description
+          path: harness-output/design-description-{N}.md
+          description: Prose visual direction (layout, type, color, rhythm, motion, atmosphere).
+
+    - role: Builder
+      alias: builder
+      responsibilities:
+        - Faithfully execute the DesignAgent's prose description into working code.
+        - Preserve the previous iteration when REFINE is requested; start fresh only on PIVOT.
+        - Flag impossible instructions, but never soften or override design intent.
+      isolation:
+        - Must NOT alter the design intent or substitute safer values.
+        - Must NOT add visual elements not described by the DesignAgent.
+      inputs:
+        - name: design_description
+          path: harness-output/design-description-{N}.md
+        - name: spec
+          path: harness-output/spec.md
+        - name: sprint_contract
+          path: harness-output/sprint-contract.md
+        - name: previous_code
+          path: harness-output/site/
+          optional: true
+          condition: N > 1 and decision != PIVOT
+      outputs:
+        - name: site
+          path: harness-output/site/
+          description: Renderable frontend code (HTML/CSS/JS or framework equivalent).
+        - name: serve_config
+          path: harness-output/serve.json
+          description: Static file server or dev-server configuration for evaluation.
+
+    - role: Evaluator
+      alias: evaluator
+      responsibilities:
+        - Serve and render the page, then capture full-page and per-zone screenshots.
+        - Run the mandatory adversarial gate before scoring.
+        - Score against the 4 rubric criteria and produce a visual-only critique.
+        - Identify zone-level issues and apply score floors for gate failures.
+      isolation:
+        - Must NOT receive source code or implementation details.
+        - Must NOT reason about implementation effort; judge only the rendered experience.
+      inputs:
+        - name: serve_config
+          path: harness-output/serve.json
+        - name: spec
+          path: harness-output/spec.md
+        - name: sprint_contract
+          path: harness-output/sprint-contract.md
+        - name: design_description
+          path: harness-output/design-description-{N}.md
+          optional: true
+          condition: N > 1
+        - name: expected_zones
+          type: list
+          description: Visual zones identified in the spec (header, hero, content, graphs, sidebar, footer, etc.).
+      outputs:
+        - name: scores
+          path: harness-output/scores.json
+          description: Per-iteration structured scores with weighted average and decision history.
+        - name: critique
+          path: harness-output/critique-{N}.md
+          description: Structured visual critique with zone-specific issues and actionable fixes.
+
+  artifacts:
+    spec: harness-output/spec.md
+    sprintContract: harness-output/sprint-contract.md
+    designDescription: harness-output/design-description-{N}.md
+    site: harness-output/site/
+    serveConfig: harness-output/serve.json
+    scores: harness-output/scores.json
+    critique: harness-output/critique-{N}.md
+    report: harness-output/report.md
+
+  steps:
+    - id: plan
+      name: Plan
+      agent: Planner
+      iteration: 1
+      inputs:
+        - user_prompt
+      context:
+        - artifact: brand_brief
+          optional: true
+      prompt: |
+        You are the Planner for the Design Studio harness.
+
+        The user said: {user_prompt}
+
+        Your job is to expand this into a vivid, distinctive product specification.
+        Write:
+        1. harness-output/spec.md with Purpose & Audience, Aesthetic Direction & Creative Tension, Feature Set (Core/Distinctive/Ambitious), Technical Stack, Expected Zones & Sections, Reference Points, and Anti-Goals.
+        2. harness-output/sprint-contract.md with testable success criteria.
+
+        Rules:
+        - Define a creative tension (e.g., "Brutalist WITH ornamental flourishes"), not just a single aesthetic label.
+        - Bias toward distinctive features (animations, spatial experiences, interactive elements).
+        - Avoid implementation details (CSS values, exact pixel layouts); specify WHAT and WHY.
+        - Anti-goals must be concrete and aggressive.
+      outputs:
+        - harness-output/spec.md
+        - harness-output/sprint-contract.md
+      termination:
+        completed_when: both artifacts are written
+        next: design
+
+    - id: design
+      name: Design
+      agent: DesignAgent
+      iteration: N
+      inputs:
+        - spec
+        - sprint_contract
+      context:
+        - artifact: previous_design
+          path: harness-output/design-description-{N-1}.md
+          optional: true
+          condition: N > 1
+        - artifact: critique
+          path: harness-output/critique-{N-1}.md
+          optional: true
+          condition: N > 1
+        - artifact: screenshots
+          type: images
+          optional: true
+          condition: N > 1
+          note: Desktop, mobile, and per-zone captures provided by the Evaluator.
+        - decision: "{REFINE | PIVOT}"
+          optional: true
+          condition: N > 1
+          note: On iteration 1 this is always REFINE; on later iterations it comes from the Decide step.
+      prompt: |
+        You are the Design Agent for the Design Studio harness. You NEVER see code.
+
+        Inputs:
+        - harness-output/spec.md
+        - harness-output/sprint-contract.md
+        - (if N > 1) the previous design description, evaluator critique, and screenshots
+        - (if N > 1) a decision: REFINE the current direction or PIVOT to a new aesthetic
+
+        On iteration 1, create the initial design description from the spec's creative tension.
+        On REFINE, revise the design description to address the critique while preserving what worked.
+        On PIVOT, abandon the previous visual direction entirely and invent a fresh aesthetic.
+
+        Write harness-output/design-description-{N}.md as a prose art-director brief covering:
+        - Layout geometry and proportions
+        - Typography direction and scale relationships
+        - Color relationships and atmospheric effects
+        - Spatial rhythm and negative-space logic
+        - Motion intent and interaction choreography
+        - Overall mood and what the user should feel
+
+        Constraints:
+        - Use only visual/experiential language.
+        - Do NOT reference CSS properties, DOM structure, class names, or JS frameworks.
+        - If a prior design scored poorly on originality, push harder toward the creative tension.
+      outputs:
+        - harness-output/design-description-{N}.md
+      termination:
+        completed_when: design description is written
+        next: implement
+
+    - id: implement
+      name: Implement
+      agent: Builder
+      iteration: N
+      inputs:
+        - design_description
+      context:
+        - artifact: spec
+        - artifact: sprint_contract
+        - artifact: previous_code
+          path: harness-output/site/
+          optional: true
+          condition: N > 1 and decision != PIVOT
+      prompt: |
+        You are the Builder (Implementation Agent) for the Design Studio harness.
+
+        Inputs:
+        - harness-output/design-description-{N}.md (the design description you must execute)
+        - harness-output/spec.md
+        - harness-output/sprint-contract.md
+        - (if N > 1 and decision is REFINE) the existing code in harness-output/site/
+
+        Rules:
+        - Translate the design description into working code literally and faithfully.
+        - "15vw scale" means 15vw. "Klein Blue bar" means Klein Blue. Do not soften values.
+        - If an instruction is impossible, flag it with a DESIGN-FLAG comment and implement the closest possible visual equivalent.
+        - Do NOT add visual elements not in the design description.
+        - Do NOT change the layout from centered to asymmetric or vice versa unless the design description explicitly says so.
+        - Use CSS custom properties for all design tokens.
+        - Self-test basic rendering and interactions before finishing.
+        - Write a harness-output/serve.json file so the Evaluator can serve the page.
+
+        After building, self-commit the artifacts if version control is active.
+      outputs:
+        - harness-output/site/
+        - harness-output/serve.json
+      termination:
+        completed_when: site is built and serve.json is written
+        next: evaluate
+
+    - id: evaluate
+      name: Evaluate
+      agent: Evaluator
+      iteration: N
+      inputs:
+        - serve_config
+      context:
+        - artifact: spec
+        - artifact: sprint_contract
+        - artifact: design_description
+          path: harness-output/design-description-{N}.md
+          optional: true
+          condition: N > 1
+        - expected_zones: derived from spec section 5
+      prompt: |
+        You are the Evaluator for the Design Studio harness. You judge only the rendered page.
+
+        Steps:
+        1. Start the server using harness-output/serve.json and verify it responds.
+        2. Capture full-page screenshots at 1440px and 390px.
+        3. Identify visual zones from the full-page screenshot and capture each at 2x zoom.
+        4. Run the adversarial gate BEFORE scoring:
+           - scroll all containers and check for hidden/clipped text
+           - check for overlapping elements
+           - resize to 390px and check for horizontal overflow or broken layouts
+           - check the browser console for JS errors and failed resources
+           - click/hover every interactive element and verify expected behavior
+        5. Score each zone and the whole page against the 4 criteria:
+           - designQuality (weight 2x)
+           - originality (weight 2x)
+           - craft (weight 1x)
+           - functionality (weight 1x)
+        6. Apply zone minimums: craft and functionality are the minimum of whole-page and worst-zone scores.
+        7. Apply the craft penalty: if originality <= 4 and craft >= 6, subtract 1-2 craft points.
+        8. Write structured visual critique to harness-output/critique-{N}.md with specific references and actionable fixes.
+        9. Write harness-output/scores.json with the four scores, weightedAverage, decision, bestIteration, and keyIssues.
+
+        Constraints:
+        - You do NOT see code. If you identify a problem, it IS a problem; do not rationalize it away.
+        - Every critique point must include a specific visual observation ("the hero strapline overlaps the CTA at 390px").
+        - Gate failures hard-cap craft or functionality at 5.
+      outputs:
+        - harness-output/scores.json
+        - harness-output/critique-{N}.md
+      termination:
+        completed_when: scores and critique are written
+        next: decide
+
+    - id: decide
+      name: Decide
+      agent: orchestrator
+      iteration: N
+      inputs:
+        - scores
+      context:
+        - artifact: scores
+        - history: all previous entries in harness-output/scores.json
+      decisionTable:
+        - condition: originality <= 4 and N >= 2
+          decision: PIVOT
+          rationale: Template pattern detected early; refinement will not fix structural unoriginality.
+        - condition: originality <= 5 and N >= 4
+          decision: PIVOT
+          rationale: Direction is fundamentally conventional; explicit PIVOT trigger fires at iteration 4.
+        - condition: originality within +/- 0.5 for 2 consecutive iterations and originality < 6
+          decision: PIVOT
+          rationale: Refinement is not reaching originality; stagnation below 6 triggers restart.
+        - condition: designQuality >= 7.0 and originality >= 7.0 and craft >= 7.0 and functionality >= 7.0
+          decision: SHIP
+          rationale: Quality threshold met; overrides all remaining rules.
+        - condition: weightedAverage improved by >= 0.5 from previous iteration
+          decision: REFINE
+          rationale: Positive trajectory; continue refining the current direction.
+        - condition: weightedAverage within +/- 0.5 for 2+ consecutive iterations and weightedAverage >= 6.5
+          decision: SHIP
+          rationale: Converged at acceptable quality.
+        - condition: weightedAverage within +/- 0.5 for 2+ consecutive iterations and weightedAverage < 6.5
+          decision: PIVOT
+          rationale: Converged at unacceptable quality.
+        - condition: weightedAverage < 5.0 and N >= 3
+          decision: PIVOT
+          rationale: Not improving fast enough.
+        - condition: weightedAverage declined for 2 consecutive iterations
+          decision: PIVOT
+          rationale: Direction is failing.
+        - condition: N == 1
+          decision: REFINE
+          rationale: First iteration always refines unless quality threshold already met.
+        - condition: N >= maxIterations
+          decision: SHIP
+          rationale: Budget exhausted; deliver the best-scoring iteration.
+      outputs:
+        - name: decision
+          type: string
+          enum: [REFINE, PIVOT, SHIP]
+      termination:
+        - if: decision == SHIP
+          next: finalize
+        - if: decision in [REFINE, PIVOT]
+          next: design
+
+    - id: loop
+      name: Loop
+      agent: orchestrator
+      iteration: N
+      inputs:
+        - decision
+      context:
+        - currentIteration: N
+        - maxIterations: defaults.maxIterations
+      loopControl:
+        increment: N = N + 1
+        continueWhen: decision in [REFINE, PIVOT] and N <= maxIterations
+        terminateWhen: decision == SHIP or N > maxIterations
+        onTerminate: finalize with the best-scoring iteration across all iterations and pivots
+      outputs:
+        - name: iteration_counter
+          type: integer
+      termination:
+        - if: continueWhen is true
+          next: design
+        - if: terminateWhen is true
+          next: finalize
+
+  finalize:
+    agent: orchestrator
+    inputs:
+      - scores
+      - all_iteration_artifacts
+    outputs:
+      - harness-output/report.md
+      - best_scoring_frontend_code
+    prompt: |
+      Identify the best-scoring iteration from harness-output/scores.json.
+      Copy its harness-output/site/ files to the final deliverable location.
+      Write harness-output/report.md with iteration history, decisions, pivots, and final scores.
+      If the best iteration is not the latest, explain why in the report.
+
+  notes:
+    - The workflow defaults to full-page mode. For multi-section pages, set sectionDecomposition: true and run per-section design-implement-evaluate cycles before a final integration pass.
+    - The orchestrator must enforce agent isolation: the DesignAgent never sees code, and the Evaluator never sees code.
+    - Every iteration must produce a deterministic decision because the decision table is ordered and each rule is testable from harness-output/scores.json.
