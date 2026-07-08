@@ -1,0 +1,25 @@
+{
+  "name": "remotion-video",
+  "version": "1.0.0",
+  "description": "Design Studio promo video",
+  "type": "module",
+  "scripts": {
+    "build": "remotion render src/Root.tsx DesignStudioPromo out/video.mp4",
+    "compress": "ffmpeg -y -i out/video.mp4 -vf scale=1920:-2 -c:v libx264 -crf 28 -preset slow -movflags +faststart -an out/video-1080p.mp4",
+    "gif": "ffmpeg -y -i out/video.mp4 -vf \"fps=20,scale=720:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse\" -loop 0 out/video-1080p.gif",
+    "poster": "ffmpeg -y -i out/video.mp4 -ss 00:00:01.5 -frames:v 1 -vf scale=1280:-1 out/poster.jpg"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.0",
+    "@remotion/google-fonts": "^4.0.0",
+    "@remotion/renderer": "^4.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "remotion": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "^6.0.3"
+  }
+}
