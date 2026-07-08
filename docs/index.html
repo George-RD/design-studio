@@ -943,16 +943,25 @@
           });
         }
 
-        if ('IntersectionObserver' in window) {
+        var reduceMotion = window.matchMedia &&
+          window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        if ('IntersectionObserver' in window && !reduceMotion) {
           frame.classList.add('js-autovideo'); // hide play button for JS users
           var vObserver = new IntersectionObserver(function(entries) {
             entries.forEach(function(entry) {
               if (entry.isIntersecting) {
                 var p = video.play();
-                if (p && p.catch) {
-                  p.catch(function() {
-                    // Autoplay blocked: reveal the manual play button
-                    if (playBtn) playBtn.style.display = 'flex';
+                if (p && p.then) {
+                  p.then(function() {
+                    // Playback started: keep the manual button hidden
+                    if (playBtn) playBtn.style.display = 'none';
+                  }).catch(function(err) {
+                    // Only a real policy block reveals the button. Our own
+                    // pause() rejects with AbortError, which we ignore.
+                    if (playBtn && (!err || err.name !== 'AbortError')) {
+                      playBtn.style.display = 'flex';
+                    }
                   });
                 }
               } else {
