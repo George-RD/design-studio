@@ -674,10 +674,10 @@
       .version { font-size: 10px; }
       .header-link { font-size: 10px; }
       .process-nodes { grid-template-columns: 1fr; }
-      .process-line { display: block; top: 0; bottom: 0; left: 50%; right: auto; width: 1px; height: 100%; transform: translateX(-50%) scaleY(0); transform-origin: top; }
+      .process-line { display: block; top: calc(80px + 28px); bottom: calc(80px + 28px); left: 28px; right: auto; width: 1px; height: auto; transform: translateX(-50%) scaleY(0); transform-origin: top; }
       .process-diagram.visible .process-line { transform: translateX(-50%) scaleY(1); }
-      .node { flex-direction: column; align-items: center; text-align: center; gap: 16px; }
-      .node-label { order: 1; margin-top: 0; }
+      .node { flex-direction: row; align-items: flex-start; text-align: left; gap: 20px; }
+      .node-label { order: 0; margin-top: 0; text-align: left; max-width: none; }
       .node-label strong { font-size: 16px; }
       .node-label span { font-size: 14px; }
       .index-list li { grid-template-columns: 48px 1fr; gap: 16px; padding: 24px 0; }
