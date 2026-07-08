@@ -413,6 +413,8 @@
       margin-left: 4px;
       transition: fill 200ms ease;
     }
+    /* Hide the play button for JS users: video autoplays on scroll */
+    .video-frame.js-autovideo .video-play { display: none; }
     .video-caption {
       font-family: 'Space Mono', monospace;
       font-size: 12px;
@@ -781,7 +783,7 @@
         <p class="section-label section-reveal">See the work</p>
         <h2 class="section-title section-reveal">Proof</h2>
         <div class="video-frame section-reveal">
-          <video poster="poster.jpg" playsinline>
+          <video poster="poster.jpg" playsinline muted preload="metadata">
             <source src="video-1080p.mp4" type="video/mp4" />
           </video>
           <button class="video-play" aria-label="Play overview video">
@@ -926,25 +928,49 @@
         observer.observe(el);
       });
 
-      // Video play
+      // Video autoplay when scrolled into view (muted so browsers allow it)
       var frame = document.querySelector('.video-frame');
       var video = frame ? frame.querySelector('video') : null;
       var playBtn = frame ? frame.querySelector('.video-play') : null;
 
-      if (playBtn && video) {
-        playBtn.addEventListener('click', function() {
-          video.setAttribute('controls', '');
-          video.play();
-          playBtn.style.display = 'none';
-        });
-      }
+      if (video) {
+        video.muted = true;
+        if (playBtn) {
+          playBtn.addEventListener('click', function() {
+            video.setAttribute('controls', '');
+            video.play();
+            playBtn.style.display = 'none';
+          });
+        }
 
+        if ('IntersectionObserver' in window) {
+          frame.classList.add('js-autovideo'); // hide play button for JS users
+          var vObserver = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+              if (entry.isIntersecting) {
+                var p = video.play();
+                if (p && p.catch) {
+                  p.catch(function() {
+                    // Autoplay blocked: reveal the manual play button
+                    if (playBtn) playBtn.style.display = 'flex';
+                  });
+                }
+              } else {
+                // Pause and rewind when scrolled away so it replays on return
+                video.pause();
+                try { video.currentTime = 0; } catch (e) {}
+              }
+            });
+          }, { threshold: 0.4 });
+          vObserver.observe(video);
+        }
+      }
       // Copy command
       var commandBlock = document.querySelector('.command-block');
-      if (commandBlock) {
-        var copyLabel = commandBlock.querySelector('.copy-label');
-        var code = commandBlock.querySelector('code');
+      var code = commandBlock ? commandBlock.querySelector('code') : null;
+      var copyLabel = commandBlock ? commandBlock.querySelector('.copy-label') : null;
 
+      if (commandBlock) {
         var doCopy = function() {
           if (!code || !copyLabel) return;
           var text = code.textContent;
