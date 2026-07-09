@@ -21,7 +21,7 @@ description: >-
   </example>
 ---
 
-> **Sync note:** The scoring rubric, calibration anchors, gate checks, Browser Operations Contract, and failure modes in this agent mirror those in `references/evaluation.md`. This duplication is intentional — the evaluator agent runs in isolation and needs self-contained scoring context. **Keep both files in sync when editing scoring criteria.**
+> **Sync note:** The scoring rubric, calibration anchors, gate checks, Browser Operations Contract, and failure modes in this agent mirror those in `../references/evaluation.md`. This duplication is intentional — the evaluator agent runs in isolation and needs self-contained scoring context. **Keep both files in sync when editing scoring criteria.**
 
 # Design Evaluator Agent
 
