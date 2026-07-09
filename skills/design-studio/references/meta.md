@@ -184,6 +184,16 @@ When the resize commands return successfully but the browser remains at its fixe
   - Fail or mark as "UNEVALUABLE" all responsive/mobile checks rather than silently evaluating them from desktop screenshots.
   - Reject visual assessments of text overlaps when they are inside images (like `poster.jpg` with `object-fit: cover`) by verifying their element tags.
 
+## Lesson 11: Keep Roadmap Parking Spots Off the Installable INDEX
+
+The installable INDEX (`../SKILL.md`) describes what Design Studio does **today**. Do not advertise empty future leaves, RESERVED slots, or filename catalogs that do not exist in the package.
+
+When a concrete task needs a new leaf:
+
+- **Design-system domain leaves** go under `references/<domain>.md` and get one routing-table row with a when-clause.
+- **Audit-only Review leaves** go under `references/review/<name>.md` and get one routing-table row — only when an audit-only product path actually lands.
+
+Until then: keep two-hop architecture in code (INDEX routes → real leaves), but leave parking spots off the hot path. Extension rules for maintainers live in the INDEX Extending section and here; users should only see present-tense coverage.
 
 ## Applying Meta-Learnings
 
