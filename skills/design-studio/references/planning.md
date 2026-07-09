@@ -174,6 +174,10 @@ Write `harness-output/sprint-contract.md` with testable success criteria:
 
 The sprint contract is not fixed by the planner alone. When the harness orchestrator creates the evaluator agent, it should include the sprint contract and invite the evaluator to propose additional criteria. This negotiation ensures the evaluator knows exactly what "done" means before evaluation begins.
 
+## Overhaul mode
+
+When `existing_site` or `existing_url` is present, load `overhaul.md` for the full procedure. Expand product intent from the existing UI and goals, write `harness-output/baseline.md` with baseline paths, and never paste source into DesignAgent inputs.
+
 ## Planning Anti-Patterns
 
 1. **Over-specification.** Don't write implementation details (CSS values, exact layouts). Specify the WHAT and WHY, not the HOW. The Design Agent needs creative freedom.

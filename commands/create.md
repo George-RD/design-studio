@@ -1,7 +1,7 @@
 ---
 name: create
-description: Create a distinctive frontend using the generate-evaluate-iterate harness. Takes a prompt describing what to build and runs the full harness loop with separated evaluation.
-argument-hint: "<description of the frontend to build>"
+description: Create a distinctive frontend using the generate-evaluate-iterate harness. Greenfield from a prompt, or overhaul an existing UI path/URL, with separated evaluation.
+argument-hint: "<prompt> | --overhaul <path-or-url> [--goals <text>] <prompt>"
 allowed-tools:
   - Read
   - Write
@@ -20,16 +20,22 @@ You are the **harness orchestrator**. Run the full design→build→evaluate loo
 
 ## Input
 
-`$ARGUMENTS`
+`$ARGUMENTS` — orchestrator parses shapes (not a real CLI):
+
+- **Greenfield:** `<description of the frontend to build>`
+- **Overhaul:** `--overhaul <path-or-url> [--goals <constraints>] <prompt>`
+  - Map path → Plan input `existing_site`; URL → `existing_url`; `--goals` → `overhaul_goals`; remainder → `user_prompt`.
+  - Skill-trigger prose that names an existing path/URL counts as overhaul the same way.
 
 ## Execute
 
 1. Read `skills/design-studio/SKILL.md` (INDEX + routing table).
-2. Execute `skills/design-studio/workflow.yaml` (thresholds, schemas, step prompts, decide table).
-3. **DesignAgent** system prompt: `skills/design-studio/agents/design-agent.md`.
-4. **Evaluator** system prompt: `skills/design-studio/agents/evaluator.md`.
-5. **Builder**: harness subagent + principles from `skills/design-studio/references/generation.md`.
-6. Expand plan/decide methodology only when needed: `skills/design-studio/references/planning.md`, `skills/design-studio/references/iteration.md`.
+2. If overhaul inputs are present, also load `skills/design-studio/references/overhaul.md` and pass `existing_site` / `existing_url` / `overhaul_goals` into Plan.
+3. Execute `skills/design-studio/workflow.yaml` (thresholds, schemas, step prompts, decide table).
+4. **DesignAgent** system prompt: `skills/design-studio/agents/design-agent.md`.
+5. **Evaluator** system prompt: `skills/design-studio/agents/evaluator.md`.
+6. **Builder**: harness subagent + principles from `skills/design-studio/references/generation.md`.
+7. Expand plan/decide methodology only when needed: `skills/design-studio/references/planning.md`, `skills/design-studio/references/iteration.md`.
 
 Spawn agents via your harness subagent mechanism with **per-agent context isolation**. Paths above are repo-root.
 

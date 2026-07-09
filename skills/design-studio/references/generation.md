@@ -9,6 +9,8 @@ The Implementation Agent is a **faithful executor**, not a creative director. It
 1. **Design description** (natural language from the Design Agent) — the primary input defining what to build
 2. **Existing code** (when iterating) — context for what's currently there
 
+**Overhaul seed (N=1):** when overhaul mode seeded `harness-output/site/`, you may receive that tree on the first implement. Still execute the design description faithfully; seed is substrate, not design authority. PIVOT abandons the implementation.
+
 The Implementation Agent decides **how** to implement, never **what** to implement:
 
 | Implementation Agent decides | Design Agent decides |
