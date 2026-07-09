@@ -56,6 +56,7 @@ Report detections grouped by category. For each detection record:
 
 | Field | Value |
 |-------|-------|
+| `id` | stable identifier, e.g. `slop-1` |
 | `lens` | `slop` |
 | `severity` | `blocker` / `quality` / `polish` (use `quality` for template-default combos, `polish` for subtle) |
 | `confidence` | `high` / `medium` / `low` |

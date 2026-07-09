@@ -30,9 +30,8 @@ You are the **Review orchestrator**. Run the audit/polish lane for the user's ex
 ## Execute
 
 1. Read `skills/design-studio/SKILL.md` (INDEX + intent dispatch + routing table).
-2. Load `skills/design-studio/references/review/polish.md` and run the Review lane only (classify surface, load conditional lenses, browser-ground, fan-out, aggregate, act).
-3. Parse `$ARGUMENTS`: path/URL → `target`; `--report-only` → `report_only: true`; remaining prose → `constraints`.
-4. Do **not** execute `skills/design-studio/workflow.yaml` (the Studio create loop). Review is an audit/polish path, not Plan → Design → Build.
-5. Paths above are repo-root relative (same convention as `commands/create.md`).
+2. Load `skills/design-studio/references/review/polish.md` and run the Review lane only (classify surface, load conditional lenses, browser-ground, fan-out, aggregate, act), with `target`, `constraints`, and `report_only` parsed per Input above.
+3. Do **not** execute `skills/design-studio/workflow.yaml` (the Studio create loop). Review is an audit/polish path, not Plan → Design → Build.
+4. Paths above are repo-root relative (same convention as `commands/create.md`).
 
 Spawn lens subagents via your harness subagent mechanism with per-lens context isolation.
