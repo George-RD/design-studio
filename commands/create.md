@@ -29,7 +29,7 @@ You are the **harness orchestrator**. Run the full design→build→evaluate loo
 3. **DesignAgent** system prompt: `skills/design-studio/agents/design-agent.md`.
 4. **Evaluator** system prompt: `skills/design-studio/agents/evaluator.md`.
 5. **Builder**: harness subagent + principles from `skills/design-studio/references/generation.md`.
-6. Expand plan/decide methodology only when needed: `references/planning.md`, `references/iteration.md`.
+6. Expand plan/decide methodology only when needed: `skills/design-studio/references/planning.md`, `skills/design-studio/references/iteration.md`.
 
 Spawn agents via your harness subagent mechanism with **per-agent context isolation**. Paths above are repo-root.
 

@@ -1,6 +1,6 @@
 workflow:
   name: design-studio
-  version: 1.0.0
+  version: 1.1.0
   description: >
     4-agent design-evaluate-iterate harness for distinctive frontend creation.
     Separates planning, visual design, implementation, and live evaluation so

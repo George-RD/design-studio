@@ -37,8 +37,8 @@ Standalone: no brand kit required. Planner invents aesthetic direction from the 
 | Lane | Use when | v1 loads | Future leaves (not in this package yet) |
 |------|----------|----------|----------------------------------------|
 | **Studio** | Full design→build→evaluate loop | workflow, planning, generation, agents, iteration, codify assets | — |
-| **Design system** | Codify or extend tokens/DNA/components | codify assets only | `references/tokens-and-theming.md`, `references/component-patterns.md` |
-| **Review** | Audit without full studio loop | none yet (Evaluator only inside Studio) | `references/review/{ai-slop,hierarchy-rhythm,interaction-states,accessibility,polish-pass}.md` (conditional fan-out) |
+| **Design system** | Codify or extend tokens/DNA/components | codify assets only | RESERVED — add leaves under `references/` only when a domain task needs them |
+| **Review** | Audit without full studio loop | none yet (Evaluator only inside Studio) | RESERVED — add leaves under `references/review/` with conditional fan-out when audit-only lands |
 | **Meta** | Improve the harness | `references/meta.md`, `references/rationale.md` | — |
 
 ## Orchestrator checklist (Studio lane)
@@ -54,7 +54,7 @@ Execute `workflow.yaml` end to end. Expand prompts from references only when the
 7. **Codify** — on SHIP or budget exhaust: DesignAgent → `design-system/design-dna.md` (12 sections); Builder → `tokens.css`; Orchestrator instantiates `assets/design-system-skill/` → `design-system/skill/<project>-design/`.
 8. **Finalize** — `report.md` + best iteration; track `harness-output/` on the feature branch.
 
-Agents: Planner, DesignAgent, Builder, Evaluator. Roles and prompts are authoritative in `workflow.yaml`.
+Agents: Planner, DesignAgent, Builder, Evaluator. Roles, step wiring, thresholds, and schemas are authoritative in `workflow.yaml`. DesignAgent/Evaluator system prompts are authoritative in `agents/*.md` (paths in the routing table).
 
 Optional multi-section pages: section decomposition (per-section Design→Implement→Evaluate, then integration). Zone scoring always runs inside Evaluate. Details: `references/evaluation.md`.
 
