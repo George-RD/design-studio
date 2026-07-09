@@ -8,8 +8,9 @@ description: >-
   design agent (visual-only, never sees code), and implementation agent with live browser
   interaction to push past safe AI defaults.
   Triggers: "create a website", "build a page", "design a frontend", "harness mode",
-  "iterate on design", "evaluate the design", "design quality loop".
-version: 1.1.0
+  "iterate on design", "evaluate the design", "design quality loop",
+  "overhaul existing UI", "redesign existing site", "redesign this page".
+version: 1.2.0
 ---
 
 # Design Studio
@@ -30,7 +31,7 @@ A multi-agent harness that produces distinctive frontends by isolating design vi
 | Skill trigger (description match) | Load this INDEX + execute `workflow.yaml` |
 | `/design-studio:create` (`commands/create.md`) | Same: orchestrator + INDEX + `workflow.yaml` |
 
-Standalone: no brand kit required. Planner invents aesthetic direction from the user prompt.
+Standalone: no brand kit required. Greenfield from a text prompt, or overhaul from an existing path/URL plus goals. Planner invents or reframes aesthetic direction from those inputs.
 
 ## Lanes
 
@@ -47,8 +48,8 @@ v1 = Studio loop + codify.
 
 Execute `workflow.yaml` end to end. Expand prompts from references only when the step needs them.
 
-1. **Plan** — write `harness-output/spec.md` + `sprint-contract.md` (creative tension + anti-goals). Load `references/planning.md` if expanding methodology.
-2. **Design** — spawn DesignAgent from `agents/design-agent.md`. Input: screenshots/critique (if any), spec, sprint contract — never code. Output: `design-description-{N}.md`. Iteration 1: three divergent concepts, pick boldest that fits.
+1. **Plan** — write `harness-output/spec.md` + `sprint-contract.md` (creative tension + anti-goals). Load `references/planning.md` if expanding methodology. If overhaul inputs (`existing_site` / `existing_url`) are present, load `references/overhaul.md` and capture baseline before Design.
+2. **Design** — spawn DesignAgent from `agents/design-agent.md`. Input: screenshots/critique (if any), baseline screenshots on overhaul N=1, spec, sprint contract — never code. Output: `design-description-{N}.md`. Iteration 1: three divergent concepts, pick boldest that fits.
 3. **Implement** — spawn Builder with design description + code + `references/generation.md`. Must write `serve.json`, site, and `design-flags-{N}.json`.
 4. **Evaluate** — spawn Evaluator from `agents/evaluator.md`. BOC probe→first adapter; live browser only. Writes `critique-{N}.md` + `scores.json`.
 5. **Decide** — REFINE / PIVOT / SHIP per `workflow.yaml` decision table; narrative in `references/iteration.md`. Thresholds live only in `workflow.yaml` `defaults:`.
@@ -66,6 +67,7 @@ Optional multi-section pages: section decomposition (per-section Design→Implem
 |------|-----------|------|
 | Machine loop, thresholds, schemas | Always (Studio) | `workflow.yaml` |
 | Expand prompt / creative tension | Plan | `references/planning.md` |
+| Overhaul mode (existing UI path/URL) | Plan when `existing_site` or `existing_url` provided | `references/overhaul.md` |
 | DesignAgent system prompt | Spawn design | `agents/design-agent.md` |
 | Builder principles / DESIGN-FLAG | Implement | `references/generation.md` |
 | Evaluator system prompt + BOC + rubric | Spawn evaluate | `agents/evaluator.md` |
@@ -81,6 +83,8 @@ Optional multi-section pages: section decomposition (per-section Design→Implem
 |----------|----|------|
 | `harness-output/spec.md` | Planner | Plan |
 | `harness-output/sprint-contract.md` | Planner | Plan |
+| `harness-output/baseline.md` | Planner / orchestrator | Plan (overhaul) |
+| `harness-output/baseline/*` | Orchestrator | Plan (overhaul screenshots) |
 | `harness-output/design-description-{N}.md` | DesignAgent | Design |
 | `harness-output/serve.json` | Builder | Implement |
 | `harness-output/site/` | Builder | Implement |

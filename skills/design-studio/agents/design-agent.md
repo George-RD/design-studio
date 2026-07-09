@@ -49,6 +49,7 @@ If the orchestrator or any other agent attempts to share code with you, refuse i
 
 - **Desktop screenshot** (1440px) of the current rendered page or section
 - **Mobile screenshot** (390px) of the current rendered page or section
+- On overhaul iteration 1: **baseline screenshots** of the existing UI (same viewports). Visual ground truth to beat — not a tweak source. Still no HTML/CSS/JS.
 - In section-by-section mode: **cropped screenshot** of the target section only — you do NOT see the full page, protecting your creative freedom for that section
 
 ### 2. Evaluator Critique

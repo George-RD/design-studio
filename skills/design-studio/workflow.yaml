@@ -1,6 +1,6 @@
 workflow:
   name: design-studio
-  version: 1.1.0
+  version: 1.2.0
   description: >
     4-agent design-evaluate-iterate harness for distinctive frontend creation.
     Separates planning, visual design, implementation, and live evaluation so
@@ -110,6 +110,18 @@ workflow:
           type: file
           optional: true
           description: Optional brand toolkit or voice/tone guidelines.
+        - name: existing_site
+          type: path
+          optional: true
+          description: Local path to an existing UI tree for overhaul mode.
+        - name: existing_url
+          type: string
+          optional: true
+          description: URL of an existing UI for overhaul baseline capture.
+        - name: overhaul_goals
+          type: string
+          optional: true
+          description: Constraints for overhaul (keep IA, rebrand only, mobile-first, etc.).
       outputs:
         - name: spec
           path: harness-output/spec.md
@@ -145,6 +157,12 @@ workflow:
           optional: true
           condition: N > 1
           description: Desktop + mobile + per-zone captures from the evaluator.
+        - name: baseline_screenshots
+          type: images
+          path: harness-output/baseline/
+          optional: true
+          condition: overhaul baseline present
+          description: Pre-Design desktop/mobile captures of the existing UI (overhaul only). Never source.
         - name: decision
           type: string
           optional: true
@@ -175,7 +193,8 @@ workflow:
         - name: previous_code
           path: harness-output/site/
           optional: true
-          condition: N > 1 and decision != PIVOT
+          condition: (N == 1 and overhaul seed present) or (N > 1 and decision != PIVOT)
+          description: Seeded existing tree on overhaul N=1, or prior iteration site on REFINE.
       outputs:
         - name: site
           path: harness-output/site/
@@ -219,6 +238,8 @@ workflow:
   artifacts:
     spec: harness-output/spec.md
     sprintContract: harness-output/sprint-contract.md
+    baseline: harness-output/baseline.md
+    baselineScreenshots: harness-output/baseline/
     designDescription: harness-output/design-description-{N}.md
     site: harness-output/site/
     serveConfig: harness-output/serve.json
@@ -236,6 +257,9 @@ workflow:
       iteration: 1
       inputs:
         - user_prompt
+        - existing_site
+        - existing_url
+        - overhaul_goals
       context:
         - artifact: brand_brief
           optional: true
@@ -244,21 +268,33 @@ workflow:
 
         The user said: {user_prompt}
 
+        Optional overhaul inputs (may be empty):
+        - existing_site: {existing_site}
+        - existing_url: {existing_url}
+        - overhaul_goals: {overhaul_goals}
+
+        Detect mode: if existing_site or existing_url is present, mode is overhaul; otherwise greenfield.
+        Load references/overhaul.md when mode is overhaul.
+
         Your job is to expand this into a vivid, distinctive product specification.
         Write:
         1. harness-output/spec.md with Purpose & Audience, Aesthetic Direction & Creative Tension, Feature Set (Core/Distinctive/Ambitious), Technical Stack, Expected Zones & Sections, Reference Points, and Anti-Goals.
         2. harness-output/sprint-contract.md with testable success criteria.
+        3. On overhaul only: harness-output/baseline.md recording mode, existing_site/url, overhaul_goals, baseline screenshot paths (or why capture failed), and whether the tree was seeded into harness-output/site/.
 
         Rules:
         - Define a creative tension (e.g., "Brutalist WITH ornamental flourishes"), not just a single aesthetic label.
         - Bias toward distinctive features (animations, spatial experiences, interactive elements).
         - Avoid implementation details (CSS values, exact pixel layouts); specify WHAT and WHY.
         - Anti-goals must be concrete and aggressive.
+        - Overhaul: expand against the existing product intent and goals; anti-goals must reject polishing the current template.
+        - Overhaul: before Design, capture baseline serve + screenshots when possible (seed site, write serve.json, desktop 1440 + mobile 390 under harness-output/baseline/). Never put source files into DesignAgent inputs.
       outputs:
         - harness-output/spec.md
         - harness-output/sprint-contract.md
+        - harness-output/baseline.md
       termination:
-        completed_when: both artifacts are written
+        completed_when: spec and sprint-contract are written (and baseline.md on overhaul)
         next: design
 
     - id: design
@@ -282,6 +318,12 @@ workflow:
           optional: true
           condition: N > 1
           note: Desktop, mobile, and per-zone captures provided by the Evaluator.
+        - artifact: baseline_screenshots
+          type: images
+          path: harness-output/baseline/
+          optional: true
+          condition: overhaul baseline present
+          note: Existing-UI captures for Design iter 1 overhaul. Images only — never source.
         - decision: "{REFINE | PIVOT}"
           optional: true
           condition: N > 1
@@ -292,6 +334,7 @@ workflow:
         Inputs:
         - harness-output/spec.md
         - harness-output/sprint-contract.md
+        - (if overhaul baseline present on N = 1) harness-output/baseline/ screenshots only — never source
         - (if N > 1) the previous design description, evaluator critique, and screenshots
         - (if N > 1) a decision: REFINE the current direction or PIVOT to a new aesthetic
 
@@ -300,7 +343,7 @@ workflow:
         select by checklist (violates no anti-goal, matches no banned-pattern floor, boldest
         that can satisfy the sprint contract), and expand ONLY the winner into the full
         description. Record the two rejected concepts in one line each at the top of
-        design-description-1.md.
+        design-description-1.md. On overhaul, treat baseline screenshots as the thing to beat, not a tweak source.
         On REFINE, revise the design description to address the critique while preserving what worked.
         On PIVOT, invent a fresh aesthetic that differs from ALL previously attempted concepts
         (check the rejected-concepts lines and all prior descriptions).
@@ -335,7 +378,7 @@ workflow:
         - artifact: previous_code
           path: harness-output/site/
           optional: true
-          condition: N > 1 and decision != PIVOT
+          condition: (N == 1 and overhaul seed present) or (N > 1 and decision != PIVOT)
       prompt: |
         You are the Builder (Implementation Agent) for the Design Studio harness.
 
@@ -343,9 +386,11 @@ workflow:
         - harness-output/design-description-{N}.md (the design description you must execute)
         - harness-output/spec.md
         - harness-output/sprint-contract.md
+        - (if N = 1 and overhaul seed present) existing code seeded in harness-output/site/
         - (if N > 1 and decision is REFINE) the existing code in harness-output/site/
 
         Rules:
+        - Overhaul N=1: seed is substrate only; execute the design description faithfully, do not merely tweak the seed. PIVOT still abandons and rebuilds.
         - Translate the design description into working code literally and faithfully.
         - "15vw scale" means 15vw. "Klein Blue bar" means Klein Blue. Do not soften values.
         - If an instruction is impossible, flag it with a DESIGN-FLAG comment and implement the closest possible visual equivalent.
@@ -556,4 +601,5 @@ workflow:
   notes:
     - The workflow defaults to full-page mode. For multi-section pages, set sectionDecomposition: true and run per-section design-implement-evaluate cycles before a final integration pass.
     - The orchestrator must enforce agent isolation: the DesignAgent never sees code, and the Evaluator never sees code.
+    - Overhaul mode feeds baseline renders and product intent to DesignAgent only; existing source is for Builder seed and orchestrator capture, never DesignAgent or Evaluator context.
     - Every iteration must produce a deterministic decision because the decision table is ordered and each rule is testable from harness-output/scores.json.
