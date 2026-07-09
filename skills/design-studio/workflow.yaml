@@ -527,7 +527,7 @@ workflow:
            This is the canonical design-token file; the site references the same values,
            and any repo copy is a vendored consumer synced from this master.
 
-        3. Orchestrator: instantiate templates/design-system-skill/ into
+        3. Orchestrator: instantiate assets/design-system-skill/ into
            harness-output/design-system/skill/<project>-design/ by filling placeholders
            and copying design-dna.md + tokens.css in, producing an installable,
            harness-portable design-system skill.

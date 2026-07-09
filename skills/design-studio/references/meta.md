@@ -15,7 +15,7 @@ The machine-readable iteration loop is now encoded in `../workflow.yaml`. It is 
 When tuning the harness:
 
 - Update `../workflow.yaml` whenever you change thresholds, prompts, agent isolation, or transition logic.
-- Treat `modules/iteration.md` and `../workflow.yaml` as a single source of truth; divergence makes deterministic execution impossible.
+- Treat `iteration.md` and `../workflow.yaml` as a single source of truth; divergence makes deterministic execution impossible.
 - When testing component removal, run the change through the workflow definition to confirm that the orchestration still terminates correctly and that agent boundaries remain intact.
 
 ## Lesson 1: Criteria Wording Steers Generation

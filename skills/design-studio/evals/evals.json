@@ -1,0 +1,42 @@
+{
+  "skill_name": "design-studio",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "create a landing page for a small coffee shop using design studio",
+      "expected_output": "Plan artifacts written; design→implement→evaluate cycle attempted; DesignAgent not given source code; serve.json after implement.",
+      "assertions": [
+        "harness-output/spec.md exists",
+        "harness-output/sprint-contract.md exists",
+        "Design agent context does not include HTML/CSS/JS source files",
+        "After implement, harness-output/serve.json exists with port and path"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "build a multi-section marketing site for a design tool with hero, problem, process, and install sections",
+      "expected_output": "Spec identifies multiple sections or zones; evaluation uses browser automation.",
+      "assertions": [
+        "spec mentions multiple sections or expected zones",
+        "evaluator path uses browser automation not code-only review"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "evaluate the current design at harness-output/site against the sprint contract",
+      "expected_output": "Evaluator produces critique and/or scores without judging from source code.",
+      "assertions": [
+        "critique or scores artifact written",
+        "evaluation does not treat reading HTML/CSS as the scoring basis"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "write CSS for a centered hero with three feature cards",
+      "expected_output": "Near-miss: should not start the full 4-agent studio loop as a pure CSS tweak.",
+      "assertions": [
+        "skill either does not activate or agent does not start full 4-agent loop"
+      ]
+    }
+  ]
+}
