@@ -26,6 +26,7 @@ You are the **harness orchestrator**. Run the full design→build→evaluate loo
 - **Overhaul:** `--overhaul <path-or-url> [--goals <constraints>] <prompt>`
   - Map path → Plan input `existing_site`; URL → `existing_url`; `--goals` → `overhaul_goals`; remainder → `user_prompt`.
   - Skill-trigger prose that names an existing path/URL counts as overhaul the same way.
+  - If `$ARGUMENTS` is clearly audit/polish-only with no create/overhaul intent, stop and direct the orchestrator to the Review lane (`skills/design-studio/references/review/polish.md` or `/design-studio:review`) instead of starting `workflow.yaml`.
 
 ## Execute
 

@@ -191,7 +191,7 @@ The installable INDEX (`../SKILL.md`) describes what Design Studio does **today*
 When a concrete task needs a new leaf:
 
 - **Design-system domain leaves** go under `references/<domain>.md` and get one routing-table row with a when-clause.
-- **Audit-only Review leaves** go under `references/review/<name>.md` and get one routing-table row — only when an audit-only product path actually lands.
+- **Audit-only Review leaves** live at `references/review/<name>.md` and are routed from INDEX when present (e.g. the Review lane's slop, hierarchy, interaction, and a11y lenses).
 
 Until then: keep two-hop architecture in code (INDEX routes → real leaves), but leave parking spots off the hot path. Extension rules for maintainers live in the INDEX Extending section and here; users should only see present-tense coverage.
 
