@@ -34,12 +34,14 @@ Standalone: no brand kit required. Planner invents aesthetic direction from the 
 
 ## Lanes
 
-| Lane | Use when | v1 loads | Future leaves (not in this package yet) |
-|------|----------|----------|----------------------------------------|
-| **Studio** | Full design→build→evaluate loop | workflow, planning, generation, agents, iteration, codify assets | — |
-| **Design system** | Codify or extend tokens/DNA/components | codify assets only | RESERVED — add leaves under `references/` only when a domain task needs them |
-| **Review** | Audit without full studio loop | none yet (Evaluator only inside Studio) | RESERVED — add leaves under `references/review/` with conditional fan-out when audit-only lands |
-| **Meta** | Improve the harness | `references/meta.md`, `references/rationale.md` | — |
+| Lane | Use when | v1 loads |
+|------|----------|----------|
+| **Studio** | Full design→build→evaluate loop | workflow, planning, generation, agents, iteration, codify assets |
+| **Design system** | Codify or extend tokens/DNA/components | codify assets only |
+| **Review** | Audit without full studio loop | Evaluator only, inside Studio loop |
+| **Meta** | Improve the harness | `references/meta.md`, `references/rationale.md` |
+
+v1 = Studio loop + codify.
 
 ## Orchestrator checklist (Studio lane)
 
@@ -72,8 +74,6 @@ Optional multi-section pages: section decomposition (per-section Design→Implem
 | Instantiate design-system skill | Codify | `assets/design-system-skill/` |
 | Why isolation / research | User asks why | `references/rationale.md` |
 | Tune harness | Meta lane | `references/meta.md` |
-| Future design-system leaves | Domain task (reserved) | `references/<domain>.md` |
-| Future review leaves | Audit-only (reserved) | `references/review/<name>.md` |
 
 ## Artifacts
 
@@ -102,9 +102,11 @@ Track `harness-output/` in VCS on feature branches (not `.gitignore`). Commit af
 
 Portability: `workflow.yaml` `capabilities:` + `schemas:` are the host contract. Model names, `/loop`, and Agent tool are labeled examples elsewhere, not requirements.
 
-## Extending (single entry point)
+## Extending (maintainers)
 
-- New capability = one leaf under `references/` (or `references/review/`) + **one** routing-table row with a when-clause.
+Maintainer-only. End users do not need this section to run Studio.
+
+- New capability = one leaf under `references/` + **one** routing-table row with a when-clause.
 - Do **not** add a second always-on skill for “design”.
 - Do **not** instruct “read all of `references/`”.
 - Do **not** embed catalogs of every leaf procedure in this INDEX.
