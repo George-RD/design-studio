@@ -74,6 +74,10 @@ All the work is saved in a folder called `harness-output/`. The final design sys
 | Command | What It Does |
 |---------|-------------|
 | `/design-studio:create <your prompt>` | Run the full design loop |
+| `/design-studio:review <path-or-url>` | Audit/polish an existing UI without the full loop |
+
+
+Design Studio has two lanes: **Studio** runs the create/overhaul loop, **Review** audits and polishes an existing UI without it.
 
 ## How Scoring Works
 

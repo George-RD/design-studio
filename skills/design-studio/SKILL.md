@@ -9,8 +9,10 @@ description: >-
   interaction to push past safe AI defaults.
   Triggers: "create a website", "build a page", "design a frontend", "harness mode",
   "iterate on design", "evaluate the design", "design quality loop",
-  "overhaul existing UI", "redesign existing site", "redesign this page".
-version: 1.2.0
+  "overhaul existing UI", "redesign existing site", "redesign this page",
+  "audit this UI", "polish this page", "design review", "slop check",
+  "accessibility audit", "hierarchy review", "ship-ready polish".
+version: 1.3.0
 ---
 
 # Design Studio
@@ -28,21 +30,39 @@ A multi-agent harness that produces distinctive frontends by isolating design vi
 
 | Entry | Means |
 |-------|--------|
-| Skill trigger (description match) | Load this INDEX + execute `workflow.yaml` |
-| `/design-studio:create` (`commands/create.md`) | Same: orchestrator + INDEX + `workflow.yaml` |
+| Skill trigger (description match) | Load this INDEX + dispatch by intent (see Intent dispatch) |
+| `/design-studio:create` (`commands/create.md`) | Orchestrator + INDEX + `workflow.yaml` (Studio lane) |
+| `/design-studio:review` (`commands/review.md`) | Orchestrator + INDEX + Review lane only (`references/review/polish.md`) |
 
 Standalone: no brand kit required. Greenfield from a text prompt, or overhaul from an existing path/URL plus goals. Planner invents or reframes aesthetic direction from those inputs.
 
 ## Lanes
 
-| Lane | Use when | v1 loads |
-|------|----------|----------|
-| **Studio** | Full design→build→evaluate loop | workflow, planning, generation, agents, iteration, codify assets |
-| **Design system** | Codify or extend tokens/DNA/components | codify assets only |
-| **Review** | Audit without full studio loop | Evaluator only, inside Studio loop |
+| Lane | Use when | Loads |
+|------|----------|-------|
+| **Studio** | Full design→build→evaluate loop (greenfield or overhaul) | `workflow.yaml`, planning, generation, agents, iteration, codify assets |
+| **Design system** | Codify or extend tokens/DNA after SHIP (or codify-only request) | codify assets only |
+| **Review** | Audit/polish **without** full Studio loop | `references/review/polish.md` (+ conditional lens leaves) |
 | **Meta** | Improve the harness | `references/meta.md`, `references/rationale.md` |
 
-v1 = Studio loop + codify.
+Studio + Review + codify. Design system extract-without-loop leaves are not shipped yet.
+
+## Intent dispatch
+
+| User intent signals | Lane |
+|---|---|
+| create / build / design a new UI / run the harness loop | **Studio** (greenfield) |
+| redesign / overhaul + existing path or URL | **Studio** + `references/overhaul.md` |
+| audit / polish / review / slop / a11y / hierarchy / ship-ready / score my current site **without** redesign | **Review** → load `references/review/polish.md` |
+| extract tokens / write DNA only / codify after ship | **Design system** (existing codify path) |
+| improve the harness itself | **Meta** |
+
+Tie-breakers:
+
+- Path/URL present **and** verbs are polish/audit/review only → **Review** (not overhaul).
+- Path/URL present **and** verbs are redesign/overhaul/rebuild or goals include "raise originality / rebrand / new direction" → **Studio** overhaul.
+- Both signals mixed ("audit then redesign") → run **Review** first only if user asked for a report before rebuild; otherwise **Studio** overhaul. If still ambiguous, ask one clarifying question (Review-only vs full overhaul) — do not silently start the 4-agent loop for pure polish language.
+- Near-miss pure CSS tweak without design-quality ask → do not start Studio (existing eval id 4 spirit); Review only if they asked to audit.
 
 ## Orchestrator checklist (Studio lane)
 
@@ -61,6 +81,19 @@ Agents: Planner, DesignAgent, Builder, Evaluator. Roles, step wiring, thresholds
 
 Optional multi-section pages: section decomposition (per-section Design→Implement→Evaluate, then integration). Zone scoring always runs inside Evaluate. Details: `references/evaluation.md`.
 
+## Orchestrator checklist (Review lane)
+
+Execute `references/review/polish.md` only. Do **not** run `workflow.yaml` or the Studio loop.
+
+1. **Load** — read `references/review/polish.md` (umbrella procedure).
+2. **Classify surface** — `static` (marketing/content, links only) or `interactive` (forms, states, modals, app UI).
+3. **Conditional lenses** — always load `slop.md` + `hierarchy.md`; if `interactive` or user asked states/a11y, also load `interaction.md` + `a11y.md`.
+4. **Browser (BOC)** — probe → first available adapter; HALT only if no browser automation. Ground findings in live screenshots, never code-only.
+5. **Fan-out** — spawn one subagent per loaded lens with screenshots + surface description + the lens file body; collect every issue with severity + confidence.
+6. **Aggregate** — merge/dedupe; bucket Blockers / Quality / Polish recommendations.
+7. **Act** — default: fix all Blockers + Quality on the target; `report_only` true: write findings only.
+8. **Write artifacts** — `harness-output/review/report.md`, `harness-output/review/findings.json`, `harness-output/review/screenshots/*`.
+
 ## Routing table
 
 | Need | Load when | Path |
@@ -76,6 +109,11 @@ Optional multi-section pages: section decomposition (per-section Design→Implem
 | Instantiate design-system skill | Codify | `assets/design-system-skill/` |
 | Why isolation / research | User asks why | `references/rationale.md` |
 | Tune harness | Meta lane | `references/meta.md` |
+| Review umbrella (audit/polish, no Studio loop) | Review lane | `references/review/polish.md` |
+| AI slop lens | Review, always under polish | `references/review/slop.md` |
+| Hierarchy & rhythm lens | Review, always under polish | `references/review/hierarchy.md` |
+| Interaction states lens | Review when surface is interactive or user asks states | `references/review/interaction.md` |
+| Accessibility lens | Review when surface is interactive or user asks a11y | `references/review/a11y.md` |
 
 ## Artifacts
 
@@ -95,6 +133,9 @@ Optional multi-section pages: section decomposition (per-section Design→Implem
 | `harness-output/design-system/tokens.css` | Builder | Codify |
 | `harness-output/design-system/skill/<project>-design/` | Orchestrator | Codify |
 | `harness-output/report.md` | Orchestrator | Finalize |
+| `harness-output/review/report.md` | Orchestrator / Review | Review |
+| `harness-output/review/findings.json` | Orchestrator / Review | Review |
+| `harness-output/review/screenshots/*` | Orchestrator / Review | Review |
 
 Track `harness-output/` in VCS on feature branches (not `.gitignore`). Commit after each iteration so artifacts survive branch switches.
 

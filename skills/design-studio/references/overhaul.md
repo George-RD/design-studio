@@ -9,6 +9,7 @@ Full procedure lives here. INDEX routes here when overhaul inputs are present.
 Use overhaul when the user provides an existing UI **path** and/or **URL** plus goals (keep IA, rebrand, raise originality, mobile-first, etc.).
 
 Use greenfield when there is only a text prompt (optional brand brief) and no existing site.
+  - If the user wants **audit/polish only** (no redesign), use the **Review** lane (`references/review/polish.md`) — not overhaul.
 
 ## Inputs
 

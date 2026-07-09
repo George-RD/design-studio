@@ -38,5 +38,25 @@
         "skill either does not activate or agent does not start full 4-agent loop"
       ]
     }
+    ,
+    {
+      "id": 5,
+      "prompt": "polish this landing page at harness-output/site — audit only, no redesign",
+      "expected_output": "Review lane; loads polish; does not start Plan/Design/Builder loop; writes harness-output/review/report.md.",
+      "assertions": [
+        "harness-output/review/report.md exists",
+        "no requirement that design-description-*.md be newly created for this run",
+        "workflow full loop not started"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "overhaul the site at ./site — raise originality, keep IA",
+      "expected_output": "Studio overhaul, not Review-only.",
+      "assertions": [
+        "overhaul/plan path engaged (baseline or overhaul leaf / studio loop)",
+        "not review-only termination"
+      ]
+    }
   ]
 }
