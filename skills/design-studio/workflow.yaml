@@ -292,7 +292,9 @@ workflow:
       outputs:
         - harness-output/spec.md
         - harness-output/sprint-contract.md
-        - harness-output/baseline.md
+        - path: harness-output/baseline.md
+          optional: true
+          condition: overhaul (existing_site or existing_url present)
       termination:
         completed_when: spec and sprint-contract are written (and baseline.md on overhaul)
         next: design
