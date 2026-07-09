@@ -2,7 +2,7 @@
 
 The scoring rubric, live evaluation protocol, zone-based evaluation system, adversarial testing gate, and common evaluator failure modes.
 
-> **Sync note:** The scoring rubric, calibration anchors, gate checks, Browser Operations Contract, and failure modes in this module mirror those in `agents/evaluator.md`. This duplication is intentional — the evaluator agent runs in isolation and needs self-contained scoring context, while this module gives the orchestrator the same information for decision-making. **Keep both files in sync when editing scoring criteria.**
+> **Sync note:** The scoring rubric, calibration anchors, gate checks, Browser Operations Contract, and failure modes in this module mirror those in `../agents/evaluator.md`. This duplication is intentional — the evaluator agent runs in isolation and needs self-contained scoring context, while this module gives the orchestrator the same information for decision-making. **Keep both files in sync when editing scoring criteria.**
 
 ## Why Separated Evaluation
 

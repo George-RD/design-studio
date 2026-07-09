@@ -1,6 +1,6 @@
 {
   "name": "design-studio",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "4-agent design-evaluate-iterate harness for distinctive frontend creation that defeats code-anchoring bias. Produces a reusable design system (design-dna.md + tokens.css + skill template) and runs on any harness with portable browser automation and subagent support.",
   "author": { "name": "Design Studio" },
   "keywords": [

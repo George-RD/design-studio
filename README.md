@@ -36,7 +36,7 @@ Each round makes the design better. The evaluator checks each section of the pag
 ## What You Need
 
 - **Primary path:** Claude Code installed and logged in, with a way to open pages in a real browser (Claude Code's claude-in-chrome MCP, or another browser tool).
-- **Portable path:** Any agent harness that can run the workflow file and the helper agent prompts in `agents/`. That includes OMP, Codex, Cursor, and similar tools. You just need a browser tool and a way to run helper agents.
+- **Portable path:** Any agent harness that can run `skills/design-studio/workflow.yaml` and the full helper prompts under `skills/design-studio/agents/` (plugin-root `agents/` files are discovery stubs only). That includes OMP, Codex, Cursor, and similar tools. You just need a browser tool and a way to run helper agents.
 
 ## Install
 
