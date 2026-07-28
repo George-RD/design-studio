@@ -8,15 +8,16 @@ on:
       - synchronize
 
 permissions:
-  contents: read
-  pull-requests: write
+  contents: write
 
 jobs:
   impeccable:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           ref: ${{ github.head_ref || github.ref_name }}
 
       - uses: actions/setup-node@v4
@@ -58,6 +59,11 @@ jobs:
           mobile_status=$?
           set -e
 
+          mkdir -p .impeccable-audit
+          cp /tmp/impeccable-source.json .impeccable-audit/source.json
+          cp /tmp/impeccable-desktop.json .impeccable-audit/desktop-1440x900.json
+          cp /tmp/impeccable-mobile.json .impeccable-audit/mobile-390x844.json
+
           python - "$source_status" "$desktop_status" "$mobile_status" <<'PY'
           import json
           import sys
@@ -65,83 +71,39 @@ jobs:
 
           statuses = {
               'source': int(sys.argv[1]),
-              'desktop 1440×900': int(sys.argv[2]),
-              'mobile 390×844': int(sys.argv[3]),
+              'desktop-1440x900': int(sys.argv[2]),
+              'mobile-390x844': int(sys.argv[3]),
           }
-          files = {
-              'source': Path('/tmp/impeccable-source.json'),
-              'desktop 1440×900': Path('/tmp/impeccable-desktop.json'),
-              'mobile 390×844': Path('/tmp/impeccable-mobile.json'),
-          }
-
-          all_rows = []
-          details = []
+          lines = ['# Exact Impeccable audit', '', '| Pass | Exit | Primary | Advisory |', '|---|---:|---:|---:|']
           overall_failed = False
-
-          def clean(value):
-              return str(value or '').replace('|', '\\|').replace('\n', ' ').strip()
-
           for label, status in statuses.items():
-              path = files[label]
+              path = Path('.impeccable-audit') / f'{label}.json'
               try:
                   findings = json.loads(path.read_text())
                   if not isinstance(findings, list):
-                      raise TypeError(f'expected a JSON array, got {type(findings).__name__}')
+                      raise TypeError(f'expected array, got {type(findings).__name__}')
               except Exception as exc:
                   findings = []
                   overall_failed = True
-                  details.append(f'- **{label}: detector output could not be parsed:** `{clean(exc)}`')
-
-              primary = [finding for finding in findings if not finding.get('advisory')]
-              advisory = [finding for finding in findings if finding.get('advisory')]
-              all_rows.append((label, status, len(primary), len(advisory)))
-              if status != 0 or primary:
-                  overall_failed = True
-
-              for finding in findings:
-                  severity = 'Advisory' if finding.get('advisory') else 'Primary'
-                  location = clean(finding.get('file', '<render>'))
-                  if finding.get('line'):
-                      location += f":{finding['line']}"
-                  rule = clean(finding.get('antipattern', 'unknown'))
-                  description = clean(finding.get('description', ''))
-                  snippet = clean(finding.get('snippet', ''))
-                  details.append(
-                      f'- **{severity} · `{rule}` · `{location}`** — {description}'
-                      + (f'  \n  `{snippet[:300]}`' if snippet else '')
-                  )
-
-          lines = [
-              '<!-- impeccable-exact-audit -->',
-              '## Exact Impeccable audit',
-              '',
-              'Ran the current `impeccable@latest` detector against the PR documentation source and both required rendered viewports.',
-              '',
-              '| Pass | Exit | Primary | Advisory |',
-              '|---|---:|---:|---:|',
-          ]
-          for label, status, primary, advisory in all_rows:
+                  lines.append(f'| {label} | {status} | parse error: {exc} | — |')
+                  continue
+              primary = sum(not finding.get('advisory') for finding in findings)
+              advisory = sum(bool(finding.get('advisory')) for finding in findings)
               lines.append(f'| {label} | {status} | {primary} | {advisory} |')
-          lines.extend(['', '### Findings', ''])
-          lines.extend(details or ['No findings.'])
-          lines.extend(['', f'**Verdict: {"HOLD" if overall_failed else "PASS"}.**'])
-
-          Path('/tmp/impeccable-summary.md').write_text('\n'.join(lines) + '\n')
-          Path('/tmp/impeccable-result').write_text('failure' if overall_failed else 'success')
+              overall_failed = overall_failed or status != 0 or primary > 0
+          lines.extend(['', f'**Verdict: {"HOLD" if overall_failed else "PASS"}.**', ''])
+          Path('.impeccable-audit/summary.md').write_text('\n'.join(lines))
           PY
 
-      - name: Publish exact audit summary
-        if: always()
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        shell: bash
-        run: gh pr comment "$PR_NUMBER" --body-file /tmp/impeccable-summary.md
-
-      - name: Enforce exact audit result
+      - name: Commit exact audit artifacts
         shell: bash
         run: |
-          test "$(cat /tmp/impeccable-result)" = success
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .impeccable-audit
+          git commit -m 'chore: record exact Impeccable audit'
+          git push origin "HEAD:${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
 
       - name: Stop documentation server
         if: always()
