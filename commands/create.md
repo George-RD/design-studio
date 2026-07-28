@@ -24,7 +24,7 @@ Parse `$ARGUMENTS` into:
 - `existing_site`: local path after `--overhaul`, when present.
 - `existing_url`: URL after `--overhaul`, when present.
 - `overhaul_goals`: text after `--goals`, when present.
-- `budget_override`: `quick`, `standard`, `ambitious`, or an explicit positive integer after `--budget`.
+- `budget_override`: `quick`, `standard`, `ambitious`, or an explicit integer after `--budget`; the workflow clamps it to the supported range.
 
 Rules:
 
