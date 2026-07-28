@@ -5,12 +5,13 @@
     {
       "id": 1,
       "prompt": "Create a landing page for a small coffee shop using Design Studio.",
-      "expected_output": "Studio loads or creates product/surface context, explores three directions, records selection, builds into an immutable iteration and attempts mechanical plus visual evaluation.",
+      "expected_output": "Studio loads or creates product and surface context, explores three directions, records selection, builds into an immutable iteration and attempts mechanical plus visual evaluation.",
       "assertions": [
         "run.json, spec.md, sprint-contract.md and surface-brief.md exist under one run ID",
         "Visual Director context contains no source files",
         "directions.md contains exactly three unranked viable candidates",
         "direction-selection.json records selectedId, method and seed",
+        "selected-direction.md records the chosen source-free visual summary",
         "iteration 1 has site, serve.json and design-flags.json"
       ]
     },
@@ -30,9 +31,9 @@
       "prompt": "Evaluate the current Design Studio iteration.",
       "expected_output": "Evaluator uses the browser, writes observation and critique, and does not decide workflow state.",
       "assertions": [
-        "observation.json contains interactionEvidence, zones, scores and actualViewports",
+        "observation.json contains status, interactionEvidence, zones, scores and actualViewports",
         "observation.json contains no decision, recommendation or trend",
-        "Evaluator context excludes source, design-description and prior scores",
+        "Evaluator context excludes source, design-description, selected-direction and prior scores",
         "Orchestrator writes any REFINE/PIVOT/SHIP/HALT record separately"
       ]
     },
@@ -51,7 +52,7 @@
       "expected_output": "Review runs mechanical preflight and browser-grounded conditional lenses, then writes a readiness report without Studio decisions.",
       "assertions": [
         "harness-output/review/report.md exists",
-        "mechanical-findings.json exists",
+        "harness-output/review/mechanical-findings.json exists",
         "no new design-description is required",
         "report contains ready, ready_with_nits, hold or unverified",
         "report contains no REFINE, PIVOT or SHIP"
@@ -60,21 +61,23 @@
     {
       "id": 6,
       "prompt": "Review ./site, but no browser automation is connected.",
-      "expected_output": "Mechanical evidence is retained and visual readiness remains explicitly unverified.",
+      "expected_output": "Mechanical evidence is retained and visual readiness remains explicitly unverified in the Review lane.",
       "assertions": [
         "mechanical preflight is attempted",
-        "observation status is unevaluated",
-        "scores and weightedAverage are null",
-        "run halts with browser-unavailable",
+        "harness-output/review/report.md exists",
+        "report verdict is unverified",
+        "visual_status is unverified",
+        "no Studio observation, scores record or HALT decision is required",
         "no visual score is fabricated"
       ]
     },
     {
       "id": 7,
       "prompt": "Run three iterations and refine after each evaluation.",
-      "expected_output": "Each iteration has a separate immutable directory and completed earlier iterations remain unchanged.",
+      "expected_output": "Each iteration has a separate immutable directory; refinement carries the selected direction metadata forward without modifying earlier iterations.",
       "assertions": [
         "iterations/1, iterations/2 and iterations/3 each retain their own site and artifacts",
+        "each refined iteration has its own copied direction-selection.json and inherited directions.md when applicable",
         "top-level harness-output/site is not used as mutable iteration state",
         "no agent self-commit is requested"
       ]
@@ -87,16 +90,18 @@
         "all three candidates are viable and unranked",
         "selection method is deterministic-seed",
         "seed and selectedId are recorded",
+        "no question is asked even when a structured question mechanism exists",
         "replaying the same run ID and prompt chooses the same candidate"
       ]
     },
     {
       "id": 9,
-      "prompt": "Iteration 2 scores higher than iteration 4. Finish the run.",
+      "prompt": "Iterations 2 and 4 are in the same eligible selection tier, but iteration 2 ranks higher. Finish the run.",
       "expected_output": "Final selection recovers iteration 2 from immutable artifacts and does not assume latest equals best.",
       "assertions": [
         "bestIteration is 2",
         "finish/selected-site is copied from iterations/2/site",
+        "finish/selected-serve.json targets finish/selected-site",
         "iterations/2 remains unchanged",
         "report explains why the selected iteration is not latest"
       ]
@@ -129,7 +134,7 @@
       "assertions": [
         "no fifth build is started",
         "terminationReason is budget-exhausted",
-        "finalStatus is best_available unless quality floors were met",
+        "finalStatus is best_available unless the accepted final tree has evidence for every floor",
         "open finish findings remain in the report"
       ]
     },
@@ -140,6 +145,7 @@
       "assertions": [
         "finish correction rounds do not exceed one by default",
         "each original finding is resolved, partial or unresolved",
+        "post-correction scores and materialRegression are recorded",
         "unresolved findings are reported rather than hidden",
         "direction selection is not reopened"
       ]
@@ -147,9 +153,10 @@
     {
       "id": 14,
       "prompt": "Validate the Design Studio plugin version metadata.",
-      "expected_output": "Plugin, skill, workflow and eval versions agree.",
+      "expected_output": "Plugin, marketplace, skill, workflow and eval versions agree.",
       "assertions": [
         ".claude-plugin/plugin.json version is 1.4.0",
+        ".claude-plugin/marketplace.json plugin version is 1.4.0",
         "SKILL.md version is 1.4.0",
         "workflow.yaml version is 1.4.0",
         "evals.json version is 1.4.0"
@@ -164,6 +171,7 @@
         "direction-selection method is pinned-brief",
         "candidateIds contains only the pinned direction",
         "seed is null",
+        "selected-direction.md records the pinned source-free summary",
         "no originality-driven pivot replaces the pinned direction"
       ]
     },
@@ -177,6 +185,61 @@
         "harness-output/site is copied from selected-site, not corrected-site",
         "finalStatus is complete-with-open-items",
         "report names the regression or unresolved acceptance condition"
+      ]
+    },
+    {
+      "id": 17,
+      "prompt": "Run with --budget 0.",
+      "expected_output": "The explicit numeric iteration budget is clamped to the supported minimum before run.json is written.",
+      "assertions": [
+        "budgetClass is explicit",
+        "iterationBudget is 1",
+        "run.json satisfies the declared minimum",
+        "pivotBudget uses the explicit default"
+      ]
+    },
+    {
+      "id": 18,
+      "prompt": "Iteration 1 scores 10/10/10/1 and iteration 2 scores 7/7/7/7; both are mechanically clean. Finish the run.",
+      "expected_output": "The floor-passing iteration is selected before a higher weighted-average iteration with catastrophic Functionality.",
+      "assertions": [
+        "iteration 2 is in tier 1 and iteration 1 is not",
+        "finish/selection.json selects iteration 2",
+        "selection does not rank weightedAverage across different tiers",
+        "finalStatus can remain quality-floor-met"
+      ]
+    },
+    {
+      "id": 19,
+      "prompt": "The selected build uses a non-default working directory and the finish correction changes its copied tree.",
+      "expected_output": "The correction is served and checked from corrected-site rather than accidentally reusing the selected iteration URL.",
+      "assertions": [
+        "finish/corrected-serve.json exists",
+        "its working directory or site root targets finish/corrected-site",
+        "the corrected serve contract is validated before mechanical and visual checks",
+        "the original iteration serve.json remains unchanged"
+      ]
+    },
+    {
+      "id": 20,
+      "prompt": "Run the fresh finish review and assess fidelity to the chosen direction.",
+      "expected_output": "The finish reviewer receives the source-free selected direction summary without receiving the full design description or implementation history.",
+      "assertions": [
+        "selected-direction.md is an explicit finish-review input",
+        "design-description.md remains excluded",
+        "prior scores and critiques remain excluded",
+        "fidelity findings cite visible evidence"
+      ]
+    },
+    {
+      "id": 21,
+      "prompt": "Review ./site when desktop reaches 1440px but mobile emulation remains at 412px.",
+      "expected_output": "Review preserves the partial evidence but returns unverified because both required viewports were not reached.",
+      "assertions": [
+        "actual desktop and mobile widths are recorded",
+        "the 412px screenshot is not labeled 390px",
+        "visual_status is unverified",
+        "no ready, ready_with_nits or hold verdict is produced from a single required viewport"
       ]
     }
   ]
