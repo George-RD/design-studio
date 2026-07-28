@@ -92,13 +92,13 @@ harness-output/
 │   ├── spec.md
 │   ├── sprint-contract.md
 │   ├── surface-brief.md
-│   ├── selected-direction.md
 │   ├── baseline/                         # overhaul only
 │   ├── scores.json
 │   ├── iterations/<n>/
 │   │   ├── direction/
 │   │   │   ├── directions.md             # omitted for an exact pinned direction
 │   │   │   ├── direction-selection.json
+│   │   │   ├── selected-direction.md
 │   │   │   └── design-description.md
 │   │   ├── site/
 │   │   ├── serve.json
@@ -111,6 +111,7 @@ harness-output/
 │       ├── selection.json
 │       ├── selected-site/
 │       ├── selected-serve.json
+│       ├── selected-direction.md
 │       ├── corrected-site/               # only when the bounded correction runs
 │       ├── corrected-serve.json           # only when the bounded correction runs
 │       ├── correction-verdict.json        # only when the bounded correction runs
@@ -123,7 +124,7 @@ harness-output/
     └── skill/<project>-design/
 ```
 
-Completed iteration directories are immutable. A refinement creates a new iteration and copies the selected direction metadata forward. A pivot creates a new iteration with a new direction tournament. The final site is copied from the accepted finish tree; a correction cannot replace the selected build merely because its directory exists.
+Completed iteration directories are immutable. A refinement creates a new iteration and copies the selected direction metadata forward. A pivot creates a new iteration with a new direction tournament. Final selection copies the winning iteration’s own direction summary into the finish artifacts before review, so an earlier pre-pivot winner is never judged against a later pivot. The final site is copied from the accepted finish tree; a correction cannot replace the selected build merely because its directory exists.
 
 ## Optional Impeccable integration
 
