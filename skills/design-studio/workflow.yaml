@@ -10,10 +10,11 @@ workflow:
     - Visual Director and Evaluator never receive source code.
     - Evaluator never receives the full design description, design flags, prior scores or implementation effort.
     - Evaluator writes observations and scores only; Orchestrator writes workflow decisions.
-    - Every iteration directory is immutable after evaluation.
+    - Every completed iteration directory is immutable.
     - No agent self-commits. Version-control actions belong to the calling harness or user.
     - Mechanical findings cannot award Design Quality or Originality.
-    - No visual decision is made when the requested browser viewports were not actually reached.
+    - No visual decision is made when either required browser viewport was not actually reached.
+    - A finish correction can replace the selected build only after evidence proves it did not regress.
 
   capabilities:
     required:
@@ -33,6 +34,7 @@ workflow:
       quick: 2
       standard: 4
       ambitious: 6
+    explicitBudgetMinimum: 1
     explicitBudgetMaximum: 8
     pivotBudget:
       quick: 0
@@ -59,6 +61,7 @@ workflow:
     spec: harness-output/runs/{runId}/spec.md
     sprintContract: harness-output/runs/{runId}/sprint-contract.md
     surfaceBrief: harness-output/runs/{runId}/surface-brief.md
+    selectedDirection: harness-output/runs/{runId}/selected-direction.md
     baseline: harness-output/runs/{runId}/baseline/
     scores: harness-output/runs/{runId}/scores.json
     iterationRoot: harness-output/runs/{runId}/iterations/{N}
@@ -73,6 +76,12 @@ workflow:
     observation: harness-output/runs/{runId}/iterations/{N}/observation.json
     critique: harness-output/runs/{runId}/iterations/{N}/critique.md
     finishRoot: harness-output/runs/{runId}/finish/
+    finishSelection: harness-output/runs/{runId}/finish/selection.json
+    finishSelectedSite: harness-output/runs/{runId}/finish/selected-site/
+    finishSelectedServeConfig: harness-output/runs/{runId}/finish/selected-serve.json
+    finishCorrectedSite: harness-output/runs/{runId}/finish/corrected-site/
+    finishCorrectedServeConfig: harness-output/runs/{runId}/finish/corrected-serve.json
+    finishFinalTree: harness-output/runs/{runId}/finish/final-tree.json
     compatibilitySite: harness-output/site/
     designDna: harness-output/design-system/design-dna.md
     tokens: harness-output/design-system/tokens.css
@@ -82,7 +91,16 @@ workflow:
   schemas:
     runManifest:
       type: object
-      required: [runId, status, mode, budgetClass, iterationBudget, pivotBudget, currentIteration, pivotsUsed, correctionRoundsUsed]
+      required:
+        - runId
+        - status
+        - mode
+        - budgetClass
+        - iterationBudget
+        - pivotBudget
+        - currentIteration
+        - pivotsUsed
+        - correctionRoundsUsed
       properties:
         runId: { type: string }
         status: { enum: [initialising, running, halted, complete] }
@@ -192,6 +210,31 @@ workflow:
               scores: { type: 'null' }
               weightedAverage: { type: 'null' }
 
+    correctionVerdict:
+      type: object
+      required:
+        - findingResults
+        - actualViewports
+        - postCorrectionScores
+        - weightedAverage
+        - materialRegression
+      properties:
+        findingResults:
+          type: array
+          items:
+            type: object
+            required: [findingId, status, evidence]
+            properties:
+              findingId: { type: string }
+              status: { enum: [resolved, partial, unresolved] }
+              evidence: { type: string }
+        actualViewports: { type: object }
+        postCorrectionScores:
+          type: object
+          required: [designQuality, originality, craft, functionality]
+        weightedAverage: { type: number }
+        materialRegression: { type: boolean }
+
     scores:
       type: object
       required: [iterations, decisions, bestIteration]
@@ -247,7 +290,7 @@ workflow:
         - design-flags evidence
       neverOwns:
         - replacing the selected visual direction
-        - overwriting earlier iterations
+        - overwriting completed iterations
         - version-control actions
 
     Evaluator:
@@ -286,8 +329,9 @@ workflow:
         - Create the run root without reusing a previous run directory.
         - Resolve mode as overhaul when an existing path or URL is present; otherwise greenfield.
         - Load references/context.md and inspect existing PRODUCT.md, DESIGN.md, product docs, routes, assets and runnable commands before asking questions.
-        - Resolve budget class, numeric budget and pivot budget; cap explicit iteration budgets at defaults.explicitBudgetMaximum and use defaults.pivotBudget.explicit.
-        - Write run.json with status initialising, the resolved pivotBudget, pivotsUsed 0 and correctionRoundsUsed 0; write scores.json with empty iterations and decisions.
+        - Resolve budget class, numeric budget and pivot budget; clamp an explicit numeric iteration budget to [defaults.explicitBudgetMinimum, defaults.explicitBudgetMaximum] and use defaults.pivotBudget.explicit.
+        - Write run.json with status initialising, currentIteration 1, the resolved pivotBudget, pivotsUsed 0, correctionRoundsUsed 0 and finalStatus pending.
+        - Write scores.json with empty iterations and decisions.
       outputs: [runManifest, scores]
       next: plan
 
@@ -345,9 +389,10 @@ workflow:
           action: Derive a stable seed from runId plus prompt hash, map it to one of the three candidates and record method deterministic-seed.
       actions:
         - Record candidate IDs, selected ID, method and seed in direction-selection.json.
+        - Write selected-direction.md with the selected candidate's thesis, visual world, first viewport, visitor path, responsive intent, signature moment, anti-goals and explicit risk; exclude source and implementation instructions.
         - Never ask a question after an explicit unattended or no-question request, even when a question mechanism exists.
         - Never use the Visual Director's private preference as the selection rule.
-      outputs: [directionSelection]
+      outputs: [directionSelection, selectedDirection]
       next: direct
 
     - id: direct
@@ -380,7 +425,7 @@ workflow:
         behaviour. Add semantic structure, keyboard operation, focus, loading, empty, error and disabled
         states where the surface needs them. Do not add decorative concepts not present in the direction.
         Record every material instruction in design-flags.json with implemented, equivalent or blocked
-        status. Write serve.json. Do not commit and do not modify earlier iterations.
+        status. Write serve.json. Do not commit and do not modify completed iterations.
       outputs: [site, serveConfig, designFlags]
       next: mechanical_preflight
 
@@ -390,7 +435,7 @@ workflow:
       procedure: references/quality-gates.md
       actions:
         - Prefer Impeccable source plus desktop URL plus mobile URL scans when its CLI is available.
-        - Otherwise run the browser-computed fallback gate.
+        - Otherwise run the browser-computed fallback gate and record detector fallback.
         - Resolve primary findings through fixes or documented waivers.
         - Write mechanical-findings.json; advisory findings cannot block.
       outputs: [mechanicalFindings]
@@ -408,6 +453,7 @@ workflow:
         - source code
         - designDescription
         - designFlags
+        - selectedDirection
         - prior observations and scores
         - implementation effort
       procedure: agents/evaluator.md
@@ -417,9 +463,9 @@ workflow:
 
     - id: decide
       agent: Orchestrator
-      inputs: [observation, mechanicalFindings, scoreHistory, runManifest]
+      inputs: [observation, mechanicalFindings, scoreHistory, runManifest, directionSelection]
       orderedDecisionTable:
-        - when: browser evaluation did not complete or requested viewports are unevaluable
+        - when: browser evaluation did not complete or either requested viewport is unevaluable
           decision: HALT
           terminationReason: browser-unavailable
         - when: server or iteration artifacts are invalid
@@ -448,25 +494,49 @@ workflow:
           terminationReason: continue-current-direction
       actions:
         - Append the observation summary and decision as separate records in scores.json.
-        - Recompute bestIteration from eligible immutable iterations.
-        - Increment pivotsUsed only for PIVOT.
+        - Recompute bestIteration using the same tiered ordering as finish_select.
       transitions:
-        REFINE: increment_iteration_then_direct
-        PIVOT: increment_iteration_then_explore_direction
+        REFINE: prepare_refine_iteration
+        PIVOT: prepare_pivot_iteration
         SHIP: finish_select
         HALT: halt
+
+    - id: prepare_refine_iteration
+      agent: Orchestrator
+      actions:
+        - Increment currentIteration and create the new iteration root without modifying the completed iteration.
+        - Copy the previous iteration's direction/directions.md when it exists and direction/direction-selection.json into the new iteration direction directory.
+        - Verify the copied selection still points to the run-level selected-direction.md.
+        - Set previousDecision REFINE and pass the prior screenshots plus visual-only critique to direct.
+      outputs: [iterationRoot, directions, directionSelection]
+      next: direct
+
+    - id: prepare_pivot_iteration
+      agent: Orchestrator
+      actions:
+        - Increment currentIteration and pivotsUsed, then create the new iteration root without modifying completed iterations.
+        - Preserve the rejected direction summary, its scores and visual-only failure lessons for explore_direction.
+        - Do not copy the prior direction selection into the pivot iteration.
+        - Set previousDecision PIVOT.
+      outputs: [iterationRoot, rejectedDirectionSummary]
+      next: explore_direction
 
     - id: finish_select
       agent: Orchestrator
       actions:
-        - Select among iterations without open primary mechanical findings first.
-        - Rank by weightedAverage, then by the minimum criterion, then functionality, then latest iteration.
-        - If none are mechanically eligible, choose the highest-ranked build and mark finalStatus best_available.
+        - Build tier 1 from evaluated iterations with no open primary mechanical finding and every criterion meeting shipFloor.
+        - If tier 1 is non-empty, select only from tier 1.
+        - Otherwise build tier 2 from evaluated iterations with no open primary mechanical finding and select only from tier 2 when non-empty.
+        - Otherwise select from all evaluated immutable iterations and set finalStatus best_available.
+        - Within the active tier rank by weightedAverage, then the minimum criterion, then functionality, then latest iteration.
+        - Record the selected iteration, tier, scores, floor status and evidence paths in finish/selection.json.
         - Copy, do not move, the selected site into finish/selected-site/.
+        - Copy the selected iteration's serve.json to finish/selected-serve.json and rewrite its working directory or site-root fields to target finish/selected-site/; validate it before capture.
         - Capture fresh verified desktop and mobile screenshots.
       outputs:
         - finish/selection.json
         - finish/selected-site/
+        - finish/selected-serve.json
         - finish/screenshots/
       next: finish_review
 
@@ -477,10 +547,12 @@ workflow:
         - original user_prompt
         - confirmed product purpose and constraints
         - surfaceBrief
-        - live selected build
+        - selectedDirection
+        - live selected build from finishSelectedServeConfig
         - fresh finish screenshots
         - mechanical gate summary
       explicitlyExcluded:
+        - full designDescription
         - prior scores
         - prior critiques
         - implementation history
@@ -488,7 +560,7 @@ workflow:
       prompt: >-
         Run a final material-defect review. Return pass or hold, with only findings that would change
         comprehension, usability, responsive integrity, accessibility, visual coherence or fidelity to
-        the selected direction. Do not reopen taste decisions or propose a new direction.
+        the selected direction summary. Do not reopen taste decisions or propose a new direction.
       outputs:
         - finish/verdict.json
         - finish/critique.md
@@ -508,16 +580,22 @@ workflow:
       agent: Builder
       inputs:
         - finish/selected-site/
+        - finish/selected-serve.json
         - finish/verdict.json material findings only
         - designDescription from selected iteration
       actions:
         - Copy selected-site to finish/corrected-site before editing.
+        - Copy selected-serve.json to finish/corrected-serve.json and rewrite its working directory or site-root fields to target corrected-site.
+        - Validate corrected-serve.json by starting the corrected tree before running any checks.
         - Apply one grouped correction batch without changing the direction.
         - Increment correctionRoundsUsed.
-        - Rerun mechanical preflight and recapture the same viewports.
-        - Ask the fresh Evaluator to score each material finding resolved, partial or unresolved.
+        - Rerun mechanical preflight against corrected-serve.json and recapture the same verified viewports.
+        - Ask a fresh Evaluator to classify every original material finding as resolved, partial or unresolved, rescore all four criteria, and state whether a material regression exists against selected-site.
       outputs:
         - finish/corrected-site/
+        - finish/corrected-serve.json
+        - finish/corrected-mechanical-findings.json
+        - finish/corrected-screenshots/
         - finish/correction-verdict.json
       next: finish_correction_decide
 
@@ -530,8 +608,9 @@ workflow:
         - corrected desktop and mobile screenshots
       acceptanceRule: >-
         Accept corrected-site only when every original material finding is resolved, the corrected
-        mechanical preflight has no open primary finding, both required viewports were reached, and
-        the fresh Evaluator found no material regression against selected-site.
+        mechanical preflight has no open primary finding, both required viewports were reached,
+        materialRegression is false, and—when the selected iteration was floor-passing—every
+        post-correction score still meets shipFloor.
       actions:
         - Write finish/final-tree.json with selectedTree corrected-site or selected-site and the evidence-based rationale.
         - Never accept corrected-site solely because its directory exists.
@@ -539,7 +618,7 @@ workflow:
         - when: correction satisfies the complete acceptanceRule
           selectedTree: corrected-site
           next: finalise
-        - when: any material finding is partial or unresolved, a primary mechanical finding is open, a viewport is unevaluated, or a material regression exists
+        - when: any material finding is partial or unresolved, a primary mechanical finding is open, a viewport is unevaluated, a material regression exists, or required post-correction floors fail
           selectedTree: selected-site
           next: finalise_with_open_items
 
@@ -547,7 +626,7 @@ workflow:
       agent: Orchestrator
       actions:
         - Preserve unresolved finish findings and rejected-correction evidence.
-        - When a correction was attempted but not accepted, keep finish/selected-site as the selectedTree in finish/final-tree.json.
+        - When a correction was attempted but not accepted, keep finish/selected-site as selectedTree in finish/final-tree.json.
         - Set finalStatus complete-with-open-items.
       next: finalise
 
@@ -556,8 +635,9 @@ workflow:
       actions:
         - Choose the tree named by finish/final-tree.json when present; otherwise choose selected-site.
         - Never choose corrected-site from directory existence alone.
-        - Replace harness-output/site/ with a copy of that accepted final tree.
-        - Preserve complete-with-open-items when already set; otherwise keep quality-floor-met only when the accepted result still meets every floor after finish, and use best_available in all other cases.
+        - Replace harness-output/site/ with a copy of the accepted final tree.
+        - Preserve complete-with-open-items when already set.
+        - Otherwise set quality-floor-met when selected-site was chosen from tier 1, or when corrected-site was accepted and every post-correction score meets shipFloor; use best_available in all other cases.
         - Keep every source iteration untouched.
       outputs: [compatibilitySite]
       next: codify
