@@ -53,7 +53,8 @@ Load `references/context.md` before planning.
 
 - `PRODUCT.md` is durable product truth: users, purpose, positioning, capabilities, constraints, real evidence and brand commitments.
 - `DESIGN.md` is the current proven visual system. It is authority for extensions; during a requested redesign it is evidence and an anti-reference unless the user says to preserve it.
-- `harness-output/runs/<run-id>/surface-brief.md` contains only the current surface's mode, job, action, content/proof, constraints and selected direction.
+- `harness-output/runs/<run-id>/surface-brief.md` contains only the current surface's mode, job, action, content/proof and constraints.
+- `harness-output/runs/<run-id>/selected-direction.md` records the chosen source-free visual thesis after selection; regular iteration evaluation does not receive it, while the fresh finish review may use it to assess fidelity.
 
 Inspect before asking. Ask only for material gaps. Mark unattended inferences as assumptions. Never fabricate customers, prices, benchmarks, capabilities or testimonials.
 
@@ -62,14 +63,14 @@ Inspect before asking. Ask only for material gaps. Mark unattended inferences as
 Run `workflow.yaml` end to end.
 
 1. **Context and Plan** — resolve product truth, classify the surface as `persuade`, `operate`, `read` or `experience`, capture a baseline for overhauls, define success criteria and select a finite iteration budget.
-2. **Explore** — unless the user already pinned an exact direction, the Visual Director produces three viable, materially different directions without ranking them. All must fit the truth and constraints.
-3. **Select** — an exact pinned direction proceeds directly. Otherwise the user selects when an answer mechanism is available; unattended runs use a reproducible seed recorded in `direction-selection.json`. The Visual Director does not pick its own winner.
+2. **Explore** — Visual Director produces three viable, materially different directions without ranking them. All must fit the truth and constraints.
+3. **Select** — an exact pinned direction wins first; explicit unattended requests never trigger a question; otherwise the user selects when an answer mechanism is available or the Orchestrator uses a reproducible seed. Record the choice in `direction-selection.json` and its source-free visual summary in `selected-direction.md`. The Visual Director does not pick its own winner.
 4. **Direct** — Visual Director expands the selected direction into a visual contract: thesis, first viewport, visitor path, visual world, type, colour, rhythm, motion, responsive behaviour and signature interaction.
 5. **Build** — Builder implements into the current immutable iteration directory and writes `serve.json` plus `design-flags.json`. It never commits or overwrites another iteration.
 6. **Mechanical preflight** — run `references/quality-gates.md`. Prefer Impeccable's deterministic detector when available; otherwise use the browser-computed fallback. Mechanical checks may block craft/functionality but never assign visual quality or originality.
 7. **Blind evaluation** — Evaluator interacts with the live render at verified desktop and mobile viewports, captures zones, tests states and writes `observation.json` plus `critique.md`. It emits no workflow decision.
-8. **Decide** — Orchestrator applies the ordered decision table to history and budget. REFINE preserves the direction; PIVOT starts a materially different direction; SHIP selects the strongest eligible iteration.
-9. **Finish** — a fresh evaluator reviews the selected iteration from the original brief and live render. Apply at most one correction batch and record unresolved items honestly.
+8. **Decide** — Orchestrator applies the ordered decision table to history and budget. REFINE creates a new iteration and copies the chosen direction metadata forward; PIVOT creates a new iteration with a materially different direction; SHIP moves to tiered final selection.
+9. **Finish** — floor-passing, mechanically clean iterations outrank higher averages with a failed criterion. A fresh evaluator reviews the selected build using the original brief, `selected-direction.md` and live render. Apply at most one correction batch. Serve and verify the corrected copy through its own rewritten `corrected-serve.json`; accept it only when findings resolve and no material or mechanical regression remains.
 10. **Codify** — copy the selected build to `harness-output/site/`; document `DESIGN.md`, design DNA and tokens from the built result; write `report.md`.
 
 ## Budget selection
@@ -82,7 +83,7 @@ The Planner recommends one class; the user or explicit command can override it.
 | standard | 4 | ambitious page or product screen |
 | ambitious | 6 | complex experience, many states or high visual risk |
 
-The budget covers builds, not every screenshot. A PIVOT consumes an iteration. An explicit numeric budget is capped at eight. Budget exhaustion selects the best available result and labels it `best_available` when it did not meet the ship floor.
+The budget covers builds, not every screenshot. A PIVOT consumes an iteration. An explicit numeric budget is clamped to 1–8. Budget exhaustion selects the best available result and labels it `best_available` when it did not meet the ship floor.
 
 ## Artifacts
 
@@ -93,10 +94,11 @@ run.json
 spec.md
 sprint-contract.md
 surface-brief.md
+selected-direction.md
 scores.json
 baseline/
 iterations/<n>/
-  direction/directions.md           # absent only when an exact direction was already pinned
+  direction/directions.md
   direction/direction-selection.json
   direction/design-description.md
   site/
@@ -107,6 +109,13 @@ iterations/<n>/
   observation.json
   critique.md
 finish/
+  selection.json
+  selected-site/
+  selected-serve.json
+  corrected-site/          # only when correction runs
+  corrected-serve.json     # only when correction runs
+  correction-verdict.json  # only when correction runs
+  final-tree.json
 ```
 
 Only after selection may the Orchestrator replace the compatibility output at `harness-output/site/`. Never depend on git history to recover an earlier iteration.
@@ -117,7 +126,7 @@ Execute `references/review/polish.md` without `workflow.yaml`.
 
 - Deterministic checks own source/computed facts such as exact contrast, overflow and token misuse.
 - Visual lenses own visible hierarchy, composition, rhythm and generated-template feel.
-- With no browser, return `visual_status: unverified` and the mechanical report. Do not return `ready`.
+- With no browser, or when either required viewport cannot be reached, return `visual_status: unverified` and the mechanical report. Do not return a browser-grounded readiness verdict.
 - With a browser, run one inspection batch, apply one grouped fix batch when requested, and confirm once.
 
 ## Quality semantics
@@ -146,8 +155,8 @@ Execute `references/review/polish.md` without `workflow.yaml`.
 
 Studio requires file I/O, isolated subagents, a runnable target and browser automation. Verify requested viewport widths with `window.innerWidth` or the adapter equivalent.
 
-- No browser in **Studio**: preserve the build and mechanical report, write an unevaluated observation with null scores, and HALT before a visual decision.
-- No browser in **Review**: return mechanical findings with visual status `unverified`.
+- No browser in **Studio**: preserve the build and mechanical report, mark the iteration unevaluated and HALT before a visual decision.
+- No browser or missing required viewport in **Review**: return mechanical findings with visual status `unverified`.
 - No Impeccable: use the fallback gate and record `detector: fallback`.
 - No user answer mechanism: use the deterministic selection rule and record the seed.
 - No image generation: present directions as equal text cards; do not fabricate visual comps.
@@ -157,5 +166,5 @@ Studio requires file I/O, isolated subagents, a runnable target and browser auto
 - Add a capability as one focused leaf plus one routing row; do not create another always-on design skill.
 - Keep style examples out of always-loaded prompts unless the user's brief names them.
 - Keep scoring language about qualities, not favoured aesthetics.
-- Version `SKILL.md`, `workflow.yaml`, `.claude-plugin/plugin.json` and eval metadata together.
+- Version `SKILL.md`, `workflow.yaml`, `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json` and eval metadata together.
 - After a material model upgrade, test whether each layer still improves outcomes before retaining its cost.
