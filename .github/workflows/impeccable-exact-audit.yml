@@ -1,0 +1,72 @@
+name: Impeccable exact audit
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - synchronize
+
+permissions:
+  contents: read
+
+jobs:
+  impeccable:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: remotion-video/package-lock.json
+
+      - name: Start documentation server
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4173 --directory docs > /tmp/design-studio-docs.log 2>&1 &
+          echo $! > /tmp/design-studio-docs.pid
+          for attempt in {1..20}; do
+            if curl --fail --silent http://127.0.0.1:4173/ > /dev/null; then
+              exit 0
+            fi
+            sleep 0.5
+          done
+          cat /tmp/design-studio-docs.log
+          exit 1
+
+      - name: Run exact Impeccable source and viewport scans
+        shell: bash
+        run: |
+          set -uo pipefail
+          chrome_path="$(command -v google-chrome-stable || command -v google-chrome || command -v chromium || true)"
+          if [ -n "$chrome_path" ]; then
+            export PUPPETEER_EXECUTABLE_PATH="$chrome_path"
+            echo "Using browser: $chrome_path"
+          fi
+
+          failed=0
+          npx -y impeccable@latest detect --json docs/index.html > /tmp/impeccable-source.json || failed=1
+          npx -y impeccable@latest detect --json --viewport 1440x900 http://127.0.0.1:4173/ > /tmp/impeccable-desktop.json || failed=1
+          npx -y impeccable@latest detect --json --viewport 390x844 http://127.0.0.1:4173/ > /tmp/impeccable-mobile.json || failed=1
+
+          echo '--- source ---'
+          cat /tmp/impeccable-source.json
+          echo '--- desktop ---'
+          cat /tmp/impeccable-desktop.json
+          echo '--- mobile ---'
+          cat /tmp/impeccable-mobile.json
+
+          exit "$failed"
+
+      - name: Stop documentation server
+        if: always()
+        shell: bash
+        run: |
+          if [ -f /tmp/design-studio-docs.pid ]; then
+            kill "$(cat /tmp/design-studio-docs.pid)" 2>/dev/null || true
+          fi
