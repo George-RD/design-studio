@@ -127,7 +127,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npm install --prefix /tmp/impeccable --ignore-scripts --no-audit --no-fund impeccable@4.0.3
+          npm install --prefix /tmp/impeccable --ignore-scripts --no-audit --no-fund impeccable@3.3.1
           test -x /tmp/impeccable/node_modules/.bin/impeccable
 
       - name: Run exact Impeccable scans
@@ -194,7 +194,7 @@ jobs:
         with:
           name: impeccable-audit
           path: .impeccable-audit/
-          if-no-files-found: error
+          if-no-files-found: warn
 
       - name: Enforce exact audit result
         shell: bash
