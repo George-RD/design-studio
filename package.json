@@ -1,0 +1,16 @@
+{
+  "name": "design-studio-plugin",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Validation tooling for the Design Studio agent plugin.",
+  "scripts": {
+    "preflight:docs": "node scripts/design-studio-check.mjs docs/index.html --mode persuade --json harness-output/preflight.json",
+    "check": "node scripts/validate-package.mjs",
+    "test": "node --test test/*.test.mjs",
+    "validate": "npm run test && npm run check"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
