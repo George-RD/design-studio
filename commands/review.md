@@ -20,7 +20,7 @@ Load `skills/design-studio/SKILL.md`, then execute `skills/design-studio/referen
 
 Parse `$ARGUMENTS` into:
 
-- `target`: local path or URL.
+- `target`: local path, URL, or an existing `serve.json`.
 - `constraints`: remaining text.
 - `report_only`: true when `--report-only` is present.
 - `mechanical_only`: true when `--mechanical-only` is present.
