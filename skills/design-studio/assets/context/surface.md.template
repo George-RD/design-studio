@@ -1,0 +1,33 @@
+# Surface: <name>
+
+- **Route or target:**
+- **Mode:** persuade | operate | read | experience
+- **Change semantics:** preserve | extend | replace
+- **Primary visitor success:**
+
+## Audience state
+
+<!-- What the visitor knows, believes, has, and needs at entry. -->
+
+## Required content and proof
+
+## Information order or task flow
+
+## Important states
+
+- Default:
+- Loading:
+- Empty:
+- Error:
+- Success:
+- Disabled or unavailable:
+
+## Protected behavior and content
+
+## Surface-specific constraints
+
+## Acceptance criteria
+
+- [ ]
+
+## Open decisions
