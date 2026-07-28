@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
 
 jobs:
   impeccable:
@@ -46,10 +47,8 @@ jobs:
           chrome_path="$(command -v google-chrome-stable || command -v google-chrome || command -v chromium || true)"
           if [ -n "$chrome_path" ]; then
             export PUPPETEER_EXECUTABLE_PATH="$chrome_path"
-            echo "Using browser: $chrome_path"
           fi
 
-          failed=0
           set +e
           npx -y impeccable@latest detect --json docs/index.html > /tmp/impeccable-source.json
           source_status=$?
@@ -66,37 +65,83 @@ jobs:
 
           statuses = {
               'source': int(sys.argv[1]),
-              'desktop': int(sys.argv[2]),
-              'mobile': int(sys.argv[3]),
+              'desktop 1440×900': int(sys.argv[2]),
+              'mobile 390×844': int(sys.argv[3]),
+          }
+          files = {
+              'source': Path('/tmp/impeccable-source.json'),
+              'desktop 1440×900': Path('/tmp/impeccable-desktop.json'),
+              'mobile 390×844': Path('/tmp/impeccable-mobile.json'),
           }
 
+          all_rows = []
+          details = []
+          overall_failed = False
+
+          def clean(value):
+              return str(value or '').replace('|', '\\|').replace('\n', ' ').strip()
+
           for label, status in statuses.items():
-              path = Path(f'/tmp/impeccable-{label}.json')
-              print(f'--- {label}: exit={status} ---')
+              path = files[label]
               try:
                   findings = json.loads(path.read_text())
+                  if not isinstance(findings, list):
+                      raise TypeError(f'expected a JSON array, got {type(findings).__name__}')
               except Exception as exc:
-                  print(f'Could not parse detector JSON: {exc}')
-                  print(path.read_text()[:2000])
-                  continue
+                  findings = []
+                  overall_failed = True
+                  details.append(f'- **{label}: detector output could not be parsed:** `{clean(exc)}`')
 
               primary = [finding for finding in findings if not finding.get('advisory')]
               advisory = [finding for finding in findings if finding.get('advisory')]
-              print(f'findings={len(findings)} primary={len(primary)} advisory={len(advisory)}')
+              all_rows.append((label, status, len(primary), len(advisory)))
+              if status != 0 or primary:
+                  overall_failed = True
+
               for finding in findings:
-                  severity = 'ADVISORY' if finding.get('advisory') else 'PRIMARY'
-                  location = finding.get('file', '<render>')
+                  severity = 'Advisory' if finding.get('advisory') else 'Primary'
+                  location = clean(finding.get('file', '<render>'))
                   if finding.get('line'):
                       location += f":{finding['line']}"
-                  print(
-                      f"{severity} | {location} | {finding.get('antipattern', 'unknown')} | "
-                      f"{finding.get('description', '')} | {finding.get('snippet', '')}"
+                  rule = clean(finding.get('antipattern', 'unknown'))
+                  description = clean(finding.get('description', ''))
+                  snippet = clean(finding.get('snippet', ''))
+                  details.append(
+                      f'- **{severity} · `{rule}` · `{location}`** — {description}'
+                      + (f'  \n  `{snippet[:300]}`' if snippet else '')
                   )
+
+          lines = [
+              '<!-- impeccable-exact-audit -->',
+              '## Exact Impeccable audit',
+              '',
+              'Ran the current `impeccable@latest` detector against the PR documentation source and both required rendered viewports.',
+              '',
+              '| Pass | Exit | Primary | Advisory |',
+              '|---|---:|---:|---:|',
+          ]
+          for label, status, primary, advisory in all_rows:
+              lines.append(f'| {label} | {status} | {primary} | {advisory} |')
+          lines.extend(['', '### Findings', ''])
+          lines.extend(details or ['No findings.'])
+          lines.extend(['', f'**Verdict: {"HOLD" if overall_failed else "PASS"}.**'])
+
+          Path('/tmp/impeccable-summary.md').write_text('\n'.join(lines) + '\n')
+          Path('/tmp/impeccable-result').write_text('failure' if overall_failed else 'success')
           PY
 
-          if [ "$source_status" -ne 0 ] || [ "$desktop_status" -ne 0 ] || [ "$mobile_status" -ne 0 ]; then
-            exit 1
-          fi
+      - name: Publish exact audit summary
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        shell: bash
+        run: gh pr comment "$PR_NUMBER" --body-file /tmp/impeccable-summary.md
+
+      - name: Enforce exact audit result
+        shell: bash
+        run: |
+          test "$(cat /tmp/impeccable-result)" = success
 
       - name: Stop documentation server
         if: always()
