@@ -12,7 +12,10 @@
         "directions.md contains exactly three unranked viable candidates",
         "direction-selection.json records selectedId, method and seed",
         "selected-direction.md records the chosen source-free visual summary",
-        "iteration 1 has site, serve.json and design-flags.json"
+        "iteration 1 has site, serve.json and design-flags.json",
+        "mechanical-findings.json exists, or the run records an explicit mechanical-preflight limitation",
+        "observation.json and critique.md exist when browser evaluation runs",
+        "actualViewports contains verified desktop and mobile evidence, or observation.json is explicitly unevaluated with null scores and the exact browser or viewport limitation"
       ]
     },
     {
