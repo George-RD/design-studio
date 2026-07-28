@@ -1,61 +1,170 @@
 {
   "skill_name": "design-studio",
+  "version": "1.4.0",
   "evals": [
     {
       "id": 1,
-      "prompt": "create a landing page for a small coffee shop using design studio",
-      "expected_output": "Plan artifacts written; design→implement→evaluate cycle attempted; DesignAgent not given source code; serve.json after implement.",
+      "prompt": "Create a landing page for a small coffee shop using Design Studio.",
+      "expected_output": "Studio loads or creates product/surface context, explores three directions, records selection, builds into an immutable iteration and attempts mechanical plus visual evaluation.",
       "assertions": [
-        "harness-output/spec.md exists",
-        "harness-output/sprint-contract.md exists",
-        "Design agent context does not include HTML/CSS/JS source files",
-        "After implement, harness-output/serve.json exists with port and path"
+        "run.json, spec.md, sprint-contract.md and surface-brief.md exist under one run ID",
+        "Visual Director context contains no source files",
+        "directions.md contains exactly three unranked viable candidates",
+        "direction-selection.json records selectedId, method and seed",
+        "iteration 1 has site, serve.json and design-flags.json"
       ]
     },
     {
       "id": 2,
-      "prompt": "build a multi-section marketing site for a design tool with hero, problem, process, and install sections",
-      "expected_output": "Spec identifies multiple sections or zones; evaluation uses browser automation.",
+      "prompt": "Overhaul ./site. Keep the information architecture and factual copy, but replace the visual direction.",
+      "expected_output": "Overhaul preserves product truth and behaviour, captures baseline renders, and treats incumbent styling as evidence rather than visual authority.",
       "assertions": [
-        "spec mentions multiple sections or expected zones",
-        "evaluator path uses browser automation not code-only review"
+        "baseline artifact or explicit capture limitation exists",
+        "Visual Director receives baseline screenshots but not source",
+        "Builder receives existing source as substrate",
+        "surface brief records preservation constraints"
       ]
     },
     {
       "id": 3,
-      "prompt": "evaluate the current design at harness-output/site against the sprint contract",
-      "expected_output": "Evaluator produces critique and/or scores without judging from source code.",
+      "prompt": "Evaluate the current Design Studio iteration.",
+      "expected_output": "Evaluator uses the browser, writes observation and critique, and does not decide workflow state.",
       "assertions": [
-        "critique or scores artifact written",
-        "evaluation does not treat reading HTML/CSS as the scoring basis"
+        "observation.json contains interactionEvidence, zones, scores and actualViewports",
+        "observation.json contains no decision, recommendation or trend",
+        "Evaluator context excludes source, design-description and prior scores",
+        "Orchestrator writes any REFINE/PIVOT/SHIP/HALT record separately"
       ]
     },
     {
       "id": 4,
-      "prompt": "write CSS for a centered hero with three feature cards",
-      "expected_output": "Near-miss: should not start the full 4-agent studio loop as a pure CSS tweak.",
+      "prompt": "Write CSS to increase the spacing under this button by 8px.",
+      "expected_output": "Near-miss does not start the full Studio workflow.",
       "assertions": [
-        "skill either does not activate or agent does not start full 4-agent loop"
+        "no new run directory is required",
+        "no direction tournament is started"
       ]
-    }
-    ,
+    },
     {
       "id": 5,
-      "prompt": "polish this landing page at harness-output/site — audit only, no redesign",
-      "expected_output": "Review lane; loads polish; does not start Plan/Design/Builder loop; writes harness-output/review/report.md.",
+      "prompt": "Polish ./site without redesigning it.",
+      "expected_output": "Review runs mechanical preflight and browser-grounded conditional lenses, then writes a readiness report without Studio decisions.",
       "assertions": [
         "harness-output/review/report.md exists",
-        "no requirement that design-description-*.md be newly created for this run",
-        "workflow full loop not started"
+        "mechanical-findings.json exists",
+        "no new design-description is required",
+        "report contains ready, ready_with_nits, hold or unverified",
+        "report contains no REFINE, PIVOT or SHIP"
       ]
     },
     {
       "id": 6,
-      "prompt": "overhaul the site at ./site — raise originality, keep IA",
-      "expected_output": "Studio overhaul, not Review-only.",
+      "prompt": "Review ./site, but no browser automation is connected.",
+      "expected_output": "Mechanical evidence is retained and visual readiness remains explicitly unverified.",
       "assertions": [
-        "overhaul/plan path engaged (baseline or overhaul leaf / studio loop)",
-        "not review-only termination"
+        "mechanical preflight is attempted",
+        "observation status is unevaluated",
+        "scores and weightedAverage are null",
+        "run halts with browser-unavailable",
+        "no visual score is fabricated"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "Run three iterations and refine after each evaluation.",
+      "expected_output": "Each iteration has a separate immutable directory and completed earlier iterations remain unchanged.",
+      "assertions": [
+        "iterations/1, iterations/2 and iterations/3 each retain their own site and artifacts",
+        "top-level harness-output/site is not used as mutable iteration state",
+        "no agent self-commit is requested"
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "Run unattended; choose a direction without asking me.",
+      "expected_output": "The Orchestrator uses a recorded reproducible seed rather than the Visual Director's unrecorded preference.",
+      "assertions": [
+        "all three candidates are viable and unranked",
+        "selection method is deterministic-seed",
+        "seed and selectedId are recorded",
+        "replaying the same run ID and prompt chooses the same candidate"
+      ]
+    },
+    {
+      "id": 9,
+      "prompt": "Iteration 2 scores higher than iteration 4. Finish the run.",
+      "expected_output": "Final selection recovers iteration 2 from immutable artifacts and does not assume latest equals best.",
+      "assertions": [
+        "bestIteration is 2",
+        "finish/selected-site is copied from iterations/2/site",
+        "iterations/2 remains unchanged",
+        "report explains why the selected iteration is not latest"
+      ]
+    },
+    {
+      "id": 10,
+      "prompt": "Run the mechanical gate when Impeccable is installed.",
+      "expected_output": "Design Studio consumes Impeccable JSON for source, desktop and mobile passes without treating detector output as visual judgment.",
+      "assertions": [
+        "mechanical-findings detector is impeccable",
+        "source, 1440x900 and 390x844 passes are recorded",
+        "advisory findings do not block",
+        "Design Quality and Originality are absent from mechanical output"
+      ]
+    },
+    {
+      "id": 11,
+      "prompt": "The brand deliberately uses Inter and a centered composition. Preserve that commitment.",
+      "expected_output": "Pinned brief wins; deterministic findings may be waived with authority, while the evaluator judges appropriateness and craft rather than punishing compliance.",
+      "assertions": [
+        "waiver names the relevant PRODUCT.md or DESIGN.md commitment",
+        "common patterns receive no automatic originality credit",
+        "Visual Director does not replace the pinned system"
+      ]
+    },
+    {
+      "id": 12,
+      "prompt": "A standard run reaches iteration four without meeting all ship floors.",
+      "expected_output": "Budget exhaustion selects the best available immutable iteration and labels quality status honestly.",
+      "assertions": [
+        "no fifth build is started",
+        "terminationReason is budget-exhausted",
+        "finalStatus is best_available unless quality floors were met",
+        "open finish findings remain in the report"
+      ]
+    },
+    {
+      "id": 13,
+      "prompt": "Finish review finds three material defects.",
+      "expected_output": "One grouped correction batch and one verdict pass occur; the process does not reopen indefinite polishing.",
+      "assertions": [
+        "finish correction rounds do not exceed one by default",
+        "each original finding is resolved, partial or unresolved",
+        "unresolved findings are reported rather than hidden",
+        "direction selection is not reopened"
+      ]
+    },
+    {
+      "id": 14,
+      "prompt": "Validate the Design Studio plugin version metadata.",
+      "expected_output": "Plugin, skill, workflow and eval versions agree.",
+      "assertions": [
+        ".claude-plugin/plugin.json version is 1.4.0",
+        "SKILL.md version is 1.4.0",
+        "workflow.yaml version is 1.4.0",
+        "evals.json version is 1.4.0"
+      ]
+    },
+    {
+      "id": 15,
+      "prompt": "Build this exact approved direction as specified; do not show alternatives.",
+      "expected_output": "An exact pinned direction bypasses candidate exploration, records a pinned selection with no seed, and proceeds to the visual contract.",
+      "assertions": [
+        "directions.md is not required",
+        "direction-selection method is pinned-brief",
+        "candidateIds contains only the pinned direction",
+        "seed is null",
+        "no originality-driven pivot replaces the pinned direction"
       ]
     }
   ]

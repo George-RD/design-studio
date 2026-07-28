@@ -1,125 +1,116 @@
-# Review: Polish pass
+# Review lane: audit and polish
 
-Audit and polish an existing UI for ship-readiness without running the full Design Studio create/overhaul loop. This is the Review lane orchestrator. It loads conditional lens leaves, grounds findings in the live render, fixes what is cheap and local, and writes a review report. It does NOT plan, generate, or codify.
-
-## When to use
-
-Use this pass when the user wants an audit, polish, ship-gate, or slop/a11y/hierarchy/states check of a surface they already have, without a redesign or overhaul. Triggers include: "audit this UI", "polish this page", "design review", "slop check", "accessibility audit", "hierarchy review", "ship-ready polish".
-
-The surface is anything rendered: a local HTML/CSS/JS path, a served site, a live URL, or an already-running `harness-output/serve.json`.
-
-## Not when
-
-Do NOT use this pass for:
-
-- "create / build / design a new UI" — that is the Studio lane (`workflow.yaml` loop).
-- "redesign / overhaul / rebuild" — that is the Studio lane with `references/overhaul.md`, even if the user also has an existing path. A pure audit with no rebuild intent stays here.
-- "extract tokens / write DNA only" — that is the Design system path (existing codify assets flow).
-
-If the user says "audit then redesign", run Review first only if they explicitly asked for a report before the rebuild. Otherwise route to Studio overhaul and ask one clarifying question if still ambiguous. Do not silently start the 4-agent loop for pure polish language.
+Review improves an existing surface without inventing a replacement visual world. It is independent of the Studio create loop.
 
 ## Inputs
 
-| Input | Required | Notes |
-|-------|----------|-------|
-| `target` | yes | Local path, URL, or running `harness-output/serve.json` for the surface to review |
-| `constraints` | no | User-specified focus (e.g. "mobile only", "check contrast") |
-| `report_only` | no | When `true`, write findings only and apply no fixes (default `false`) |
+- `target`: local path, URL or existing `serve.json`;
+- `constraints`: optional scope/focus;
+- `report_only`: write evidence without editing;
+- `mechanical_only`: run deterministic checks and stop with visual status `unverified`.
 
-## Serve and browser
+Load `PRODUCT.md`, `DESIGN.md` and any relevant surface brief. The incumbent design is authority in Review. Do not use the audit as an excuse to rebrand, restructure the product or replace factual copy.
 
-Reuse the Studio serve contract when the target is a local site:
+## 1. Resolve and classify
 
-1. If `harness-output/serve.json` is present, use it as the running surface.
-2. Else, serve the given local path (e.g. `npx serve ./<path> -l 3333`) or open the given URL in a dedicated review tab.
-3. Capture screenshots before any lens fan-out (see Artifacts for viewports).
+Resolve one runnable target and capture its primary user goal. Classify once:
 
-**Browser Operations Contract (BOC).** All review is grounded in the live render. Resolve the browser adapter at runtime:
+- `static`: content/marketing surface whose meaningful interactions are navigation and links;
+- `interactive`: forms, application controls, stateful navigation, data views, editors, dialogs or multi-step flows.
 
-- Probe for any available adapter (claude-in-chrome MCP, chrome-devtools MCP, Playwright MCP, headless Chrome CDP, or harness-native) with a harmless call.
-- Use the first adapter that responds.
-- HALT only if no browser automation is available at all. Record the halt in `report.md` and stop. Never fall back to a code-only review — design quality and accessibility cannot be judged from source alone.
+Record actual scope and excluded areas.
 
-This is the same BOC rule as the Studio evaluator (`agents/evaluator.md`) and INDEX Prerequisites. Review is a live-render audit, not a grep over CSS.
+## 2. Mechanical gate
 
-## Classify surface once
+Run `../quality-gates.md` before visual lenses.
 
-Decide the surface class a single time, before fan-out. Every lens reads this classification:
+- Prefer Impeccable source, desktop URL and mobile URL JSON scans.
+- Otherwise run the fallback source/browser-computed checks.
+- Preserve primary, advisory and waived findings separately.
+- Exact contrast, token, DOM, viewport, overflow and target-size claims come from this gate—not from screenshot-only agents.
 
-- `static` — marketing, landing, or content pages with no meaningful interactive widgets beyond links (no forms, no stateful buttons, no modals, no menus, no multi-step flow).
-- `interactive` — forms, buttons with state, modals, menus, tabs, app UI, or any multi-step flow.
+If `mechanical_only` is true, write the report now with `visual_status: unverified` and verdict `unverified`.
 
-## Conditional lens load (hard rule)
+## 3. Browser evidence
 
-Never load all lenses always. Load per this rule:
+When a browser is available:
 
-- **Always:** `slop.md` + `hierarchy.md`.
-- **If `interactive` OR the user asked about states / a11y / keyboard:** also load `interaction.md` + `a11y.md`.
-- **If `static` AND the user only asked for visual polish:** skip `interaction.md` + `a11y.md` unless they explicitly ask.
+1. verify 1440×900 and 390×844 using measured `window.innerWidth`;
+2. capture full-page and first-viewport screenshots at both widths;
+3. read console and failed resources;
+4. inventory meaningful controls and states;
+5. test primary paths, keyboard focus and relevant edge cases;
+6. capture additional state/zone screenshots only where they support a finding.
 
-This keeps static visual-only reviews fast and keeps interactive reviews honest. The lens leaf paths are relative to this skill package:
+If no browser is available, retain mechanical evidence and return verdict `unverified`. Never infer visual readiness from source.
 
-| Lens | Path | Load |
-|------|------|------|
-| AI slop | `references/review/slop.md` | always |
-| Hierarchy & rhythm | `references/review/hierarchy.md` | always |
-| Interaction states | `references/review/interaction.md` | conditional |
-| Accessibility | `references/review/a11y.md` | conditional |
+## 4. Conditional lenses
 
-## Fan-out
+Fan out visual lenses with screenshots, interaction evidence, surface goal, class, constraints and the mechanical summary. Lens agents report only; they do not edit.
 
-Spawn one subagent per loaded lens (parallel where the harness allows; sequential otherwise). Give each subagent:
+- Always: `slop.md`, `hierarchy.md`, `a11y.md`.
+- Interactive or state-focused request: also `interaction.md`.
+- Static surfaces receive a reduced a11y interaction inventory, not an exemption from accessibility.
 
-1. The screenshots captured above (desktop 1440 + mobile 390).
-2. `surface_description` — what the surface is, its primary goal, and the `surface_class` (static / interactive).
-3. The single lens file body (read the lens file and pass its contents as the procedure).
-4. The instruction to report **every** issue with `confidence` and `severity` — no self-censoring of "minor" findings.
-
-Each lens subagent returns findings in the shared schema (see Artifacts). Do not have a lens subagent edit the surface; lens subagents report, the orchestrator acts (below).
-
-If a single a11y subagent covers all four a11y sections, that is acceptable — `a11y.md` is one leaf with four sections, not four agents.
-
-## Aggregate
-
-Merge findings from all lens subagents into one list. Dedupe overlaps: when two findings describe the same defect, keep one and let the **highest severity win**. Map each finding into one of three buckets:
-
-1. **Blockers** — accessibility failures (contrast, keyboard, focus, labels), broken interaction, primary CTA invisible or unusable within 5 seconds.
-2. **Quality** — slop tropes, broken hierarchy or rhythm, missing or wrong interaction states, weak but non-blocking a11y.
-3. **Polish recommendations** — subtler improvements (easing, spacing tuning, strategic variation).
-
-## Act
-
-- Default (`report_only` false): fix all **Blockers** and **Quality** on the target surface. Apply **Polish recommendations** only when cheap and local (e.g. a token swap, a one-line spacing fix). Flag judgment calls for the owner rather than guessing.
-- `report_only` true: write findings only. Apply no edits.
-
-Fixes are applied to the served source where the surface lives (local path or `harness-output/site/`). Never invent a new design direction; this is audit-and-fix, not generate.
-
-## Artifacts
-
-Always write these under `harness-output/review/`:
-
-- `report.md` — verdict (`ready` | `ready_with_nits` | `hold`), the surface class, the lenses run, findings grouped by bucket (Blockers / Quality / Polish), and fixes applied (if any). Verdict rule: `ready` = no Blockers and no Quality; `ready_with_nits` = Quality fixed or only Polish remain; `hold` = any open Blocker.
-- `findings.json` — structured list, one object per finding:
+Every finding uses:
 
 ```json
 {
-  "id": "slop-1",
-  "lens": "slop | hierarchy | interaction | a11y",
-  "severity": "blocker | quality | polish",
-  "confidence": "high | medium | low",
-  "summary": "one-line description of the issue",
-  "evidence": "screenshot path + region, or viewport that shows it",
-  "status": "open | fixed | wont_fix"
+  "id": "hier-001",
+  "lens": "hierarchy",
+  "severity": "blocker",
+  "confidence": "high",
+  "summary": "The primary action disappears below competing process labels",
+  "evidence": "screenshots/desktop-1440.png, first viewport",
+  "status": "open"
 }
 ```
 
-- `screenshots/` — desktop 1440 (`desktop-1440.png`) and mobile 390 (`mobile-390.png`) captures used for grounding. If no browser adapter was available, this directory is empty and `report.md` records the HALT per BOC.
+## 5. Aggregate
 
-## Termination
+Merge all findings. Deduplicate by user-visible defect; retain all supporting evidence and use the highest severity.
 
-Write the report and findings, then stop. Do NOT run `workflow.yaml` loop, do NOT spawn DesignAgent, do NOT pass Builder design-flags, do NOT consult `scores.json` decision table, and do NOT codify assets. Review is a standalone audit path, not a step inside Studio.
+- **Blocker:** broken primary task/action, inaccessible interaction, serious comprehension failure or open primary mechanical finding.
+- **Quality:** visible generated-template feel, weak hierarchy/rhythm, missing important states or material craft gap.
+- **Polish:** local refinement that does not change direction, product or information architecture.
 
-## Temptation stop
+A detector pattern supported by the current brief or `DESIGN.md` can be waived, but the waiver names the authority and reason. Common patterns receive no automatic quality credit simply because they are intentional.
 
-- Do not call this path "the Evaluate step of Studio". It is not. Studio's Evaluator scores against originality floors and writes `scores.json`/`critique-{N}.md`; Review writes `harness-output/review/*` and reports a ship verdict.
-- Do not produce `REFINE`, `PIVOT`, or `SHIP`. Those are Studio loop decisions. Review ends at the report.
+## 6. Act once
+
+When `report_only` is false:
+
+1. fix all Blockers that can be resolved without changing product or direction;
+2. fix Quality findings in one grouped batch;
+3. take cheap, local Polish fixes only when clearly consistent with `DESIGN.md`;
+4. flag judgment calls instead of inventing a new direction;
+5. rerun the mechanical gate and recapture the same viewports once;
+6. mark each original finding fixed, partial, open or waived.
+
+Do not start a per-tweak screenshot loop. Do not create design directions, originality scores or design-system artifacts.
+
+## 7. Output and verdict
+
+Write:
+
+```text
+harness-output/review/
+  report.md
+  findings.json
+  mechanical-findings.json
+  screenshots/
+  confirmation/
+```
+
+Verdict rules:
+
+- `ready`: browser-grounded; no open Blockers or Quality findings; primary mechanical findings cleared or explicitly waived.
+- `ready_with_nits`: browser-grounded; only Polish findings remain.
+- `hold`: any open Blocker, or a material Quality issue the requested pass could not resolve.
+- `unverified`: browser unavailable or `mechanical_only`; mechanical evidence may exist but visual readiness was not established.
+
+The report names the surface class, lenses run, actual viewports, fixes, waivers, open items, limitations and `visual_status`.
+
+## Stop condition
+
+Review ends with the report. It does not emit REFINE, PIVOT or SHIP, does not execute `workflow.yaml`, and does not call the Visual Director.

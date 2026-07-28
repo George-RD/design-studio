@@ -1,158 +1,161 @@
 ---
 name: design-studio
 description: >-
-  4-agent design-evaluate-iterate harness for distinctive frontend creation that defeats code-anchoring bias
-  and codifies the winning direction into a reusable design system (design-dna.md, tokens.css, and an installable skill template).
-  Use this skill when building web pages, components, or applications where design quality
-  and originality matter — not just functional correctness. Orchestrates separated evaluator,
-  design agent (visual-only, never sees code), and implementation agent with live browser
-  interaction to push past safe AI defaults.
-  Triggers: "create a website", "build a page", "design a frontend", "harness mode",
-  "iterate on design", "evaluate the design", "design quality loop",
-  "overhaul existing UI", "redesign existing site", "redesign this page",
-  "audit this UI", "polish this page", "design review", "slop check",
-  "accessibility audit", "hierarchy review", "ship-ready polish".
-version: 1.3.0
+  Multi-agent frontend design harness for new surfaces, full redesigns and high-value visual iteration.
+  Separates product framing, visual direction, implementation and blind browser evaluation; preserves
+  immutable iterations; optionally consumes Impeccable detector output; and documents the shipped visual
+  system. Use for websites, landing pages, product screens and interactive experiences where originality
+  and design quality justify a structured loop. Use the Review lane for audit/polish without redesign.
+version: 1.4.0
 ---
 
 # Design Studio
 
-A multi-agent harness that produces distinctive frontends by isolating design vision, implementation, and evaluation. When a direction ships, it codifies DNA, tokens, and an installable design-system skill. Paths below are relative to this skill package (`skills/design-studio/`).
+Design Studio protects creative judgment from implementation anchoring. It is an orchestration system, not a catalog of style prompts.
 
-## Isolation rules
+## Non-negotiable boundaries
 
-- **DesignAgent** — never sees source code; only screenshots, critique, and the spec.
-- **Evaluator** — never sees source code; judges the live rendered page only.
-- **Builder** — receives design description + code; executes, does not invent direction.
-- **Orchestrator** — runs the loop, enforces isolation, never substitutes code-only review.
+| Role | May see source | May see prior scores | Owns decisions |
+|---|---:|---:|---:|
+| Planner | yes | no | scope and success criteria only |
+| Visual Director | no | no; critique summaries only | visual proposals only |
+| Builder | yes | no | implementation only |
+| Evaluator | no | no | observations and scores only |
+| Orchestrator | as needed | yes | SELECT / REFINE / PIVOT / SHIP / HALT |
 
-## Entry points
-
-| Entry | Means |
-|-------|--------|
-| Skill trigger (description match) | Load this INDEX + dispatch by intent (see Intent dispatch) |
-| `/design-studio:create` (`commands/create.md`) | Orchestrator + INDEX + `workflow.yaml` (Studio lane) |
-| `/design-studio:review` (`commands/review.md`) | Orchestrator + INDEX + Review lane only (`references/review/polish.md`) |
-
-Standalone: no brand kit required. Greenfield from a text prompt, or overhaul from an existing path/URL plus goals. Planner invents or reframes aesthetic direction from those inputs.
+- The Visual Director never receives HTML, CSS, JSX, component names, selectors or implementation diffs.
+- The Evaluator never receives source, implementation effort, the intended design description or prior scores. It judges the current render against product and surface success criteria.
+- The Builder does not choose a safer visual direction. It may add semantics, accessibility, responsive behaviour and required states even when the art direction did not spell them out.
+- The Orchestrator is the sole decision owner. A score file written by an Evaluator must not contain a workflow decision.
 
 ## Lanes
 
-| Lane | Use when | Loads |
-|------|----------|-------|
-| **Studio** | Full design→build→evaluate loop (greenfield or overhaul) | `workflow.yaml`, planning, generation, agents, iteration, codify assets |
-| **Design system** | Codify or extend tokens/DNA after SHIP (or codify-only request) | codify assets only |
-| **Review** | Audit/polish **without** full Studio loop | `references/review/polish.md` (+ conditional lens leaves) |
-| **Meta** | Improve the harness | `references/meta.md`, `references/rationale.md` |
+| Lane | Use when | Authority |
+|---|---|---|
+| **Studio** | New surface or material redesign | `workflow.yaml` |
+| **Review** | Audit/polish without a new visual world | `references/review/polish.md` |
+| **Design system** | Codify the selected build or extend an existing system | Codify step in `workflow.yaml` |
+| **Meta** | Improve the harness itself | `references/meta.md` plus run traces |
 
-Studio + Review + codify. Design system extract-without-loop leaves are not shipped yet.
+### Routing
 
-## Intent dispatch
+- Create/build/design a page or product surface → **Studio**.
+- Redesign/overhaul/rebuild an existing path or URL → **Studio**, with baseline capture.
+- Audit/polish/slop/a11y/hierarchy/ship-readiness without redesign → **Review**.
+- A single component, narrow CSS correction, or change a skilled designer would complete quickly → ordinary implementation or **Review**, not the full loop.
+- Extract tokens/design DNA from an accepted build → **Design system**.
 
-| User intent signals | Lane |
-|---|---|
-| create / build / design a new UI / run the harness loop | **Studio** (greenfield) |
-| redesign / overhaul + existing path or URL | **Studio** + `references/overhaul.md` |
-| audit / polish / review / slop / a11y / hierarchy / ship-ready / score my current site **without** redesign | **Review** → load `references/review/polish.md` |
-| extract tokens / write DNA only / codify after ship | **Design system** (existing codify path) |
-| improve the harness itself | **Meta** |
+When the request mixes audit and redesign, Studio owns the task unless the user explicitly asked for a report before any rebuild.
 
-Tie-breakers:
+## Context model
 
-- Path/URL present **and** verbs are polish/audit/review only → **Review** (not overhaul).
-- Path/URL present **and** verbs are redesign/overhaul/rebuild or goals include "raise originality / rebrand / new direction" → **Studio** overhaul.
-- Both signals mixed ("audit then redesign") → run **Review** first only if user asked for a report before rebuild; otherwise **Studio** overhaul. If still ambiguous, ask one clarifying question (Review-only vs full overhaul) — do not silently start the 4-agent loop for pure polish language.
-- Near-miss pure CSS tweak without design-quality ask → do not start Studio (existing eval id 4 spirit); Review only if they asked to audit.
+Load `references/context.md` before planning.
 
-## Orchestrator checklist (Studio lane)
+- `PRODUCT.md` is durable product truth: users, purpose, positioning, capabilities, constraints, real evidence and brand commitments.
+- `DESIGN.md` is the current proven visual system. It is authority for extensions; during a requested redesign it is evidence and an anti-reference unless the user says to preserve it.
+- `harness-output/runs/<run-id>/surface-brief.md` contains only the current surface's mode, job, action, content/proof, constraints and selected direction.
 
-Execute `workflow.yaml` end to end. Expand prompts from references only when the step needs them.
+Inspect before asking. Ask only for material gaps. Mark unattended inferences as assumptions. Never fabricate customers, prices, benchmarks, capabilities or testimonials.
 
-1. **Plan** — write `harness-output/spec.md` + `sprint-contract.md` (creative tension + anti-goals). Load `references/planning.md` if expanding methodology. If overhaul inputs (`existing_site` / `existing_url`) are present, load `references/overhaul.md` and capture baseline before Design.
-2. **Design** — spawn DesignAgent from `agents/design-agent.md`. Input: screenshots/critique (if any), baseline screenshots on overhaul N=1, spec, sprint contract — never code. Output: `design-description-{N}.md`. Iteration 1: three divergent concepts, pick boldest that fits.
-3. **Implement** — spawn Builder with design description + code + `references/generation.md`. Must write `serve.json`, site, and `design-flags-{N}.json`.
-4. **Evaluate** — spawn Evaluator from `agents/evaluator.md`. BOC probe→first adapter; live browser only. Writes `critique-{N}.md` + `scores.json`.
-5. **Decide** — REFINE / PIVOT / SHIP per `workflow.yaml` decision table; narrative in `references/iteration.md`. Thresholds live only in `workflow.yaml` `defaults:`.
-6. **Loop** — on REFINE/PIVOT return to Design with prior scores + flags as constraints; stop at SHIP or `maxIterations`.
-7. **Codify** — on SHIP or budget exhaust: DesignAgent → `design-system/design-dna.md` (12 sections); Builder → `tokens.css`; Orchestrator instantiates `assets/design-system-skill/` → `design-system/skill/<project>-design/`.
-8. **Finalize** — `report.md` + best iteration; track `harness-output/` on the feature branch.
+## Studio execution
 
-Agents: Planner, DesignAgent, Builder, Evaluator. Roles, step wiring, thresholds, and schemas are authoritative in `workflow.yaml`. DesignAgent/Evaluator system prompts are authoritative in `agents/*.md` (paths in the routing table).
+Run `workflow.yaml` end to end.
 
-Optional multi-section pages: section decomposition (per-section Design→Implement→Evaluate, then integration). Zone scoring always runs inside Evaluate. Details: `references/evaluation.md`.
+1. **Context and Plan** — resolve product truth, classify the surface as `persuade`, `operate`, `read` or `experience`, capture a baseline for overhauls, define success criteria and select a finite iteration budget.
+2. **Explore** — unless the user already pinned an exact direction, the Visual Director produces three viable, materially different directions without ranking them. All must fit the truth and constraints.
+3. **Select** — an exact pinned direction proceeds directly. Otherwise the user selects when an answer mechanism is available; unattended runs use a reproducible seed recorded in `direction-selection.json`. The Visual Director does not pick its own winner.
+4. **Direct** — Visual Director expands the selected direction into a visual contract: thesis, first viewport, visitor path, visual world, type, colour, rhythm, motion, responsive behaviour and signature interaction.
+5. **Build** — Builder implements into the current immutable iteration directory and writes `serve.json` plus `design-flags.json`. It never commits or overwrites another iteration.
+6. **Mechanical preflight** — run `references/quality-gates.md`. Prefer Impeccable's deterministic detector when available; otherwise use the browser-computed fallback. Mechanical checks may block craft/functionality but never assign visual quality or originality.
+7. **Blind evaluation** — Evaluator interacts with the live render at verified desktop and mobile viewports, captures zones, tests states and writes `observation.json` plus `critique.md`. It emits no workflow decision.
+8. **Decide** — Orchestrator applies the ordered decision table to history and budget. REFINE preserves the direction; PIVOT starts a materially different direction; SHIP selects the strongest eligible iteration.
+9. **Finish** — a fresh evaluator reviews the selected iteration from the original brief and live render. Apply at most one correction batch and record unresolved items honestly.
+10. **Codify** — copy the selected build to `harness-output/site/`; document `DESIGN.md`, design DNA and tokens from the built result; write `report.md`.
 
-## Orchestrator checklist (Review lane)
+## Budget selection
 
-Execute `references/review/polish.md` only. Do **not** run `workflow.yaml` or the Studio loop.
+The Planner recommends one class; the user or explicit command can override it.
 
-1. **Load** — read `references/review/polish.md` (umbrella procedure).
-2. **Classify surface** — `static` (marketing/content, links only) or `interactive` (forms, states, modals, app UI).
-3. **Conditional lenses** — always load `slop.md` + `hierarchy.md`; if `interactive` or user asked states/a11y, also load `interaction.md` + `a11y.md`.
-4. **Browser (BOC)** — probe → first available adapter; HALT only if no browser automation. Ground findings in live screenshots, never code-only.
-5. **Fan-out** — spawn one subagent per loaded lens with screenshots + surface description + the lens file body; collect every issue with severity + confidence.
-6. **Aggregate** — merge/dedupe; bucket Blockers / Quality / Polish recommendations.
-7. **Act** — default: fix all Blockers + Quality on the target; `report_only` true: write findings only.
-8. **Write artifacts** — `harness-output/review/report.md`, `harness-output/review/findings.json`, `harness-output/review/screenshots/*`.
+| Class | Iterations | Use |
+|---|---:|---|
+| quick | 2 | focused surface or straightforward page |
+| standard | 4 | ambitious page or product screen |
+| ambitious | 6 | complex experience, many states or high visual risk |
 
-## Routing table
-
-| Need | Load when | Path |
-|------|-----------|------|
-| Machine loop, thresholds, schemas | Always (Studio) | `workflow.yaml` |
-| Expand prompt / creative tension | Plan | `references/planning.md` |
-| Overhaul mode (existing UI path/URL) | Plan when `existing_site` or `existing_url` provided | `references/overhaul.md` |
-| DesignAgent system prompt | Spawn design | `agents/design-agent.md` |
-| Builder principles / DESIGN-FLAG | Implement | `references/generation.md` |
-| Evaluator system prompt + BOC + rubric | Spawn evaluate | `agents/evaluator.md` |
-| Orchestrator score reading | After scores (optional) | `references/evaluation.md` |
-| REFINE / PIVOT / SHIP | Decide | `references/iteration.md` |
-| Instantiate design-system skill | Codify | `assets/design-system-skill/` |
-| Why isolation / research | User asks why | `references/rationale.md` |
-| Tune harness | Meta lane | `references/meta.md` |
-| Review umbrella (audit/polish, no Studio loop) | Review lane | `references/review/polish.md` |
-| AI slop lens | Review, always under polish | `references/review/slop.md` |
-| Hierarchy & rhythm lens | Review, always under polish | `references/review/hierarchy.md` |
-| Interaction states lens | Review when surface is interactive or user asks states | `references/review/interaction.md` |
-| Accessibility lens | Review when surface is interactive or user asks a11y | `references/review/a11y.md` |
+The budget covers builds, not every screenshot. A PIVOT consumes an iteration. An explicit numeric budget is capped at eight. Budget exhaustion selects the best available result and labels it `best_available` when it did not meet the ship floor.
 
 ## Artifacts
 
-| Artifact | By | When |
-|----------|----|------|
-| `harness-output/spec.md` | Planner | Plan |
-| `harness-output/sprint-contract.md` | Planner | Plan |
-| `harness-output/baseline.md` | Planner / orchestrator | Plan (overhaul) |
-| `harness-output/baseline/*` | Orchestrator | Plan (overhaul screenshots) |
-| `harness-output/design-description-{N}.md` | DesignAgent | Design |
-| `harness-output/serve.json` | Builder | Implement |
-| `harness-output/site/` | Builder | Implement |
-| `harness-output/design-flags-{N}.json` | Builder | Implement |
-| `harness-output/scores.json` | Evaluator | Evaluate |
-| `harness-output/critique-{N}.md` | Evaluator | Evaluate |
-| `harness-output/design-system/design-dna.md` | DesignAgent | Codify |
-| `harness-output/design-system/tokens.css` | Builder | Codify |
-| `harness-output/design-system/skill/<project>-design/` | Orchestrator | Codify |
-| `harness-output/report.md` | Orchestrator | Finalize |
-| `harness-output/review/report.md` | Orchestrator / Review | Review |
-| `harness-output/review/findings.json` | Orchestrator / Review | Review |
-| `harness-output/review/screenshots/*` | Orchestrator / Review | Review |
+Every run is immutable below `harness-output/runs/<run-id>/`.
 
-Track `harness-output/` in VCS on feature branches (not `.gitignore`). Commit after each iteration so artifacts survive branch switches.
+```text
+run.json
+spec.md
+sprint-contract.md
+surface-brief.md
+scores.json
+baseline/
+iterations/<n>/
+  direction/directions.md           # absent only when an exact direction was already pinned
+  direction/direction-selection.json
+  direction/design-description.md
+  site/
+  serve.json
+  design-flags.json
+  mechanical-findings.json
+  screenshots/
+  observation.json
+  critique.md
+finish/
+```
 
-## Prerequisites
+Only after selection may the Orchestrator replace the compatibility output at `harness-output/site/`. Never depend on git history to recover an earlier iteration.
 
-- **Browser automation** — probe → first available adapter (claude-in-chrome MCP, chrome-devtools MCP, Playwright MCP, headless Chrome CDP, harness-native) → HALT only if none. Never code-only evaluation. Full BOC: `agents/evaluator.md` / `references/evaluation.md`.
-- **Serve contract** — `harness-output/serve.json` is authoritative for path/port/command; default port 3333 is only an example.
-- **Subagents** — harness must spawn isolated agents with per-agent context (Agent tool / OMP `task` / equivalent).
+## Review lane
 
-Portability: `workflow.yaml` `capabilities:` + `schemas:` are the host contract. Model names, `/loop`, and Agent tool are labeled examples elsewhere, not requirements.
+Execute `references/review/polish.md` without `workflow.yaml`.
 
-## Extending (maintainers)
+- Deterministic checks own source/computed facts such as exact contrast, overflow and token misuse.
+- Visual lenses own visible hierarchy, composition, rhythm and generated-template feel.
+- With no browser, return `visual_status: unverified` and the mechanical report. Do not return `ready`.
+- With a browser, run one inspection batch, apply one grouped fix batch when requested, and confirm once.
 
-Maintainer-only. End users do not need this section to run Studio.
+## Quality semantics
 
-- New capability = one leaf under `references/` + **one** routing-table row with a when-clause.
-- Do **not** add a second always-on skill for “design”.
-- Do **not** instruct “read all of `references/`”.
-- Do **not** embed catalogs of every leaf procedure in this INDEX.
-- External kits (e.g. design-system prompt packs): split into leaves; map into **Design system** or **Review** lanes; polish umbrellas route **conditionally** (static → hierarchy + slop; interactive → + interaction + a11y) — never all reviewers always.
+- **The brief wins.** A user-pinned aesthetic or system is not penalised merely because a detector knows the pattern. Use a documented waiver where appropriate.
+- **Common is not automatically bad.** A common component can be correct for an operational task; it simply does not create originality by itself.
+- **Redesign replaces; refinement preserves.** Preserve product truth, content, behaviour and explicit brand commitments. Do not average the old and new visual worlds together.
+- **Mechanics are a floor, not a direction.** Passing deterministic rules does not make a page distinctive.
+- **Finish from evidence.** Record the design system after the final build, not before the implementation proves it.
+
+## Required references
+
+| Need | File |
+|---|---|
+| Product/design/surface context | `references/context.md` |
+| Machine workflow, paths and decisions | `workflow.yaml` |
+| Visual Director prompt | `agents/design-agent.md` |
+| Builder constraints | `references/generation.md` |
+| Mechanical gate and Impeccable integration | `references/quality-gates.md` |
+| Blind visual evaluation | `agents/evaluator.md` |
+| Review-only audit | `references/review/polish.md` |
+| Overhaul baseline | `references/overhaul.md` |
+| Harness tuning | `references/meta.md` |
+
+## Prerequisites and degradation
+
+Studio requires file I/O, isolated subagents, a runnable target and browser automation. Verify requested viewport widths with `window.innerWidth` or the adapter equivalent.
+
+- No browser in **Studio**: preserve the build and mechanical report, write an unevaluated observation with null scores, and HALT before a visual decision.
+- No browser in **Review**: return mechanical findings with visual status `unverified`.
+- No Impeccable: use the fallback gate and record `detector: fallback`.
+- No user answer mechanism: use the deterministic selection rule and record the seed.
+- No image generation: present directions as equal text cards; do not fabricate visual comps.
+
+## Extending the harness
+
+- Add a capability as one focused leaf plus one routing row; do not create another always-on design skill.
+- Keep style examples out of always-loaded prompts unless the user's brief names them.
+- Keep scoring language about qualities, not favoured aesthetics.
+- Version `SKILL.md`, `workflow.yaml`, `.claude-plugin/plugin.json` and eval metadata together.
+- After a material model upgrade, test whether each layer still improves outcomes before retaining its cost.

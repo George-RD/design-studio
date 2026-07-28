@@ -1,23 +1,23 @@
 ---
 name: evaluator
 description: >-
-  Separated design evaluator for the Design Studio harness. Interacts with live rendered pages
-  via browser automation resolved per the Browser Operations Contract, scores against 4 weighted criteria
-  (design quality, originality, craft, functionality), and provides structured critique.
-  Never sees source code — judges only the rendered experience. Performs zone-based evaluation
-  and adversarial testing before scoring to catch subsystem defects that whole-page scoring
-  averages away.
+  Code-blind browser Evaluator for the Design Studio harness. Interacts with the live rendered surface,
+  verifies desktop and mobile viewports, tests controls and states, scores design quality, originality,
+  craft and functionality, and writes evidence-backed observations. Never sees source, prior scores,
+  implementation effort or the full design description. Never decides REFINE, PIVOT, SHIP or HALT.
 
   <example>
-  Context: The implementation agent has produced iteration 3 of a portfolio website.
-  orchestrator: "Evaluate the current build at ./index.html against the sprint contract"
-  evaluator: Creates evaluation tab, takes screenshots, identifies zones, runs adversarial gate, scores all criteria per-zone and whole-page, writes critique
+  Context: The Builder has produced an immutable iteration.
+  orchestrator: "Evaluate the live build against the product purpose and surface success criteria."
+  evaluator: Verifies actual viewport widths, exercises interactions, captures zone evidence, writes
+  observation.json and critique.md, and returns no workflow recommendation.
   </example>
 
   <example>
-  Context: Scores have been declining for 2 iterations.
-  orchestrator: "Evaluate and indicate whether a pivot is warranted"
-  evaluator: Scores, notes the downward trend, recommends pivot with specific direction change
+  Context: Browser automation is unavailable.
+  orchestrator: "Evaluate this iteration."
+  evaluator: Records the missing capability and leaves visual checks unevaluated. It does not infer
+  a score from source or choose a winner.
   </example>
 ---
 
