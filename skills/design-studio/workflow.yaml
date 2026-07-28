@@ -61,7 +61,7 @@ workflow:
     spec: harness-output/runs/{runId}/spec.md
     sprintContract: harness-output/runs/{runId}/sprint-contract.md
     surfaceBrief: harness-output/runs/{runId}/surface-brief.md
-    selectedDirection: harness-output/runs/{runId}/selected-direction.md
+    selectedDirection: harness-output/runs/{runId}/iterations/{N}/direction/selected-direction.md
     baseline: harness-output/runs/{runId}/baseline/
     scores: harness-output/runs/{runId}/scores.json
     iterationRoot: harness-output/runs/{runId}/iterations/{N}
@@ -79,6 +79,7 @@ workflow:
     finishSelection: harness-output/runs/{runId}/finish/selection.json
     finishSelectedSite: harness-output/runs/{runId}/finish/selected-site/
     finishSelectedServeConfig: harness-output/runs/{runId}/finish/selected-serve.json
+    finishSelectedDirection: harness-output/runs/{runId}/finish/selected-direction.md
     finishCorrectedSite: harness-output/runs/{runId}/finish/corrected-site/
     finishCorrectedServeConfig: harness-output/runs/{runId}/finish/corrected-serve.json
     finishFinalTree: harness-output/runs/{runId}/finish/final-tree.json
@@ -213,12 +214,14 @@ workflow:
     correctionVerdict:
       type: object
       required:
+        - status
         - findingResults
         - actualViewports
         - postCorrectionScores
         - weightedAverage
         - materialRegression
       properties:
+        status: { enum: [evaluated, unevaluated] }
         findingResults:
           type: array
           items:
@@ -226,14 +229,27 @@ workflow:
             required: [findingId, status, evidence]
             properties:
               findingId: { type: string }
-              status: { enum: [resolved, partial, unresolved] }
+              status: { enum: [resolved, partial, unresolved, unevaluated] }
               evidence: { type: string }
         actualViewports: { type: object }
-        postCorrectionScores:
-          type: object
-          required: [designQuality, originality, craft, functionality]
-        weightedAverage: { type: number }
-        materialRegression: { type: boolean }
+        postCorrectionScores: { type: [object, 'null'] }
+        weightedAverage: { type: [number, 'null'] }
+        materialRegression: { type: [boolean, 'null'] }
+      allOf:
+        - if: { properties: { status: { const: evaluated } } }
+          then:
+            properties:
+              postCorrectionScores:
+                type: object
+                required: [designQuality, originality, craft, functionality]
+              weightedAverage: { type: number }
+              materialRegression: { type: boolean }
+        - if: { properties: { status: { const: unevaluated } } }
+          then:
+            properties:
+              postCorrectionScores: { type: 'null' }
+              weightedAverage: { type: 'null' }
+              materialRegression: { type: 'null' }
 
     scores:
       type: object
@@ -389,7 +405,7 @@ workflow:
           action: Derive a stable seed from runId plus prompt hash, map it to one of the three candidates and record method deterministic-seed.
       actions:
         - Record candidate IDs, selected ID, method and seed in direction-selection.json.
-        - Write selected-direction.md with the selected candidate's thesis, visual world, first viewport, visitor path, responsive intent, signature moment, anti-goals and explicit risk; exclude source and implementation instructions.
+        - Write the current iteration's direction/selected-direction.md with the selected candidate's thesis, visual world, first viewport, visitor path, responsive intent, signature moment, anti-goals and explicit risk; exclude source and implementation instructions.
         - Never ask a question after an explicit unattended or no-question request, even when a question mechanism exists.
         - Never use the Visual Director's private preference as the selection rule.
       outputs: [directionSelection, selectedDirection]
@@ -505,8 +521,8 @@ workflow:
       agent: Orchestrator
       actions:
         - Increment currentIteration and create the new iteration root without modifying the completed iteration.
-        - Copy the previous iteration's direction/directions.md when it exists and direction/direction-selection.json into the new iteration direction directory.
-        - Verify the copied selection still points to the run-level selected-direction.md.
+        - Copy the previous iteration's direction/directions.md when it exists, direction/direction-selection.json and direction/selected-direction.md into the new iteration direction directory.
+        - Verify the copied selection and summary retain the same candidate ID, method and visual thesis.
         - Set previousDecision REFINE and pass the prior screenshots plus visual-only critique to direct.
       outputs: [iterationRoot, directions, directionSelection]
       next: direct
@@ -531,12 +547,14 @@ workflow:
         - Within the active tier rank by weightedAverage, then the minimum criterion, then functionality, then latest iteration.
         - Record the selected iteration, tier, scores, floor status and evidence paths in finish/selection.json.
         - Copy, do not move, the selected site into finish/selected-site/.
+        - Copy the selected iteration's direction/selected-direction.md to finish/selected-direction.md.
         - Copy the selected iteration's serve.json to finish/selected-serve.json and rewrite its working directory or site-root fields to target finish/selected-site/; validate it before capture.
         - Capture fresh verified desktop and mobile screenshots.
       outputs:
         - finish/selection.json
         - finish/selected-site/
         - finish/selected-serve.json
+        - finish/selected-direction.md
         - finish/screenshots/
       next: finish_review
 
@@ -547,7 +565,7 @@ workflow:
         - original user_prompt
         - confirmed product purpose and constraints
         - surfaceBrief
-        - selectedDirection
+        - finish/selected-direction.md
         - live selected build from finishSelectedServeConfig
         - fresh finish screenshots
         - mechanical gate summary
@@ -590,7 +608,7 @@ workflow:
         - Apply one grouped correction batch without changing the direction.
         - Increment correctionRoundsUsed.
         - Rerun mechanical preflight against corrected-serve.json and recapture the same verified viewports.
-        - Ask a fresh Evaluator to classify every original material finding as resolved, partial or unresolved, rescore all four criteria, and state whether a material regression exists against selected-site.
+        - Ask a fresh Evaluator to write correction-verdict.json with status evaluated only after both required viewports are verified; then classify every original material finding, rescore all four criteria and state whether a material regression exists against selected-site. If either viewport is unavailable, write status unevaluated with null scores, average and regression instead of fabricating a comparison.
       outputs:
         - finish/corrected-site/
         - finish/corrected-serve.json
@@ -607,7 +625,7 @@ workflow:
         - corrected mechanical preflight
         - corrected desktop and mobile screenshots
       acceptanceRule: >-
-        Accept corrected-site only when every original material finding is resolved, the corrected
+        Accept corrected-site only when correction-verdict.status is evaluated, every original material finding is resolved, the corrected
         mechanical preflight has no open primary finding, both required viewports were reached,
         materialRegression is false, and—when the selected iteration was floor-passing—every
         post-correction score still meets shipFloor.
@@ -618,7 +636,7 @@ workflow:
         - when: correction satisfies the complete acceptanceRule
           selectedTree: corrected-site
           next: finalise
-        - when: any material finding is partial or unresolved, a primary mechanical finding is open, a viewport is unevaluated, a material regression exists, or required post-correction floors fail
+        - when: correction-verdict.status is unevaluated, any material finding is partial, unresolved or unevaluated, a primary mechanical finding is open, a viewport is unevaluated, a material regression exists, or required post-correction floors fail
           selectedTree: selected-site
           next: finalise_with_open_items
 
