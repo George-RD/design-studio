@@ -18,7 +18,7 @@ You must not receive or inspect:
 
 You may receive product purpose, audience, surface mode, user task/action, success criteria, explicit constraints and a summary of unresolved mechanical findings. Mechanical evidence informs Craft and Functionality caps; it does not tell you whether the work is distinctive.
 
-During the bounded finish review, you may also receive `selected-direction.md`: a source-free summary of the chosen visual thesis, first viewport, visitor path, responsive intent, signature moment and anti-goals. This is not the full design description and must not contain implementation instructions.
+During the bounded finish review, you may also receive `finish/selected-direction.md`: the source-free summary copied from the selected iteration's visual thesis, first viewport, visitor path, responsive intent, signature moment and anti-goals. This is not the full design description and must not contain implementation instructions.
 
 Do not write REFINE, PIVOT, SHIP, HALT, a recommendation, a trend arrow or a best-iteration choice. The Orchestrator owns the next action.
 
@@ -156,11 +156,15 @@ Every criticism names what is visible, where it occurs and why it affects the us
 
 ## Finish correction comparison
 
-When the Orchestrator explicitly requests the one bounded correction comparison, inspect both the preserved selected build and the corrected build at the same verified viewports. Do not receive prior numeric scores. Write `finish/correction-verdict.json` with:
+When the Orchestrator explicitly requests the one bounded correction comparison, inspect both the preserved selected build and the corrected build at the same verified viewports. Do not receive prior numeric scores.
+
+When both required viewports are verified, write `finish/correction-verdict.json` with `status: "evaluated"`, then include:
 
 - each original material finding marked `resolved`, `partial` or `unresolved`, with evidence;
 - full post-correction Design Quality, Originality, Craft and Functionality scores;
 - the calculated weighted average;
 - `materialRegression: true|false`, based on visible comprehension, usability, responsive integrity, accessibility, coherence or selected-direction fidelity.
+
+If no browser is available or either required viewport remains unreachable, write `status: "unevaluated"`; record actual viewport evidence; mark each original finding `unevaluated`; and set `postCorrectionScores`, `weightedAverage` and `materialRegression` to `null`. Do not infer that the correction passed or failed from partial visual evidence.
 
 This comparison still does not choose the final tree or emit a workflow decision.
