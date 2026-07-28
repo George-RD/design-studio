@@ -166,6 +166,18 @@
         "seed is null",
         "no originality-driven pivot replaces the pinned direction"
       ]
+    },
+    {
+      "id": 16,
+      "prompt": "The finish correction resolves one issue but introduces a primary mechanical failure and leaves another finding partial.",
+      "expected_output": "The corrected tree is rejected; the previously selected build remains final and all open correction findings are reported.",
+      "assertions": [
+        "finish/final-tree.json selects selected-site",
+        "corrected-site remains preserved as rejected evidence",
+        "harness-output/site is copied from selected-site, not corrected-site",
+        "finalStatus is complete-with-open-items",
+        "report names the regression or unresolved acceptance condition"
+      ]
     }
   ]
 }

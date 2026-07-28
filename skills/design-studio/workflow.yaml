@@ -334,11 +334,18 @@ workflow:
     - id: select_direction
       agent: Orchestrator
       inputs: [optional directions, user answer mechanism, exact pinned direction, runId, user_prompt]
+      orderedBranches:
+        - when: an exact direction is pinned
+          action: Record that direction as the sole candidate with method pinned-brief and seed null.
+        - when: the user explicitly requested unattended or no-question execution
+          action: Derive a stable seed from runId plus prompt hash, map it to one of the three candidates and record method deterministic-seed.
+        - when: a user answer mechanism is available
+          action: Present the three equal candidates, ask once and record method user with seed null.
+        - when: no user answer mechanism is available
+          action: Derive a stable seed from runId plus prompt hash, map it to one of the three candidates and record method deterministic-seed.
       actions:
-        - When an exact direction is pinned, record that direction as the sole candidate with method pinned-brief and seed null.
-        - Otherwise present the three equal candidates and ask once when an answer mechanism is available; record method user and seed null.
-        - Otherwise derive a stable seed from runId plus prompt hash and map it to one of the three candidates; record method deterministic-seed and the seed.
         - Record candidate IDs, selected ID, method and seed in direction-selection.json.
+        - Never ask a question after an explicit unattended or no-question request, even when a question mechanism exists.
         - Never use the Visual Director's private preference as the selection rule.
       outputs: [directionSelection]
       next: direct
@@ -516,25 +523,41 @@ workflow:
 
     - id: finish_correction_decide
       agent: Orchestrator
+      inputs:
+        - finish/selection.json
+        - finish/correction-verdict.json
+        - corrected mechanical preflight
+        - corrected desktop and mobile screenshots
+      acceptanceRule: >-
+        Accept corrected-site only when every original material finding is resolved, the corrected
+        mechanical preflight has no open primary finding, both required viewports were reached, and
+        the fresh Evaluator found no material regression against selected-site.
+      actions:
+        - Write finish/final-tree.json with selectedTree corrected-site or selected-site and the evidence-based rationale.
+        - Never accept corrected-site solely because its directory exists.
       branches:
-        - when: every material finding is resolved
+        - when: correction satisfies the complete acceptanceRule
+          selectedTree: corrected-site
           next: finalise
-        - when: any material finding is partial or unresolved
+        - when: any material finding is partial or unresolved, a primary mechanical finding is open, a viewport is unevaluated, or a material regression exists
+          selectedTree: selected-site
           next: finalise_with_open_items
 
     - id: finalise_with_open_items
       agent: Orchestrator
       actions:
-        - Preserve unresolved finish findings.
+        - Preserve unresolved finish findings and rejected-correction evidence.
+        - When a correction was attempted but not accepted, keep finish/selected-site as the selectedTree in finish/final-tree.json.
         - Set finalStatus complete-with-open-items.
       next: finalise
 
     - id: finalise
       agent: Orchestrator
       actions:
-        - Choose corrected-site when it exists; otherwise selected-site.
-        - Replace harness-output/site/ with a copy of that final tree.
-        - Preserve complete-with-open-items when already set; otherwise keep quality-floor-met only when the selected result still meets every floor after finish, and use best_available in all other cases.
+        - Choose the tree named by finish/final-tree.json when present; otherwise choose selected-site.
+        - Never choose corrected-site from directory existence alone.
+        - Replace harness-output/site/ with a copy of that accepted final tree.
+        - Preserve complete-with-open-items when already set; otherwise keep quality-floor-met only when the accepted result still meets every floor after finish, and use best_available in all other cases.
         - Keep every source iteration untouched.
       outputs: [compatibilitySite]
       next: codify
