@@ -91,7 +91,7 @@ Do not duplicate global product truth, the selected visual contract or full toke
 
 ## selected-direction.md — chosen visual contract summary
 
-After direction selection, write `harness-output/runs/<run-id>/selected-direction.md` as a source-free summary of the chosen candidate.
+After direction selection, write `harness-output/runs/<run-id>/iterations/<n>/direction/selected-direction.md` as a source-free summary of the chosen candidate for that iteration.
 
 Include:
 
@@ -104,7 +104,7 @@ Include:
 - signature moment;
 - known risk and anti-goals.
 
-This file is the durable run-level bridge between direction selection and later stages. The Visual Director may expand it into each iteration's `design-description.md`. The fresh finish reviewer may receive it to assess fidelity without receiving source or implementation history. The regular iteration Evaluator does not receive it. Its authority is conditional: it proposes the active visual contract, but it cannot silently override a proven system when the request is to preserve or refine that system.
+This file is the immutable direction bridge for one iteration. The Visual Director may expand it into that iteration's `design-description.md`. REFINE copies it forward unchanged; PIVOT writes a new summary for the new direction. Final selection copies the selected iteration's summary into `finish/selected-direction.md` so the fresh reviewer assesses the winning build against the direction it actually implemented. The regular iteration Evaluator does not receive it. Its authority is conditional: it proposes the active visual contract, but it cannot silently override a proven system when the request is to preserve or refine that system.
 
 ## Authority order
 
