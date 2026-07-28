@@ -1,0 +1,337 @@
+--- a/docs/index.html
++++ b/docs/index.html
+@@ -4,7 +4,7 @@
+   <meta charset="UTF-8" />
+   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+   <meta name="color-scheme" content="light" />
+-  <meta name="theme-color" content="#f2efe6" />
++  <meta name="theme-color" content="#e7eef4" />
+   <title>Design Studio — Keep code out of the design decision</title>
+   <meta name="description" content="Design Studio separates product framing, visual direction, implementation and blind evaluation so AI-built frontends escape the implementation they started from." />
+   <link rel="preconnect" href="https://fonts.googleapis.com" />
+@@ -12,9 +12,9 @@
+   <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Barlow+Condensed:wght@500;600;700;800&family=Fragment+Mono&display=swap" rel="stylesheet" />
+   <style>
+     :root {
+-      --paper: #f2efe6;
+-      --paper-deep: #e7e2d6;
+-      --panel: #d9d5ca;
++      --paper: #e7eef4;
++      --paper-deep: #d7e0e8;
++      --panel: #c8d3dc;
+       --ink: #171814;
+       --ink-soft: #4f524a;
+       --line: #a8aa9e;
+@@ -51,6 +51,7 @@
+     }
+ 
+     a { color: inherit; }
++    p { max-width: 70ch; }
+     button, a { -webkit-tap-highlight-color: transparent; }
+ 
+     :focus-visible {
+@@ -107,9 +108,8 @@
+     .header-meta {
+       padding-inline: 24px;
+       border-left: var(--rule);
+-      font: 12px/1.2 var(--mono);
+-      text-transform: uppercase;
+-      letter-spacing: 0.06em;
++      font: 12px/1.4 var(--mono);
++      letter-spacing: 0.025em;
+     }
+ 
+     .header-link {
+@@ -205,18 +205,13 @@
+     .hero-note {
+       margin: 0;
+       color: var(--ink-soft);
+-      font: 12px/1.45 var(--mono);
+-      text-transform: uppercase;
+-      letter-spacing: 0.04em;
++      font: 12px/1.5 var(--mono);
++      letter-spacing: 0.01em;
+     }
+ 
+     .runboard {
+       min-width: 0;
+-      background-color: var(--ink);
+-      background-image:
+-        linear-gradient(rgba(251, 248, 239, 0.055) 1px, transparent 1px),
+-        linear-gradient(90deg, rgba(251, 248, 239, 0.055) 1px, transparent 1px);
+-      background-size: 32px 32px;
++      background: var(--ink);
+       color: var(--cream);
+       border-left: var(--rule);
+       padding: clamp(24px, 3vw, 46px);
+@@ -229,9 +224,9 @@
+       justify-content: space-between;
+       gap: 20px;
+       border-bottom: 1px solid var(--line);
+-      font: 12px/1.35 var(--mono);
+-      text-transform: uppercase;
+-      letter-spacing: 0.04em;
++      padding-bottom: 14px;
++      font: 12px/1.45 var(--mono);
++      letter-spacing: 0.015em;
+     }
+ 
+     .runboard__status {
+@@ -246,13 +241,7 @@
+       height: 12px;
+       border-radius: 50%;
+       background: var(--acid);
+-      box-shadow: 0 0 0 7px rgba(196, 231, 84, 0.22);
+-      animation: status-pulse 2.4s ease-out infinite;
+-    }
+-
+-    @keyframes status-pulse {
+-      0%, 100% { box-shadow: 0 0 0 4px rgba(196, 231, 84, 0.18); }
+-      50% { box-shadow: 0 0 0 9px rgba(196, 231, 84, 0.28); }
++      box-shadow: 0 0 0 3px rgba(208, 240, 90, 0.28);
+     }
+ 
+     .process-board {
+@@ -298,10 +287,10 @@
+     .stage__tag {
+       display: inline-flex;
+       margin-top: 10px;
+-      padding: 3px 7px;
++      padding: 4px 8px;
+       border: 1px solid currentColor;
+       color: var(--acid);
+-      font: 10px/1.2 var(--mono);
++      font: 11px/1.4 var(--mono);
+       text-transform: uppercase;
+       letter-spacing: 0.04em;
+     }
+@@ -322,8 +311,7 @@
+       border-top: 1px solid var(--line);
+       margin-top: 24px;
+       padding-top: 20px;
+-      font: 11px/1.3 var(--mono);
+-      text-transform: uppercase;
++      font: 12px/1.45 var(--mono);
+     }
+ 
+     .iterations { display: flex; gap: 8px; }
+@@ -332,14 +320,15 @@
+       min-height: 36px;
+       display: grid;
+       place-items: center;
++      padding: 4px 8px;
+       border: 1px solid var(--line);
+     }
+     .iteration--selected { background: var(--acid); color: var(--ink); border-color: var(--acid); }
+ 
+-    .section { border-bottom: var(--rule); }
++    .section { border-bottom: var(--rule); padding: 8px; }
+     .section__inner { padding-block: clamp(80px, 10vw, 150px); }
+ 
+-    .section-title, .install h2, .footer-statement {
++    .section-title, .install h2 {
+       margin: 0;
+       font: 700 clamp(58px, 7vw, 104px)/0.86 var(--display);
+       letter-spacing: -0.02em;
+@@ -376,7 +365,7 @@
+ 
+     .mechanism-column--source .mechanism-column__head { background: var(--acid); color: var(--ink); }
+     .mechanism-column__head h3 { margin: 0; font: 600 28px/1 var(--display); text-transform: uppercase; }
+-    .mechanism-column__head span { font: 10px/1.2 var(--mono); text-transform: uppercase; }
++    .mechanism-column__head span { font: 11px/1.4 var(--mono); text-transform: uppercase; }
+ 
+     .mechanism-list { list-style: none; margin: 0; padding: 0; }
+     .mechanism-list li {
+@@ -390,7 +379,7 @@
+     .mechanism-list li:last-child { border-bottom: 0; }
+     .mechanism-mark { font: 700 24px/1 var(--display); }
+     .mechanism-list strong { font: 700 22px/1 var(--display); text-transform: uppercase; }
+-    .mechanism-list p { margin: 7px 0 0; color: var(--ink-soft); }
++    .mechanism-list p { margin: 7px 0 0; max-width: 62ch; color: var(--ink-soft); }
+ 
+     .section--blue { background: var(--blue); color: var(--cream); }
+     .section--blue .section-lead { color: var(--cream); }
+@@ -407,7 +396,7 @@
+     }
+     .run-step__number { color: var(--acid); font: 700 30px/1 var(--display); }
+     .run-step h3 { margin: 0; font: 600 26px/1 var(--display); text-transform: uppercase; }
+-    .run-step p { margin: 0; max-width: 680px; }
++    .run-step p { margin: 0; max-width: 66ch; }
+ 
+     .changes { border-top: var(--rule); }
+     .change-row {
+@@ -420,7 +409,7 @@
+       padding: 24px 0;
+     }
+     .change-row h3 { margin: 0; font: 600 24px/1 var(--display); text-transform: uppercase; }
+-    .change-row p { margin: 0; color: var(--ink-soft); }
++    .change-row p { margin: 0; max-width: 66ch; color: var(--ink-soft); }
+     .change-row__state {
+       justify-self: end;
+       min-width: 72px;
+@@ -428,7 +417,7 @@
+       background: var(--acid);
+       border: 1px solid var(--ink);
+       text-align: center;
+-      font: 10px/1.1 var(--mono);
++      font: 11px/1.4 var(--mono);
+       text-transform: uppercase;
+     }
+ 
+@@ -452,8 +441,7 @@
+       max-width: 620px;
+       padding: 48px;
+       text-align: center;
+-      font: 700 clamp(48px, 6vw, 88px)/0.9 var(--display);
+-      text-transform: uppercase;
++      font: 700 clamp(48px, 6vw, 88px)/1.35 var(--display);
+     }
+     .demo-frame.media-missing .demo-frame__fallback { display: block; }
+     .demo-notes { display: flex; flex-direction: column; justify-content: space-between; padding: 34px; }
+@@ -469,8 +457,7 @@
+       background: var(--ink);
+       color: var(--cream);
+       text-decoration: none;
+-      font: 11px/1.2 var(--mono);
+-      text-transform: uppercase;
++      font: 12px/1.4 var(--mono);
+     }
+ 
+     .install { background: var(--acid); }
+@@ -481,7 +468,7 @@
+       align-items: center;
+     }
+     .install-panel { border: var(--rule); background: var(--cream); }
+-    .install-panel__top { padding: 14px 18px; border-bottom: var(--rule); font: 11px/1.2 var(--mono); text-transform: uppercase; }
++    .install-panel__top { padding: 14px 18px; border-bottom: var(--rule); font: 12px/1.4 var(--mono); text-transform: uppercase; }
+     .install-panel pre { margin: 0; padding: 28px; white-space: pre-wrap; overflow-wrap: anywhere; font: 13px/1.65 var(--mono); }
+     .install-links { display: grid; grid-template-columns: 1fr 1fr; border-top: var(--rule); }
+     .install-links a {
+@@ -491,16 +478,21 @@
+       justify-content: center;
+       padding: 10px;
+       text-decoration: none;
+-      font: 10px/1.2 var(--mono);
+-      text-transform: uppercase;
++      font: 12px/1.4 var(--mono);
+     }
+     .install-links a:first-child { background: var(--blue); color: var(--cream); }
+     .install-links a + a { border-left: var(--rule); }
+ 
+     .site-footer { background: var(--ink); color: var(--cream); }
+     .footer-inner { min-height: 210px; display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 48px; padding-block: 42px; }
+-    .footer-statement { max-width: 760px; font-size: clamp(46px, 5vw, 74px); }
+-    .footer-meta { display: grid; gap: 10px; justify-items: end; font: 10px/1.4 var(--mono); text-transform: uppercase; }
++    .footer-statement {
++      max-width: 760px;
++      margin: 0;
++      font: 700 clamp(46px, 5vw, 74px)/1.3 var(--display);
++      letter-spacing: -0.015em;
++      text-wrap: balance;
++    }
++    .footer-meta { display: grid; gap: 10px; justify-items: end; font: 12px/1.45 var(--mono); }
+     .footer-meta a { min-height: 44px; display: flex; align-items: center; }
+ 
+     .visually-hidden {
+@@ -515,7 +507,7 @@
+       border: 0 !important;
+     }
+ 
+-    @media (max-width: 1080px) {
++    @media (max-width: 1200px) {
+       .hero { grid-template-columns: 1fr; }
+       .hero-copy { min-height: auto; padding-block: 70px 56px; }
+       .runboard { border-left: 0; border-top: var(--rule); }
+--- a/skills/design-studio/workflow.yaml
++++ b/skills/design-studio/workflow.yaml
+@@ -334,11 +334,18 @@
+     - id: select_direction
+       agent: Orchestrator
+       inputs: [optional directions, user answer mechanism, exact pinned direction, runId, user_prompt]
++      orderedBranches:
++        - when: an exact direction is pinned
++          action: Record that direction as the sole candidate with method pinned-brief and seed null.
++        - when: the user explicitly requested unattended or no-question execution
++          action: Derive a stable seed from runId plus prompt hash, map it to one of the three candidates and record method deterministic-seed.
++        - when: a user answer mechanism is available
++          action: Present the three equal candidates, ask once and record method user with seed null.
++        - when: no user answer mechanism is available
++          action: Derive a stable seed from runId plus prompt hash, map it to one of the three candidates and record method deterministic-seed.
+       actions:
+-        - When an exact direction is pinned, record that direction as the sole candidate with method pinned-brief and seed null.
+-        - Otherwise present the three equal candidates and ask once when an answer mechanism is available; record method user and seed null.
+-        - Otherwise derive a stable seed from runId plus prompt hash and map it to one of the three candidates; record method deterministic-seed and the seed.
+         - Record candidate IDs, selected ID, method and seed in direction-selection.json.
++        - Never ask a question after an explicit unattended or no-question request, even when a question mechanism exists.
+         - Never use the Visual Director's private preference as the selection rule.
+       outputs: [directionSelection]
+       next: direct
+@@ -516,25 +523,41 @@
+ 
+     - id: finish_correction_decide
+       agent: Orchestrator
++      inputs:
++        - finish/selection.json
++        - finish/correction-verdict.json
++        - corrected mechanical preflight
++        - corrected desktop and mobile screenshots
++      acceptanceRule: >-
++        Accept corrected-site only when every original material finding is resolved, the corrected
++        mechanical preflight has no open primary finding, both required viewports were reached, and
++        the fresh Evaluator found no material regression against selected-site.
++      actions:
++        - Write finish/final-tree.json with selectedTree corrected-site or selected-site and the evidence-based rationale.
++        - Never accept corrected-site solely because its directory exists.
+       branches:
+-        - when: every material finding is resolved
++        - when: correction satisfies the complete acceptanceRule
++          selectedTree: corrected-site
+           next: finalise
+-        - when: any material finding is partial or unresolved
++        - when: any material finding is partial or unresolved, a primary mechanical finding is open, a viewport is unevaluated, or a material regression exists
++          selectedTree: selected-site
+           next: finalise_with_open_items
+ 
+     - id: finalise_with_open_items
+       agent: Orchestrator
+       actions:
+-        - Preserve unresolved finish findings.
++        - Preserve unresolved finish findings and rejected-correction evidence.
++        - When a correction was attempted but not accepted, keep finish/selected-site as the selectedTree in finish/final-tree.json.
+         - Set finalStatus complete-with-open-items.
+       next: finalise
+ 
+     - id: finalise
+       agent: Orchestrator
+       actions:
+-        - Choose corrected-site when it exists; otherwise selected-site.
+-        - Replace harness-output/site/ with a copy of that final tree.
+-        - Preserve complete-with-open-items when already set; otherwise keep quality-floor-met only when the selected result still meets every floor after finish, and use best_available in all other cases.
++        - Choose the tree named by finish/final-tree.json when present; otherwise choose selected-site.
++        - Never choose corrected-site from directory existence alone.
++        - Replace harness-output/site/ with a copy of that accepted final tree.
++        - Preserve complete-with-open-items when already set; otherwise keep quality-floor-met only when the accepted result still meets every floor after finish, and use best_available in all other cases.
+         - Keep every source iteration untouched.
+       outputs: [compatibilitySite]
+       next: codify
+--- a/skills/design-studio/evals/evals.json
++++ b/skills/design-studio/evals/evals.json
+@@ -166,6 +166,18 @@
+         "seed is null",
+         "no originality-driven pivot replaces the pinned direction"
+       ]
++    },
++    {
++      "id": 16,
++      "prompt": "The finish correction resolves one issue but introduces a primary mechanical failure and leaves another finding partial.",
++      "expected_output": "The corrected tree is rejected; the previously selected build remains final and all open correction findings are reported.",
++      "assertions": [
++        "finish/final-tree.json selects selected-site",
++        "corrected-site remains preserved as rejected evidence",
++        "harness-output/site is copied from selected-site, not corrected-site",
++        "finalStatus is complete-with-open-items",
++        "report names the regression or unresolved acceptance condition"
++      ]
+     }
+   ]
+ }
