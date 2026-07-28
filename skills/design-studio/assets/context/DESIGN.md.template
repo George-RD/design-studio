@@ -1,0 +1,47 @@
+# Design system
+
+> Canonical only after a Design Studio run reaches `SHIP`.
+
+## Name and essence
+
+## Principles
+
+1.
+
+## Visual world
+
+<!-- Cultural/material source, not a list of adjectives. -->
+
+## Colour roles
+
+- Ground:
+- Foreground:
+- Supporting surfaces:
+- Accent/action:
+- Status:
+
+## Typography roles
+
+- Display:
+- Body:
+- Interface/data:
+
+## Spatial logic
+
+<!-- Density, rhythm, alignment, composition, and responsive behavior. -->
+
+## Components and controls
+
+<!-- What stays consistent, including state treatment. -->
+
+## Motion and interaction character
+
+## Signature motifs
+
+## Voice and interface copy
+
+## Anti-goals
+
+## Provenance
+
+<!-- Shipped surface, date, design-description artifact, and evaluation result. -->
