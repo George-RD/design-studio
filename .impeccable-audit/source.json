@@ -1,5 +1,15 @@
 [
   {
+    "antipattern": "cramped-padding",
+    "name": "Cramped padding",
+    "description": "Text is too close to the edge of its container. Two shapes: (1) an element with its own text where the padding is too low for the font size, and (2) a wrapper with text-bearing children and near-zero padding against a visible boundary (border, outline, or non-transparent background) — children land flush against the boundary line. Add at least 8px (ideally 12–16px) of padding inside bordered, outlined, or colored containers.",
+    "severity": "warning",
+    "category": "quality",
+    "file": "/home/runner/work/design-studio/design-studio/docs/index.html",
+    "line": 0,
+    "snippet": "<div> \"runboard__top\": children flush against border-bottom on bottom (no inset)"
+  },
+  {
     "antipattern": "tight-leading",
     "name": "Tight line height",
     "description": "Line height below 1.3x the font size makes multi-line text hard to read. Use 1.5 to 1.7 for body text so lines have room to breathe.",
