@@ -1,0 +1,387 @@
+--- a/skills/design-studio/workflow.yaml
++++ b/skills/design-studio/workflow.yaml
+@@ -105,7 +105,7 @@ workflow:
+       - Mechanical detectors never award Design Quality or Originality.
+       - The Evaluator never emits REFINE, PIVOT, SHIP or HALT.
+       - The Orchestrator is the sole decision owner.
+-      - No visual decision is made when the requested browser viewports were not actually reached.
++      - No visual decision is made unless every required browser viewport was actually reached and verified.
+       - Every build is preserved before another iteration begins.
+       - A PIVOT preserves product truth and discards visual implementation.
+       - User-pinned directions are not penalised or pivoted merely for matching a common pattern.
+@@ -129,6 +129,10 @@ workflow:
+       finishScreenshots: harness-output/runs/{runId}/finish/screenshots/
+       finishVerdict: harness-output/runs/{runId}/finish/verdict.json
+       finishCritique: harness-output/runs/{runId}/finish/critique.md
++      finishCorrectedSite: harness-output/runs/{runId}/finish/corrected-site/
++      finishCorrectedServe: harness-output/runs/{runId}/finish/corrected-serve.json
++      finishCorrectionVerdict: harness-output/runs/{runId}/finish/correction-verdict.json
++      finishFinalTree: harness-output/runs/{runId}/finish/final-tree.json
+       compatibilitySite: harness-output/site/
+       designDna: harness-output/runs/{runId}/design-system/design-dna.md
+       tokens: harness-output/runs/{runId}/design-system/tokens.css
+@@ -286,7 +290,7 @@ workflow:
+         - Create the run root without reusing a previous run directory.
+         - Resolve mode as overhaul when an existing path or URL is present; otherwise greenfield.
+         - Load references/context.md and inspect existing PRODUCT.md, DESIGN.md, product docs, routes, assets and runnable commands before asking questions.
+-        - Resolve budget class, numeric budget and pivot budget; cap explicit iteration budgets at defaults.explicitBudgetMaximum and use defaults.pivotBudget.explicit.
++        - Resolve budget class, numeric budget and pivot budget; clamp explicit iteration budgets to the inclusive range [1, defaults.explicitBudgetMaximum] before writing run.json and use defaults.pivotBudget.explicit.
+         - Write run.json with status initialising, the resolved pivotBudget, pivotsUsed 0 and correctionRoundsUsed 0; write scores.json with empty iterations and decisions.
+       outputs: [runManifest, scores]
+       next: plan
+@@ -342,6 +346,7 @@ workflow:
+         - when: no user answer mechanism is available
+           action: Derive a stable seed from runId plus prompt hash, map it to one of the three candidates and record method deterministic-seed.
+       actions:
+         - Record candidate IDs, selected ID, method and seed in direction-selection.json.
++        - Update surface-brief.md with the selected candidate ID and thesis, selection method and seed or pinned constraint; keep implementation details and global tokens out of the brief.
+         - Never ask a question after an explicit unattended or no-question request, even when a question mechanism exists.
+         - Never use the Visual Director's private preference as the selection rule.
+       outputs: [directionSelection]
+@@ -401,9 +406,9 @@ workflow:
+         - Run the mechanical gate and write mechanical-findings.json.
+         - Start the target from serve.json and resolve one browser adapter for the pass.
+         - Capture the requested desktop and mobile viewports plus relevant interaction states.
+-        - Verify requested widths after resize or emulation and record actualViewports.
+-        - If the browser cannot run, or either required viewport remains unreachable, write observation.json with status unevaluated, null scores and limitationReason. Do not emit numeric visual scores.
++        - Verify every required width after resize or emulation and record actualViewports.
++        - If the browser cannot run, or any required viewport remains unreachable after emulation, write observation.json with status unevaluated, null scores, actualViewports and limitationReason. Do not emit numeric visual scores or a visual recommendation.
+         - Otherwise interact with the live render, run adversarial checks and write a visual-only observation, critique and numeric scores.
+       outputs: [mechanicalFindings, screenshots, observation, critique]
+       next: decide
+@@ -417,7 +422,7 @@ workflow:
+         - newest observation, mechanical findings and current iteration
+       orderedRules:
+-        - condition: browser evaluation did not complete or requested viewports are unevaluable
++        - condition: observation.status == unevaluated or any required viewport is absent from actualViewports
+           decision: HALT
+           finalStatus: halted-browser-unavailable
+           action: Preserve the current build and mechanical findings. Do not fabricate a visual decision.
+@@ -453,19 +458,48 @@ workflow:
+       transitions:
+         REFINE: increment_iteration_then_direct
+         PIVOT: increment_iteration_then_explore_direction
++
++    - id: increment_iteration_then_direct
++      agent: Orchestrator
++      inputs: [current iteration, directionSelection, optional iterationDirs, scores]
++      actions:
++        - Increment currentIteration and create the next immutable iteration directory with direction/, build/ and evaluation/ subdirectories.
++        - Copy the prior iteration's direction-selection.json into the new direction/ directory without changing candidate IDs, selected ID, method or seed.
++        - Copy directions.md when it exists so the refined iteration retains the candidate provenance; a pinned run may omit it.
++        - Update run.json with the new currentIteration and previousDecision REFINE before spawning the Visual Director.
++        - Preserve every prior iteration artifact unchanged.
++      outputs: [runManifest, iterationDirs, directionSelection]
++      next: direct
++
++    - id: increment_iteration_then_explore_direction
++      agent: Orchestrator
++      inputs: [current iteration, scores, prior direction artifacts]
++      actions:
++        - Increment currentIteration and create the next immutable iteration directory with direction/, build/ and evaluation/ subdirectories.
++        - Update run.json with the new currentIteration, previousDecision PIVOT and incremented pivotsUsed before direction exploration.
++        - Preserve prior direction artifacts as history but do not copy their selection into the new iteration.
++      outputs: [runManifest]
++      next: explore_direction
+ 
+     - id: finish_select
+       agent: Orchestrator
+       inputs: [scores, all iteration artifacts]
+       actions:
+-        - Select the highest weightedAverage among iterations with no open primary mechanical finding; break ties by Functionality, then Craft, then lower iteration number.
+-        - If none are mechanically clean, select the highest weightedAverage across all iterations and mark the result best_available.
++        - First consider iterations with no open primary mechanical finding and every criterion at or above defaults.shipFloor; rank them by weightedAverage, then Functionality, then Craft, then lower iteration number.
++        - If none pass every floor, consider iterations with no open primary mechanical finding using the same ranking and mark the result best_available.
++        - If none are mechanically clean, rank all iterations the same way and mark the result best_available.
+         - Copy the selected immutable build to finish/selected-site without mutating the source iteration.
+-        - Write finish/selection.json with selected iteration, score and gate rationale.
++        - Write finish/selection.json with selected iteration, eligibility class, score and gate rationale, plus source paths for site, serve.json, design-description.md and direction-selection.json.
+       outputs: [finishSelection, finishSelectedSite]
+       next: finish_review
+ 
+@@ -473,12 +507,16 @@ workflow:
+       agent: Evaluator
+       isolation: fresh context, no source and no build history
+       inputs:
+         - selected build copy
+         - selected iteration desktop and mobile screenshots
++        - selected iteration design-description.md
++        - selected iteration direction-selection.json
++        - pinned direction constraints when present
+         - productContext
+         - surfaceBrief
+         - sprintContract
+         - selected iteration mechanical findings
+       actions:
+-        - Review contract fidelity, hierarchy, clarity, responsiveness, interaction, mechanical blockers and obvious AI-default residue.
++        - Review fidelity to the selected visual contract, hierarchy, clarity, responsiveness, interaction, mechanical blockers and obvious AI-default residue.
+         - Report only material findings with evidence and severity.
+         - Write verdict ready or correction_required.
+       outputs: [finishVerdict, finishCritique]
+@@ -502,17 +540,22 @@ workflow:
+       agent: Builder
+       inputs:
+         - finish/selected-site
++        - finish/selection.json
++        - selected iteration serve.json
+         - finish/verdict.json
+         - finish/critique.md
+         - selected iteration mechanical findings
+       actions:
+         - Copy selected-site to corrected-site before editing; never alter the selected iteration or selected-site.
++        - Copy the selected iteration serve contract to finish/corrected-serve.json and rewrite its path and working directory to finish/corrected-site while preserving the command, runtime and environment. If no serve contract exists, write a valid corrected-site contract before testing.
+         - Apply one grouped correction batch limited to the material findings.
+         - Set correctionRoundsUsed to 1 in run.json.
+-        - Re-run the mechanical preflight on corrected-site.
+-        - Recapture desktop and mobile screenshots.
++        - Re-run the mechanical preflight against corrected-site using finish/corrected-serve.json.
++        - Recapture desktop and mobile screenshots from the corrected serve contract and verify both required widths.
+         - Ask a fresh Evaluator to classify each original material finding as resolved, partial or unresolved and identify any material regression.
+       outputs:
+         - harness-output/runs/{runId}/finish/corrected-site/
++        - harness-output/runs/{runId}/finish/corrected-serve.json
+         - harness-output/runs/{runId}/finish/correction-verdict.json
+       next: finish_correction_decide
+ 
+@@ -523,6 +566,7 @@ workflow:
+         - finish/selection.json
+         - finish/correction-verdict.json
++        - finish/corrected-serve.json
+         - corrected mechanical preflight
+         - corrected desktop and mobile screenshots
+       acceptanceRule: >-
+--- a/skills/design-studio/agents/evaluator.md
++++ b/skills/design-studio/agents/evaluator.md
+@@ -34,9 +34,8 @@ Resolve the first available adapter and use it for the whole pass.
+ - `set_viewport(width, height)`
+ - `screenshot()`
+ 
+-After every viewport change, verify the effective width through `window.innerWidth` or the adapter equivalent. If the width is locked, try device-metrics emulation. If a width still cannot be reached, record the actual width and mark dependent checks `not_evaluated`. Never label duplicate screenshots as different viewports.
+-
+-If browser automation is unavailable, or if either required viewport remains unreachable, stop with the failure output below. Do not score from code or from a mislabeled screenshot.
++After every viewport change, verify the effective width through `window.innerWidth` or the adapter equivalent. If the width is locked, try device-metrics emulation. If either required viewport still cannot be reached, record the actual widths and stop with the unevaluated failure output below. Never label duplicate screenshots as different viewports, and never score from partial viewport evidence.
+ 
+ ## Protocol
+@@ -58,7 +57,7 @@ Only after the gate may you judge design quality.
+ 
+ ## Hard gate
+ 
+-If there is no browser, or either required viewport cannot be verified after emulation:
++If there is no browser, or any required viewport cannot be verified after emulation:
+ 
+ - write `observation.json` with `status: unevaluated`;
+ - set all four scores and `weightedAverage` to `null`;
+--- a/skills/design-studio/references/review/polish.md
++++ b/skills/design-studio/references/review/polish.md
+@@ -39,10 +39,15 @@ Run the mechanical gate even when browser automation is unavailable. Prefer Imp
+ 
+ Probe available browser adapters and use the first responsive adapter for the pass.
+ 
+-- Browser available: capture desktop 1440 and mobile 390, verify actual widths, then continue.
++- Browser available: capture desktop 1440 and mobile 390, verifying each actual width after resize or emulation.
+ - No browser: do not invent visual findings. Write the report with `visual_status: unverified`, retain the mechanical findings and stop visual lenses.
++- Required viewport unavailable: if either 1440 or 390 still cannot be verified after emulation, do not invent a browser-grounded verdict. Write the report with `visual_status: unverified`, record `actualViewports` and the limitation, retain the mechanical findings and stop visual lenses.
+ 
+-An unverified report is not `ready`; it explicitly requires later browser verification.
++An unverified report is not `ready`; it explicitly requires later browser verification. This Review result is standalone and does not create a Studio observation, score record or HALT decision.
+ 
+ ## 4. Conditional visual lenses
+--- a/skills/design-studio/evals/evals.json
++++ b/skills/design-studio/evals/evals.json
+@@ -59,14 +59,14 @@
+     {
+       "id": 6,
+       "prompt": "Review ./site, but no browser automation is connected.",
+-      "expected_output": "Mechanical findings are retained; the visual observation is explicitly unevaluated and no visual decision is made.",
++      "expected_output": "The Review lane retains mechanical evidence and writes an unverified review report without starting or halting the Studio workflow.",
+       "assertions": [
+-        "observation.json exists with status unevaluated",
+-        "all four scores and weightedAverage are null",
+-        "run status is halted-browser-unavailable",
+-        "no fabricated visual scores exist"
++        "Review lane is selected",
++        "harness-output/review/report.md exists",
++        "report verdict and visual_status are unverified",
++        "mechanical findings are retained",
++        "no Studio observation, score record or HALT decision is required",
++        "no fabricated visual findings exist"
+       ]
+     },
+--- a/skills/design-studio/SKILL.md
++++ b/skills/design-studio/SKILL.md
+@@ -148,8 +148,8 @@ Studio requires file I/O, isolated subagents, a runnable target and browser auto
+ 
+-- No browser in **Studio**: preserve the build and mechanical report, write an unevaluated observation with null scores, and HALT before a visual decision.
+-- No browser in **Review**: return mechanical findings with visual status `unverified`.
++- No browser or unverifiable required viewport in **Studio**: preserve the build and mechanical report, write an unevaluated observation with null scores, and HALT before a visual decision.
++- No browser or unverifiable required viewport in **Review**: return mechanical findings with visual status `unverified`; do not create Studio decision artifacts.
+ - No Impeccable: use the fallback gate and record `detector: fallback`.
+ - No user answer mechanism: use the deterministic selection rule and record the seed.
+ - No image generation: present directions as equal text cards; do not fabricate visual comps.
+--- a/README.md
++++ b/README.md
+@@ -30,15 +30,23 @@ Studio lane — run the design → build → evaluate loop for new surfaces and full
+ 
+ ### Claude Code
+ 
+-From GitHub:
++Inside Claude Code, add this repository as a marketplace, install the plugin, then reload:
+ 
+-```bash
+-claude plugin install https://github.com/George-RD/design-studio
++```text
++/plugin marketplace add George-RD/design-studio
++/plugin install design-studio@design-studio
++/reload-plugins
+ ```
+ 
+-Then run `/reload-plugins`.
+-
+-For one session:
++For a one-session local checkout:
+ 
+ ```bash
++git clone https://github.com/George-RD/design-studio.git
+ claude --plugin-dir ./design-studio
+ ```
+ 
+@@ -76,28 +84,44 @@ Each run produces:
+ harness-output/
+ ├── runs/<run-id>/
+ │   ├── run.json
+ │   ├── scores.json
++│   ├── baseline/                   # overhaul only
+ │   ├── spec.md
+ │   ├── sprint-contract.md
+ │   ├── surface-brief.md
+ │   ├── iterations/<n>/
+ │   │   ├── direction/
+-│   │   ├── build/site/
++│   │   │   ├── directions.md       # omitted for an exact pinned direction
++│   │   │   ├── direction-selection.json
++│   │   │   └── design-description.md
++│   │   ├── build/
++│   │   │   ├── site/
++│   │   │   ├── serve.json
++│   │   │   └── design-flags.json
+ │   │   └── evaluation/
+-│   │       ├── observation.json
+-│   │       └── mechanical-findings.json
++│   │       ├── mechanical-findings.json
++│   │       ├── screenshots/
++│   │       ├── observation.json
++│   │       └── critique.md
+ │   ├── finish/
++│   │   ├── selection.json
++│   │   ├── selected-site/
++│   │   ├── screenshots/
+ │   │   ├── verdict.json
+-│   │   └── correction-verdict.json
++│   │   ├── critique.md
++│   │   ├── corrected-site/         # only when one correction batch runs
++│   │   ├── corrected-serve.json     # only when one correction batch runs
++│   │   ├── correction-verdict.json  # only when one correction batch runs
++│   │   └── final-tree.json
+ │   ├── design-system/
+ │   │   ├── design-dna.md
+ │   │   ├── tokens.css
+ │   │   └── skill/
+ │   └── report.md
+ └── site/                   # compatibility copy of the final selected tree
+ ```
+--- a/docs/index.html
++++ b/docs/index.html
+@@ -507,6 +507,13 @@
+       .install-grid { grid-template-columns: 1fr; }
+     }
+ 
++    @media (max-width: 780px) {
++      .change-row { grid-template-columns: 1fr auto; gap: 12px 20px; }
++      .change-row p { grid-column: 1 / -1; }
++      .change-row__state { grid-column: 2; grid-row: 1; }
++    }
++
+     @media (max-width: 720px) {
+       body { font-size: 17px; }
+       .site-header__inner { min-height: 64px; grid-template-columns: 1fr auto; }
+@@ -598,7 +605,7 @@
+-      <div class="runboard" aria-label="Design Studio run board">
++      <div class="runboard" role="group" aria-label="Design Studio run board">
+@@ -639,7 +646,7 @@
+-          <div class="iterations" aria-label="Four preserved iterations, iteration three selected">
++          <div class="iterations" role="img" aria-label="Four preserved iterations, iteration three selected">
+@@ -722,9 +729,10 @@
+           <div class="install-panel__top">Install in Claude Code</div>
+-          <pre><code>claude plugin install https://github.com/George-RD/design-studio
++          <pre><code>/plugin marketplace add George-RD/design-studio
++/plugin install design-studio@design-studio
+ 
+ /reload-plugins
+ 
+@@ -741,11 +749,17 @@
+     const status = document.getElementById('copy-status');
+     const demoImage = document.querySelector('.demo-frame img');
+ 
+-    demoImage?.addEventListener('error', () => {
++    function markMediaMissing() {
++      if (!demoImage?.isConnected) return;
+       demoImage.parentElement.classList.add('media-missing');
+       demoImage.remove();
+-    });
++    }
++
++    if (demoImage) {
++      demoImage.addEventListener('error', markMediaMissing);
++      if (demoImage.complete && demoImage.naturalWidth === 0) markMediaMissing();
++    }
+ 
+     async function copyText(value) {
+       if (navigator.clipboard && window.isSecureContext) {
+@@ -760,9 +774,14 @@
+       textarea.style.opacity = '0';
+       document.body.appendChild(textarea);
+-      textarea.select();
+-      document.execCommand('copy');
+-      textarea.remove();
++      try {
++        textarea.select();
++        if (!document.execCommand('copy')) {
++          throw new Error('copy command rejected');
++        }
++      } finally {
++        textarea.remove();
++      }
+     }
+--- /dev/null
++++ b/.claude-plugin/marketplace.json
+@@ -0,0 +1,31 @@
++{
++  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
++  "name": "design-studio",
++  "metadata": {
++    "description": "A multi-agent frontend design harness with separated visual direction, implementation and blind evaluation."
++  },
++  "owner": {
++    "name": "George Reid-Dowd"
++  },
++  "plugins": [
++    {
++      "name": "design-studio",
++      "description": "Separates product framing, visual direction, implementation and live blind evaluation; preserves every iteration and codifies the selected design system.",
++      "version": "1.4.0",
++      "author": {
++        "name": "George Reid-Dowd"
++      },
++      "source": "./",
++      "category": "design",
++      "homepage": "https://george-rd.github.io/design-studio/",
++      "tags": [
++        "design",
++        "frontend",
++        "multi-agent",
++        "evaluation",
++        "design-system"
++      ]
++    }
++  ]
++}
