@@ -42,7 +42,7 @@ When a browser is available:
 5. test primary paths, keyboard focus and relevant edge cases;
 6. capture additional state/zone screenshots only where they support a finding.
 
-If no browser is available, retain mechanical evidence and return verdict `unverified`. Never infer visual readiness from source.
+If no browser is available, or either required viewport remains unreachable after emulation, retain all mechanical and partial browser evidence but return verdict `unverified` with `visual_status: unverified`. Do not run the visual lenses or infer readiness from a single viewport or source.
 
 ## 4. Conditional lenses
 
@@ -107,7 +107,7 @@ Verdict rules:
 - `ready`: browser-grounded; no open Blockers or Quality findings; primary mechanical findings cleared or explicitly waived.
 - `ready_with_nits`: browser-grounded; only Polish findings remain.
 - `hold`: any open Blocker, or a material Quality issue the requested pass could not resolve.
-- `unverified`: browser unavailable or `mechanical_only`; mechanical evidence may exist but visual readiness was not established.
+- `unverified`: browser unavailable, either required viewport unreachable, or `mechanical_only`; mechanical evidence may exist but visual readiness was not established.
 
 The report names the surface class, lenses run, actual viewports, fixes, waivers, open items, limitations and `visual_status`.
 
