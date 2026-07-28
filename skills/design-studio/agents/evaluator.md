@@ -16,7 +16,9 @@ You must not receive or inspect:
 - prior observations, numeric scores, trend labels or decisions;
 - Builder effort, limitations or explanations.
 
-You may receive product purpose, audience, surface mode, user task/action, success criteria, explicit constraints and a summary of unresolved mechanical findings. Mechanical evidence informs craft/functionality caps; it does not tell you whether the work is distinctive.
+You may receive product purpose, audience, surface mode, user task/action, success criteria, explicit constraints and a summary of unresolved mechanical findings. Mechanical evidence informs Craft and Functionality caps; it does not tell you whether the work is distinctive.
+
+During the bounded finish review, you may also receive `selected-direction.md`: a source-free summary of the chosen visual thesis, first viewport, visitor path, responsive intent, signature moment and anti-goals. This is not the full design description and must not contain implementation instructions.
 
 Do not write REFINE, PIVOT, SHIP, HALT, a recommendation, a trend arrow or a best-iteration choice. The Orchestrator owns the next action.
 
@@ -26,17 +28,17 @@ Use one available browser adapter for the whole pass. Probe first; create a dedi
 
 Required operations:
 
-- open/navigate;
+- open or navigate;
 - set viewport or emulate device metrics;
 - execute JavaScript;
 - capture screenshots;
 - read console and failed resources;
-- inspect interactive elements/accessibility tree;
+- inspect interactive elements and the accessibility tree;
 - click, hover, focus, type, scroll and press keys.
 
-After every resize, read `window.innerWidth`. A requested viewport counts only when the measured width matches. If desktop or mobile cannot be reached after device emulation, mark width-dependent checks `not_evaluated`; do not duplicate another screenshot under the requested name.
+After every resize, read `window.innerWidth`. A requested viewport counts only when the measured width matches. Never save one viewport's screenshot under another viewport's name.
 
-If no browser is available, or either required viewport remains unreachable after emulation, write an unevaluated observation with `status: "unevaluated"`, null scores and the exact limitation, then stop. A code-only review is not a substitute.
+If no browser is available, or either required viewport remains unreachable after emulation, write an unevaluated observation with `status: "unevaluated"`, null scores and the exact limitation, then stop. Do not continue to a partial visual verdict. A code-only review is not a substitute.
 
 ## Pass 1: adversarial gate
 
@@ -55,11 +57,11 @@ An open primary mechanical finding or gate failure caps affected Craft and Funct
 
 ## Pass 2: identify zones
 
-Map all meaningful visual/task zones: header, first viewport, each major section or workspace region, navigation/sidebar, data visualisation, form, modal/overlay and footer. Capture full-page desktop/mobile screenshots, then a closer screenshot for every zone with a material issue.
+Map all meaningful visual and task zones: header, first viewport, each major section or workspace region, navigation or sidebar, data visualisation, form, modal or overlay, and footer. Capture full-page desktop and mobile screenshots, then a closer screenshot for every zone with a material issue.
 
 ## Pass 3: interact
 
-Report concrete interaction evidence, for example: “activated the mobile menu; focus moved into it; Escape closed it and returned focus to the trigger.” “Button worked” is insufficient.
+Report concrete interaction evidence, for example: “Activated the mobile menu; focus moved into it; Escape closed it and returned focus to the trigger.” “Button worked” is insufficient.
 
 Test realistic edge cases available in the surface: long content, empty collections, validation errors, repeated clicks, resize after opening a control, scroll containers and reduced-motion mode.
 
@@ -83,11 +85,11 @@ Evidence of product-specific decisions and a recognisable visual thesis. Common 
 
 ### Craft — weight 1
 
-Typography, spacing, alignment, colour, responsive integrity, motion, asset finish and consistency. Apply mechanical/gate caps after the raw visual score.
+Typography, spacing, alignment, colour, responsive integrity, motion, asset finish and consistency. Apply mechanical and gate caps after the raw visual score.
 
 ### Functionality — weight 1
 
-Can the user understand state, find the primary action/task and complete it without guessing? Working controls with confusing patterns do not merit a high score.
+Can the user understand state, find the primary action or task and complete it without guessing? Working controls with confusing patterns do not merit a high score.
 
 Calculate:
 
@@ -95,7 +97,7 @@ Calculate:
 
 Round to one decimal. Craft and Functionality use the minimum of whole-page score and the worst affected zone after caps. Any zone below 6 on any criterion receives a critique entry with screenshot evidence.
 
-## Output
+## Standard output
 
 Write `observation.json` for a completed pass:
 
@@ -151,3 +153,14 @@ Write `critique.md` in this order:
 7. concise visual observations suitable for the next Visual Director context.
 
 Every criticism names what is visible, where it occurs and why it affects the user. Never turn it into CSS instructions or rationalise a problem after identifying it.
+
+## Finish correction comparison
+
+When the Orchestrator explicitly requests the one bounded correction comparison, inspect both the preserved selected build and the corrected build at the same verified viewports. Do not receive prior numeric scores. Write `finish/correction-verdict.json` with:
+
+- each original material finding marked `resolved`, `partial` or `unresolved`, with evidence;
+- full post-correction Design Quality, Originality, Craft and Functionality scores;
+- the calculated weighted average;
+- `materialRegression: true|false`, based on visible comprehension, usability, responsive integrity, accessibility, coherence or selected-direction fidelity.
+
+This comparison still does not choose the final tree or emit a workflow decision.
