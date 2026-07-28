@@ -22,6 +22,13 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.head_ref || github.ref_name }}
 
+      - name: Reconstruct and verify reviewed overlay
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .design-studio-1.4-overlay.b64.part-* | base64 --decode > .design-studio-1.4-overlay.zip
+          echo "05d15c98653d461399a9c89d50306657d7a2074989d6eca00f528da96d40a083  .design-studio-1.4-overlay.zip" | sha256sum --check -
+
       - name: Extract reviewed overlay
         shell: bash
         run: |
@@ -31,9 +38,6 @@ jobs:
           import zipfile
 
           archive = Path('.design-studio-1.4-overlay.zip')
-          if not archive.is_file():
-              raise SystemExit('overlay archive is missing')
-
           with zipfile.ZipFile(archive) as bundle:
               for item in bundle.infolist():
                   target = Path(item.filename)
@@ -79,12 +83,19 @@ jobs:
               raise SystemExit('bounded finish correction decision is missing')
           if 'status: { enum: [evaluated, unevaluated] }' not in workflow:
               raise SystemExit('unevaluated observation contract is missing')
+          if 'pivotBudget' not in workflow:
+              raise SystemExit('pivot budget is missing')
+          if len(evals.get('evals', [])) != 15:
+              raise SystemExit(f"expected 15 evals, found {len(evals.get('evals', []))}")
           PY
 
       - name: Commit reviewed overlay
         shell: bash
         run: |
           set -euo pipefail
+          rm -f .design-studio-1.4-overlay.zip
+          rm -f .design-studio-1.4-overlay.b64.part-*
+          rm -f .github/workflows/apply-design-studio-overlay.yml
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
