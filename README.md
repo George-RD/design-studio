@@ -55,8 +55,7 @@ Run a new design:
 Redesign an existing surface:
 
 ```text
-/design-studio:create --overhaul ./site --goals "keep the information architecture" \
-  replace the visual direction and raise originality
+/design-studio:create --overhaul ./site --goals "keep the information architecture" replace the visual direction and raise originality
 ```
 
 Audit without redesigning:
