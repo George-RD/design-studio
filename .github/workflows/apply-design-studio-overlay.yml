@@ -1,0 +1,91 @@
+name: Apply reviewed Design Studio 1.4 overlay
+
+on:
+  push:
+    branches:
+      - agent/impeccable-meta-merge-1-4
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract reviewed overlay
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import zipfile
+
+          archive = Path('.design-studio-1.4-overlay.zip')
+          if not archive.is_file():
+              raise SystemExit('overlay archive is missing')
+
+          with zipfile.ZipFile(archive) as bundle:
+              for item in bundle.infolist():
+                  target = Path(item.filename)
+                  if target.is_absolute() or '..' in target.parts:
+                      raise SystemExit(f'unsafe archive path: {item.filename}')
+              bundle.extractall('.')
+          PY
+
+      - name: Validate overlay contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          import re
+
+          root = Path('.')
+          plugin = json.loads((root / '.claude-plugin/plugin.json').read_text())
+          evals = json.loads((root / 'skills/design-studio/evals/evals.json').read_text())
+          skill = (root / 'skills/design-studio/SKILL.md').read_text()
+          workflow = (root / 'skills/design-studio/workflow.yaml').read_text()
+
+          skill_version = re.search(r'^version:\s*([^\s]+)', skill, re.M).group(1)
+          workflow_version = re.search(r'^\s{2}version:\s*([^\s]+)', workflow, re.M).group(1)
+          versions = {plugin['version'], evals['version'], skill_version, workflow_version}
+          if versions != {'1.4.0'}:
+              raise SystemExit(f'version mismatch: {versions}')
+
+          required = [
+              'README.md',
+              'NOTICE.md',
+              'docs/index.html',
+              'skills/design-studio/workflow.yaml',
+              'skills/design-studio/references/context.md',
+              'skills/design-studio/references/quality-gates.md',
+          ]
+          missing = [path for path in required if not (root / path).is_file()]
+          if missing:
+              raise SystemExit(f'missing overlay files: {missing}')
+
+          if 'finish_correction_decide' not in workflow:
+              raise SystemExit('bounded finish correction decision is missing')
+          if 'status: { enum: [evaluated, unevaluated] }' not in workflow:
+              raise SystemExit('unevaluated observation contract is missing')
+          PY
+
+      - name: Commit reviewed overlay
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          if git diff --cached --quiet; then
+            echo 'No overlay changes to commit.'
+            exit 0
+          fi
+          git commit -m 'feat: integrate Impeccable patterns into Design Studio'
+          git push origin "HEAD:${GITHUB_REF_NAME}"
