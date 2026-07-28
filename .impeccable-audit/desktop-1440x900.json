@@ -1,12 +1,1 @@
-[
-  {
-    "antipattern": "cramped-padding",
-    "name": "Cramped padding",
-    "description": "Text is too close to the edge of its container. Two shapes: (1) an element with its own text where the padding is too low for the font size, and (2) a wrapper with text-bearing children and near-zero padding against a visible boundary (border, outline, or non-transparent background) — children land flush against the boundary line. Add at least 8px (ideally 12–16px) of padding inside bordered, outlined, or colored containers.",
-    "severity": "warning",
-    "category": "quality",
-    "file": "http://127.0.0.1:4173/",
-    "line": 0,
-    "snippet": "0px vertical padding (need ≥4.0px for 12px text)"
-  }
-]
+[]
