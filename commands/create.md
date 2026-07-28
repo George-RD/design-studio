@@ -33,4 +33,4 @@ Rules:
 3. Execute the workflow end to end. Do not collapse Visual Director, Builder and Evaluator into one context.
 4. Preserve every iteration under its immutable run directory. Never ask an agent to self-commit.
 5. The Evaluator writes observations and scores only. The Orchestrator alone writes decisions.
-6. On completion, copy the selected build to `harness-output/site/`, run the bounded finish pass, then codify and report.
+6. On completion, run the bounded finish pass on the selected build, copy the accepted final tree to `harness-output/site/`, then codify and report.
