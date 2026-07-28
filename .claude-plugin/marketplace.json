@@ -1,0 +1,30 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "design-studio",
+  "metadata": {
+    "description": "Multi-agent frontend design workflows with code-blind direction and evaluation."
+  },
+  "owner": {
+    "name": "George Reid-Dowd"
+  },
+  "plugins": [
+    {
+      "name": "design-studio",
+      "description": "Separate product framing, visual direction, implementation and blind browser evaluation; preserve immutable iterations and codify the accepted result.",
+      "version": "1.4.0",
+      "author": {
+        "name": "George Reid-Dowd"
+      },
+      "source": "./",
+      "category": "design",
+      "homepage": "https://george-rd.github.io/design-studio/",
+      "tags": [
+        "design",
+        "frontend",
+        "evaluation",
+        "multi-agent",
+        "design-system"
+      ]
+    }
+  ]
+}
