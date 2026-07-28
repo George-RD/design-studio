@@ -1,234 +1,74 @@
-# Implementation Agent Module
+# Builder contract
 
-Principles for the implementation agent — how to faithfully execute design descriptions from the Design Agent, and how to respond to evaluator critique.
+The Builder translates the selected visual contract into a working surface. It decides technical means, never a different design.
 
-## Role Definition
+## Inputs
 
-The Implementation Agent is a **faithful executor**, not a creative director. It receives two inputs:
+- `design-description.md` from the Visual Director;
+- product truth, spec, sprint contract and surface brief;
+- source substrate for greenfield/overhaul;
+- the previous iteration site only on REFINE;
+- existing `DESIGN.md` only when the task extends or refines that system.
 
-1. **Design description** (natural language from the Design Agent) — the primary input defining what to build
-2. **Existing code** (when iterating) — context for what's currently there
+On PIVOT, start from a clean copy of product behaviour and content. Do not carry visual structure, tokens or decorative code from the abandoned direction merely because reuse is convenient.
 
-**Overhaul seed (N=1):** when overhaul mode seeded `harness-output/site/`, you may receive that tree on the first implement. Still execute the design description faithfully; seed is substrate, not design authority. PIVOT abandons the implementation.
+## Immutable output
 
-The Implementation Agent decides **how** to implement, never **what** to implement:
+Write only inside the current `iterations/<N>/` directory. Earlier iteration files are read-only evidence.
 
-| Implementation Agent decides | Design Agent decides |
-|------------------------------|---------------------|
-| CSS Grid vs Flexbox | Layout composition and spatial relationships |
-| Animation library choice | What moves and when |
-| Responsive breakpoint strategy | Visual hierarchy at each viewport |
-| Font loading technique | Which typefaces and at what scale |
-| Build tooling and bundling | Nothing about tooling |
+Required outputs:
 
-If the design description says "15vw scale" — implement 15vw. Not 8vw "because that seemed more reasonable." If it says "Klein Blue vertical bar at 40% width" — that's exactly what gets built. The Implementation Agent does not second-guess the Design Agent's creative decisions.
+- `site/` — runnable source;
+- `serve.json` — command, URL/port, working directory and readiness condition;
+- `design-flags.json` — one entry for every material visual instruction;
+- any build notes needed by the Orchestrator, never by the blind Evaluator.
 
-### Unimplementable Descriptions
+Never self-commit, change branches or push. Git history is not the iteration store.
 
-If a design description contains instructions that are technically impossible or extremely ambiguous:
+## Fidelity
 
-1. **Flag it** — write a `/* DESIGN-FLAG: [description of the issue] */` comment in the code AND note it in the iteration output
-2. **Implement the closest faithful alternative** — preserve the visual intent even if the exact technique differs (e.g., if "particles that dissolve and reform" is specified, implement a CSS/JS particle animation that approximates the effect)
-3. **Never silently downgrade** — the orchestrator must relay the flag to the Design Agent so it can revise in the next iteration
-4. **Do not skip the instruction** — an imperfect implementation of an ambitious design is better than silently dropping it
+Translate every material instruction into a testable requirement before coding. Literal proportions, scale relationships, named colours, content order and interaction intent remain literal unless technically impossible.
 
-## Design Description Execution
+For each instruction, record:
 
-When a design description arrives, follow this execution protocol:
+- `implemented` — rendered as specified;
+- `equivalent` — different technique, same visible/interactive outcome, with reason;
+- `blocked` — cannot be delivered within current constraints, with evidence and closest safe behaviour.
 
-### Step 1: Parse into Technical Requirements
+Never silently soften scale, mute colour, conventionalise composition, omit a signature interaction or add decorative concepts not in the direction.
 
-Break each visual instruction into implementable pieces. Example:
+## Product and usability floor
 
-> "The hero should split into two zones: left 60% with the strapline at 15vw scale, right 40% with a Klein Blue vertical bar. CTA sits bottom-left corner, small and confident."
+Creative fidelity does not excuse broken product behaviour. Preserve or add as required:
 
-Parses to:
-- Container: two-column layout, 60/40 split
-- Left zone: headline text at `font-size: 15vw`
-- Right zone: solid `#002FA7` (Klein Blue) vertical element, full height
-- CTA: positioned bottom-left of container, small font size, no hover enlargement
+- semantic structure and landmarks;
+- working keyboard path and visible focus;
+- labels, names, descriptions and meaningful alternatives;
+- responsive recomposition at verified viewports;
+- loading, empty, error, disabled, success and degraded states where reachable;
+- reduced-motion behaviour;
+- honest synthetic/demo labels where real content is unavailable;
+- clear action hierarchy and recoverable errors;
+- performance safeguards for expensive effects.
 
-### Step 2: Implement Faithfully
+Accessibility and state completeness are implementation obligations, not unsolicited art direction.
 
-Execute each parsed requirement directly:
-- **Literal values are literal.** "15vw" means `font-size: 15vw`, not a "similar large size"
-- **Named colors are exact.** "Klein Blue" means `#002FA7`, not "a nice blue"
-- **Spatial descriptions are precise.** "bottom-left corner" means positioned there, not "roughly in the lower area"
-- **Proportions are ratios.** "60/40 split" means `grid-template-columns: 3fr 2fr` or equivalent, not "roughly more on the left"
+## Tokens and assets
 
-### Step 3: Flag Impossibilities
+Keep design tokens in one canonical source so the codify step can extract them without guessing. Use the project's conventions when they are compatible with the direction.
 
-If a design instruction is technically impossible or would create severe UX problems:
-1. **Implement the closest possible version** that preserves visual intent
-2. **Document the deviation** with a comment in code: `/* DEVIATION: design called for X, implemented Y because Z */`
-3. **Report to orchestrator** so the Design Agent can adjust if needed
+Author or source the assets the composition needs. Do not substitute gradients, glass, generic icon tiles or empty chrome where the contract requires real imagery, diagrams or demonstrations. Verify remote assets resolve and provide fallbacks.
 
-Never silently substitute. Never "interpret" a design instruction into something safer.
+## Pre-handoff checks
 
-## Execution Guidelines
+Before mechanical preflight:
 
-The following principles guide HOW the Implementation Agent executes design descriptions with high fidelity. These are not creative direction — they are technical execution standards that ensure design descriptions are rendered accurately.
+1. run the build and basic tests;
+2. verify the `serve.json` contract from a clean shell;
+3. compare every design flag against the rendered surface;
+4. test primary interactions and states;
+5. verify no earlier iteration changed;
+6. inspect desktop and mobile once for obvious overflow or breakage;
+7. remove debug controls and invented claims.
 
-### Typography Execution
-
-When the design description specifies typography:
-- Source fonts per the design description or spec (Google Fonts as a fallback — go deep, page 3+ of search results, fonts with fewer than 1M uses; but respect licensed, proprietary, or self-hosted font requirements)
-- Use variable fonts when the design calls for expressive weight ranges
-- Implement type size and weight hierarchy exactly as described
-- Use `clamp()` for fluid typography when the design description specifies responsive behavior
-- If the design description does NOT specify fonts, flag this to the orchestrator rather than choosing defaults
-- **If your model or harness lacks web search**, use a bundled/system stack that still expresses explicit typographic intent (e.g. a system-mono stack for a technical feel, a serif stack for editorial, or a compressed sans for a poster aesthetic). Never default to "Inter/system-ui" just because it is the AI font stack.
-
-Avoid defaulting to (unless the design description explicitly names them):
-- Inter, Roboto, Arial, Helvetica, system-ui (the "AI font stack")
-- Space Grotesk, Poppins (overused in AI-generated sites)
-
-### Color Execution
-
-When the design description specifies a palette:
-- Define all colors as CSS custom properties from the start
-- **Keep all design tokens — colors, fonts, spacing, timing — as CSS custom properties in one place** (e.g. a single `styles/tokens.css` or a `:root` block at the top of the stylesheet) so the codify step can extract `harness-output/design-system/tokens.css` directly
-- Implement the exact ratios described (e.g., "dominant at 60%, supporting at 30%, accent at 10%")
-- Match named colors precisely (research hex values for named colors like "Klein Blue", "Chartreuse", "Oxblood")
-- If the design specifies "warm earth tones" without specifics, flag for clarification rather than guessing
-- **Colour is never the only cue for status or meaning.** Pair status colours with a glyph, shape, label, or pattern (e.g. a red error state also shows an error icon and "Error" text; a success state uses a checkmark).
-
-### Spatial Composition Execution
-
-Implement layout instructions precisely:
-- Asymmetric layouts with the exact proportions specified
-- Overlapping elements at the described depth relationships
-- Negative space exactly where the design description places it
-- CSS Grid and custom positioning when the design calls for complex layouts
-- Flexbox when the design calls for simpler flow-based arrangements
-
-### Motion & Interaction Execution
-
-Implement animation and interaction as described:
-- Timing and easing curves as specified (or matching the described aesthetic if curves aren't explicit)
-- Scroll-triggered animations at the described trigger points
-- CSS-only solutions for HTML projects; Motion library for React (unless the design specifies otherwise)
-- Stagger timing and orchestration as described
-
-### Atmosphere Execution
-
-Implement atmospheric effects as described:
-- Gradient meshes, noise textures, geometric patterns at specified opacity/intensity
-- Layer order and transparency as described
-- Background effects with the specified scroll behavior
-
-## Responding to Critique
-
-### On REFINE
-
-The evaluator has provided specific critique. The Implementation Agent has two options:
-
-**Option A: Refine execution** (when the design direction is sound but execution fell short)
-1. **Read every critique point.** Do not skim.
-2. **Address the highest-impact issues first.** The evaluator orders by impact.
-3. **Do not regress.** When fixing one thing, check that you haven't broken what was working.
-4. **Improve fidelity to the design description.** Refinement means getting closer to what was described, not making independent creative choices.
-
-**Option B: Escalate to orchestrator** (when originality <= 5)
-If the evaluator scores originality <= 5, the Implementation Agent should flag to the orchestrator that the design direction may need revision. The orchestrator then applies the iteration.md decision framework — which covers this range: originality ≤4 after iteration 2 triggers PIVOT, originality ≤5 after iteration 4 triggers PIVOT, and originality stagnant below 6 for 2 iterations triggers PIVOT. Between these thresholds, the orchestrator routes back to the Design Agent for a revised design description within the current REFINE cycle. The Implementation Agent does NOT attempt creative improvements independently.
-
-The Implementation Agent should NEVER try to fix low originality scores by making its own creative choices. If the design direction is wrong, the Design Agent needs to fix it.
-
-### On PIVOT
-
-The evaluator (or decision framework) has determined the current direction isn't working:
-
-1. **Receive the new design description from the Design Agent.** This is a completely fresh creative direction.
-2. **Abandon the existing implementation entirely.** Do not salvage code, layouts, or color choices.
-3. **Start a blank file.** The existing code serves only as a reference for what NOT to do.
-4. **Execute the new design description with full fidelity.** Same execution discipline as iteration one.
-5. **Retain only the spec requirements.** Features and functionality persist across pivots. Everything visual changes.
-
-## Implementation Patterns
-
-### File Structure
-
-For single-page sites:
-```text
-index.html
-styles.css
-script.js
-assets/         (images, fonts if self-hosted)
-```
-
-For React/Vite:
-```text
-src/
-  App.tsx
-  components/
-  styles/
-  assets/
-```
-
-### CSS Architecture
-
-- Use CSS custom properties for all design tokens (colors, fonts, spacing, timing)
-- Keep the custom properties in a single source of truth so the codify step can extract `tokens.css` deterministically
-- Mobile-first responsive design
-- Prefer `clamp()` for fluid typography over breakpoint-based sizing
-- Use `@layer` for specificity management in complex sites
-- Container queries over media queries where applicable
-
-### Performance Baseline
-
-- No external CDN calls that block render (self-host critical fonts)
-- Images use `loading="lazy"` and appropriate `srcset`
-- CSS animations use `transform` and `opacity` only for GPU acceleration
-- Total page weight under 2MB for initial load
-
-## Anti-Patterns
-
-The Implementation Agent MUST avoid these telltale AI-generation patterns. If the design description does not explicitly call for one of these patterns, their presence is a bug:
-
-1. **The SaaS Landing Page.** Hero -> features grid -> testimonials -> CTA footer. This structure screams "template."
-2. **Card Grids.** Uniform cards in a 3-column grid is the most common AI layout. Break it.
-3. **Purple Gradients.** The default AI color scheme. Unless the design description explicitly calls for purple, avoid it entirely.
-4. **Centered Everything.** Center-aligned headings + center-aligned text + center-aligned buttons is the AI default. Use left-alignment, asymmetry, or deliberate composition.
-5. **Stock Illustrations.** No generic SVG illustrations of people at desks. If illustrations are needed, they should be contextual and distinctive.
-6. **Generic Hover Effects.** Scale(1.05) on cards is the AI default. Design hover states that match the aesthetic.
-7. **Softened Values.** The design description says 15vw but you implemented 8vw. Says full-bleed but you added padding. Says Klein Blue but you used a "nicer" blue. This is the most insidious anti-pattern — implement what was described.
-8. **Unsolicited Additions.** Adding decorative elements, transitions, or layout features not in the design description. If it wasn't described, don't add it.
-
-## Anti-Pattern Pre-Submission Checklist
-
-Before committing each iteration, verify every item. Fidelity failures (softened values, unsolicited additions) must be fixed immediately by the Implementation Agent — do not commit until resolved. Structural/creative failures (centered hero, card grid, lack of asymmetry) should be flagged to the orchestrator for the Design Agent to address in the next iteration:
-
-- [ ] Not a centered hero section (unless design description explicitly calls for it)
-- [ ] Not a uniform card grid (unless design description explicitly calls for it)
-- [ ] Not purple gradients or Tailwind defaults
-- [ ] Font stack matches design description's typography direction
-- [ ] At least one interaction that's surprising or delightful (if the design description specifies interactions)
-- [ ] Layout has asymmetry or spatial tension (unless design description specifies otherwise)
-- [ ] No values softened from design description (check font sizes, colors, proportions)
-- [ ] No unsolicited additions beyond what the design description specified
-
-## Fidelity Check
-
-After implementation, before submitting for evaluation, the Implementation Agent performs a self-audit:
-
-### Accuracy
-- Does the rendered output match the design description point by point?
-- Walk through each instruction in the design description and confirm it was implemented.
-
-### Softening Detection
-- Did I reduce any font sizes from what was specified?
-- Did I mute any colors from what was specified?
-- Did I add margins/padding that soften a deliberately tight or dramatic layout?
-- Did I round any sharp corners the design description intended to be sharp?
-- If any softening is detected: revert to the described values.
-
-### Addition Detection
-- Did I add any visual elements the design description didn't specify?
-- Did I add decorative animations not described?
-- Did I add hover effects not described?
-- If any additions are detected: remove them unless they're required for basic usability (e.g., focus states for accessibility).
-
-### Omission Detection
-- Did I skip any instruction from the design description?
-- Is every described element present in the output?
-- If any omissions are detected: implement the missing elements before submitting.
+Do not perform the blind aesthetic score yourself. The Evaluator owns that pass.

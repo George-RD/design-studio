@@ -3,1019 +3,788 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Design Studio</title>
-  <meta name="description" content="A four-agent design studio that generates production frontends by separating planning, design, implementation, and evaluation into isolated agents." />
+  <meta name="color-scheme" content="light" />
+  <meta name="theme-color" content="#e7eef4" />
+  <title>Design Studio — Keep code out of the design decision</title>
+  <meta name="description" content="Design Studio separates product framing, visual direction, implementation and blind evaluation so AI-built frontends escape the implementation they started from." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;800&family=Manrope:wght@400;600;700&family=Space+Mono:wght@400&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Barlow+Condensed:wght@500;600;700;800&family=Fragment+Mono&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --paper: #FAFAFA;
-      --warm-paper: #F0F0F0;
-      --ink: #0A0A0A;
-      --muted: #555452;
-      --accent: #FF3D00;
-      --rule: #E0E0E0;
-      --deep: #111111;
-      --hover-charcoal: #2A2A2A;
-      --surface-dark: #111111;
-      --off-white: #FAFAFA;
-      --charcoal: #1A1A1A;
+      --paper: #e7eef4;
+      --paper-deep: #d7e0e8;
+      --panel: #c8d3dc;
+      --ink: #171814;
+      --ink-soft: #4f524a;
+      --line: #a8aa9e;
+      --blue: #1457d9;
+      --blue-deep: #0b3d9b;
+      --orange: #f04b23;
+      --orange-text: #c83212;
+      --acid: #d0f05a;
+      --cream: #fbf8ef;
+      --display: "Barlow Condensed", "Arial Narrow", "Liberation Sans Narrow", sans-serif;
+      --body: "Atkinson Hyperlegible", "Clear Sans", "Helvetica Neue", sans-serif;
+      --mono: "Fragment Mono", "Go Mono", "Liberation Mono", monospace;
+      --content: 1440px;
+      --pad: clamp(20px, 4vw, 64px);
+      --rule: 1px solid var(--ink);
     }
 
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    * { box-sizing: border-box; }
 
-    html { scroll-behavior: smooth; }
+    html {
+      scroll-behavior: smooth;
+      background: var(--paper);
+    }
 
     body {
-      font-family: 'Manrope', sans-serif;
-      font-weight: 400;
-      font-size: 17px;
-      line-height: 1.65;
-      color: var(--ink);
+      margin: 0;
       background: var(--paper);
+      color: var(--ink);
+      font-family: var(--body);
+      font-size: 18px;
+      line-height: 1.55;
       -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
     }
 
-.grid-wrap {
-      width: 100%;
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 8vw;
-      position: relative;
+    a { color: inherit; }
+    p { max-width: 60ch; }
+    button, a { -webkit-tap-highlight-color: transparent; }
+
+    :focus-visible {
+      outline: 3px solid var(--blue);
+      outline-offset: 4px;
     }
 
-    /* Header */
-    .site-header {
-      height: 80px;
-      border-bottom: 1px solid var(--rule);
+    .skip-link {
+      position: fixed;
+      z-index: 100;
+      left: 16px;
+      top: 12px;
+      padding: 10px 14px;
+      background: var(--acid);
+      color: var(--ink);
+      font: 13px/1.4 var(--mono);
+      transform: translateY(-180%);
     }
-    .site-header .grid-wrap {
-      height: 100%;
+
+    .skip-link:focus { transform: translateY(0); }
+
+    .shell {
+      width: min(100%, var(--content));
+      margin-inline: auto;
+      padding-inline: var(--pad);
+    }
+
+    .site-header { border-bottom: var(--rule); }
+
+    .site-header__inner {
+      min-height: 72px;
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      align-items: stretch;
+    }
+
+    .wordmark, .header-meta, .header-link {
       display: flex;
       align-items: center;
+    }
+
+    .wordmark {
+      gap: 10px;
+      width: fit-content;
+      min-height: 44px;
+      text-decoration: none;
+      font: 800 24px/1 var(--display);
+      letter-spacing: 0.01em;
+      text-transform: uppercase;
+    }
+
+    .wordmark__slash { color: var(--orange); }
+
+    .header-meta {
+      padding: 8px 24px;
+      border-left: var(--rule);
+      font: 12px/1.4 var(--mono);
+      letter-spacing: 0.025em;
+    }
+
+    .header-link {
+      min-width: 118px;
+      justify-content: center;
+      padding: 8px 20px;
+      border-left: var(--rule);
+      background: var(--ink);
+      color: var(--cream);
+      font: 12px/1.4 var(--mono);
+      text-decoration: none;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      transition: background 160ms ease-out, color 160ms ease-out;
+    }
+
+    .header-link:hover { background: var(--blue); }
+
+    main { overflow: clip; }
+
+    .hero {
+      min-height: calc(100svh - 73px);
+      display: grid;
+      grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr);
+      border-bottom: var(--rule);
+    }
+
+    .hero-copy {
+      min-height: calc(100svh - 73px);
+      padding: clamp(56px, 7vw, 104px) var(--pad) 40px max(var(--pad), calc((100vw - var(--content)) / 2 + var(--pad)));
+      display: flex;
+      flex-direction: column;
       justify-content: space-between;
     }
-    .wordmark {
-      font-family: 'Manrope', sans-serif;
-      font-weight: 600;
-      font-size: 18px;
-      letter-spacing: 0.02em;
-      color: var(--ink);
-      text-decoration: none;
-      display: inline-flex;
-      padding: 12px 16px;
-      margin-left: -16px;
-    }
-    .header-meta {
-      display: flex;
-      align-items: center;
-      gap: 24px;
-    }
-    .version {
-      font-family: 'Space Mono', monospace;
-      font-size: 12px;
+
+    .hero-copy h1 {
+      margin: 0;
+      max-width: 700px;
+      font: 800 clamp(72px, 7.4vw, 108px)/0.82 var(--display);
+      letter-spacing: -0.025em;
       text-transform: uppercase;
-      letter-spacing: 1.4px;
-      color: var(--muted);
+      text-wrap: balance;
     }
-    .header-rule {
-      width: 1px;
-      height: 24px;
-      background: var(--rule);
-    }
-    .header-link {
-      font-family: 'Space Mono', monospace;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 1.4px;
-      color: var(--paper);
-      text-decoration: none;
-      background: var(--ink);
-      padding: 12px 20px;
-      height: 44px;
-      border-radius: 4px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      transition: background 200ms ease, color 200ms ease;
-    }
-    .header-link:hover { background: var(--charcoal); color: var(--paper); }
 
-    /* Reveal animations */
-    .reveal {
-      opacity: 0;
-      transform: translateY(20px);
-      transition: opacity 700ms ease-out, transform 700ms ease-out;
-    }
-    .reveal.visible { opacity: 1; transform: translateY(0); }
+    .hero-line { display: block; }
+    .hero-line--blue { color: var(--blue); }
 
-    .section-reveal {
-      opacity: 0;
-      transform: translateY(20px);
-      transition: opacity 600ms ease-out, transform 600ms ease-out;
-    }
-    .section-reveal.visible { opacity: 1; transform: translateY(0); }
-
-    .hero-title.reveal { transition-delay: 0ms; }
-    .artifact-frame.reveal { transition-delay: 0ms; }
-    .hero-manifesto.reveal { transition-delay: 200ms; }
-    .hero-rule.reveal { transition-delay: 400ms; }
-    .hero-command.reveal { transition-delay: 600ms; }
-
-    /* Hero */
-    .hero {
-      min-height: calc(100vh - 80px);
-      position: relative;
-      display: flex;
-      padding: 48px 0 120px;
-    }
-    .hero-grid {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      width: 100%;
-      min-height: calc(100vh - 80px - 48px - 120px);
-    }
-    .hero-left {
-      max-width: 720px;
-      display: flex;
-      flex-direction: column;
-    }
-    .hero-title {
-      font-family: 'Fraunces', serif;
-      font-weight: 800;
-      font-size: clamp(56px, 11vw, 170px);
-      line-height: 0.88;
-      letter-spacing: -0.02em;
-      color: var(--ink);
-    }
-    .hero-manifesto {
-      font-family: 'Manrope', sans-serif;
-      font-weight: 400;
-      font-size: 20px;
+    .hero-summary {
+      max-width: 540px;
+      margin: 30px 0 0;
+      font-size: clamp(20px, 1.7vw, 27px);
       line-height: 1.5;
-      max-width: 520px;
-      margin-top: 40px;
     }
-    .hero-rule {
-      width: 80px;
-      height: 1px;
-      background: var(--rule);
-      margin-top: auto;
-      margin-bottom: 24px;
-    }
-    .hero-command {
-      font-family: 'Space Mono', monospace;
-      font-size: 16px;
-      line-height: 1.4;
-      color: var(--muted);
-      word-break: break-all;
-    }
-    .hero-command .prompt { color: var(--accent); margin-right: 8px; }
 
-
-    /* Faint 12-column grid overlay in the hero only */
-    .hero-grid-lines {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
+    .hero-actions {
       display: grid;
-      grid-template-columns: repeat(12, 1fr);
-      gap: 24px;
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 8vw;
-      opacity: 0.04;
-      z-index: 0;
-    }
-    .hero-grid-lines span {
-      border-left: 1px solid var(--rule);
-    }
-    .hero-grid-lines span:first-child { border-left: none; }
-
-    /* Clip-reveal animation for editorial moments */
-    .clip-reveal {
-      overflow: hidden;
-    }
-    .clip-reveal > * {
-      transform: translateY(100%);
-      transition: transform 600ms cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .clip-reveal.visible > * {
-      transform: translateY(0);
-    }
-
-    /* Problem statement */
-    .problem {
-      background: var(--warm-paper);
-      padding: 140px 0;
-    }
-    .problem-grid {
-      display: grid;
-      grid-template-columns: repeat(12, 1fr);
-      gap: 24px;
-      align-items: start;
-    }
-    .problem-left {
-      grid-column: 1 / span 8;
-      position: relative;
-    }
-    .quote-mark {
-      font-family: 'Fraunces', serif;
-      font-weight: 700;
-      font-size: 280px;
-      line-height: 0.8;
-      color: var(--accent);
-      opacity: 0.14;
-      position: absolute;
-      top: -72px;
-      left: -36px;
-      pointer-events: none;
-      z-index: 0;
-    }
-    .problem blockquote {
-      font-family: 'Fraunces', serif;
-      font-weight: 700;
-      font-size: 42px;
-      line-height: 1.12;
-      letter-spacing: -0.01em;
-      color: var(--ink);
-      position: relative;
-      z-index: 1;
-    }
-    .problem-right {
-      grid-column: 9 / span 4;
-      padding-top: 120px;
-    }
-    .problem-right p {
-      font-size: 17px;
-      line-height: 1.65;
-      color: var(--muted);
-    }
-
-    /* Shared section title */
-    .section-title {
-      font-family: 'Fraunces', serif;
-      font-weight: 700;
-      font-size: 56px;
-      line-height: 1.05;
-      letter-spacing: -0.01em;
-      color: var(--ink);
-    }
-
-    .section-label {
-      font-family: 'Space Mono', monospace;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      color: var(--muted);
-      margin-bottom: 16px;
-    }
-
-    /* Process */
-    .process {
-      padding: 140px 0;
-      border-top: 1px solid var(--rule);
-    }
-    .process .section-title { margin-bottom: 24px; }
-    .process-diagram {
-      position: relative;
-      padding: 80px 0;
-    }
-    .process-line {
-      position: absolute;
-      top: calc(80px + 28px);
-      left: 0;
-      right: 0;
-      height: 1px;
-      background: var(--ink);
-      transform: translateY(-50%) scaleX(0);
-      transform-origin: left;
-      transition: transform 800ms ease-out;
-    }
-    .process-diagram.visible .process-line { transform: translateY(-50%) scaleX(1); }
-    .process-nodes {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 24px;
-      position: relative;
-    }
-    .node {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      gap: 16px;
-    }
-    .node-circle {
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      border: 1px solid var(--ink);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: 'Space Mono', monospace;
-      font-size: 12px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 1.4px;
-      background: var(--paper);
-      color: var(--ink);
-      flex-shrink: 0;
-      transition: transform 200ms ease, background 200ms ease, color 200ms ease;
-      cursor: default;
-    }
-    .node:hover .node-circle {
-      transform: scale(1.08);
-      background: var(--ink);
-      color: var(--paper);
-    }
-    .node-label { max-width: 220px; margin-top: 0; }
-    .node-label strong {
-      display: block;
-      font-family: 'Manrope', sans-serif;
-      font-weight: 700;
-      font-size: 18px;
-      line-height: 1.25;
-      margin-bottom: 4px;
-    }
-    .node-label span {
-      display: block;
-      font-family: 'Manrope', sans-serif;
-      font-weight: 400;
-      font-size: 16px;
-      line-height: 1.6;
-      color: var(--muted);
-    }
-    .process-lead {
+      gap: 14px;
+      margin-top: 34px;
       max-width: 620px;
-      font-family: 'Manrope', sans-serif;
-      font-size: 20px;
-      line-height: 1.5;
-      color: var(--ink);
-      margin-bottom: 72px;
-    }
-    .process-loop {
-      margin-top: 56px;
-      max-width: 620px;
-      font-family: 'Manrope', sans-serif;
-      font-size: 16px;
-      line-height: 1.6;
-      color: var(--muted);
-    }
-    .process-loop strong { color: var(--ink); font-weight: 700; }
-
-    /* Video */
-    .video {
-      padding: 140px 0;
-      border-top: 1px solid var(--rule);
-    }
-    .video .section-title { margin-bottom: 80px; }
-    .video-frame {
-      position: relative;
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      background: var(--deep);
-      border: 1px solid var(--rule);
-      overflow: hidden;
-      box-shadow: 0 24px 64px rgba(26, 26, 26, 0.12);
-    }
-    .video-frame video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-    .video-play {
-      position: absolute;
-      bottom: 24px;
-      left: 24px;
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      background: var(--accent);
-      border: none;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: transform 200ms ease, background 200ms ease;
-    }
-    .video-frame:hover .video-play { transform: scale(1.05); background: var(--paper); }
-    .video-frame:hover .video-play svg { fill: var(--accent); }
-    .video-play svg {
-      width: 24px;
-      height: 24px;
-      fill: var(--off-white);
-      margin-left: 4px;
-      transition: fill 200ms ease;
-    }
-    /* Hide the play button for JS users: video autoplays on scroll */
-    .video-frame.js-autovideo .video-play { display: none; }
-    .video-caption {
-      font-family: 'Space Mono', monospace;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 1.4px;
-      color: var(--ink);
-      margin-top: 16px;
     }
 
-    /* Differentiators */
-    .differentiators {
-      padding: 140px 0;
-      border-top: 1px solid var(--rule);
-    }
-    .differentiators .section-title { margin-bottom: 80px; }
-    .index-list {
-      list-style: none;
-    }
-    .index-list li {
+    .command {
+      width: 100%;
+      min-height: 62px;
       display: grid;
-      grid-template-columns: 80px 1fr;
-      gap: 24px;
-      padding: 32px 0;
-      border-top: 1px solid var(--rule);
-    }
-    .index-list li:last-child { border-bottom: 1px solid var(--rule); }
-    .index-num {
-      font-family: 'Space Mono', monospace;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 1.4px;
-      color: var(--muted);
-    }
-    .index-body {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .index-body strong {
-      font-family: 'Manrope', sans-serif;
-      font-weight: 700;
-      font-size: 24px;
-      line-height: 1.25;
-    }
-    .index-body span {
-      font-family: 'Manrope', sans-serif;
-      font-weight: 400;
-      font-size: 16px;
-      line-height: 1.6;
-      color: var(--muted);
-      max-width: 65ch;
-    }
-
-    /* Scoring */
-    .scoring {
-      padding: 140px 0;
-      border-top: 1px solid var(--rule);
-    }
-    .scoring .section-title { margin-bottom: 80px; }
-    .scorecard {
-      border: 1px solid var(--rule);
-      padding: 48px;
-      background: var(--paper);
-      box-shadow: 0 16px 48px rgba(26, 26, 26, 0.08);
-    }
-    .formula {
-      font-family: 'Fraunces', serif;
-      font-weight: 700;
-      font-size: 48px;
-      line-height: 1.1;
-      letter-spacing: -0.01em;
-      margin-bottom: 48px;
-    }
-    .score-bars {
-      display: flex;
-      flex-direction: column;
-      gap: 24px;
-    }
-    .bar {
-      display: grid;
-      grid-template-columns: 180px 1fr 40px;
-      gap: 24px;
-      align-items: center;
-    }
-    .bar-label {
-      font-family: 'Space Mono', monospace;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 1.4px;
-      color: var(--muted);
-    }
-    .bar-fill {
-      height: 12px;
-      background: var(--ink);
-      width: 100%;
-    }
-    .bar-accent .bar-fill { height: 24px; background: var(--accent); }
-    .bar-weight {
-      font-family: 'Space Mono', monospace;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 1.4px;
-      color: var(--muted);
-      text-align: right;
-    }
-
-    .scoring[style*="surface-dark"] .bar-label,
-    .scoring[style*="surface-dark"] .bar-weight {
-      color: #888;
-    }
-    .scoring[style*="surface-dark"] .bar-fill {
-      background: #333;
-    }
-    .scoring[style*="surface-dark"] .bar-accent .bar-fill {
-      background: var(--accent);
-    }
-
-    /* Install */
-    .install {
-      padding: 140px 0 160px;
-      border-top: 1px solid var(--rule);
-    }
-    .install .section-title { font-size: 42px; margin-bottom: 40px; }
-    .command-block {
-      display: flex;
+      grid-template-columns: auto 1fr auto;
       align-items: center;
       gap: 12px;
-      width: 100%;
-      background: var(--charcoal);
-      color: var(--off-white);
-      padding: 24px 32px;
-      font-family: 'Space Mono', monospace;
-      font-size: 16px;
-      line-height: 1.4;
-      cursor: pointer;
-      transition: background 200ms ease;
-      overflow-x: auto;
-    }
-    .command-block:hover { background: var(--hover-charcoal); }
-    .command-block .prompt { color: var(--accent); user-select: none; }
-    .command-block code {
-      font-family: inherit;
-      background: transparent;
-      color: inherit;
-      white-space: normal;
-      word-break: break-all;
-      overflow-wrap: break-word;
-      flex: 1;
-      min-width: 0;
-    }
-    .copy-label {
-      font-family: 'Space Mono', monospace;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 1.4px;
-      color: var(--muted);
-      margin-left: 16px;
-      flex-shrink: 0;
-    }
-    .install-note code {
-      font-family: 'Space Mono', monospace;
-      font-size: 0.9em;
-      background: var(--charcoal);
-      color: var(--off-white);
-      padding: 2px 6px;
-      border-radius: 4px;
-    }
-    .install-note {
-      margin-top: 32px;
-      font-size: 17px;
-    }
-    .cta-link {
-      color: var(--accent);
-      text-decoration: underline;
-      text-underline-offset: 4px;
-      text-decoration-thickness: 1px;
-    }
-
-    /* Commands */
-    .commands {
-      padding: 140px 0;
-      border-top: 1px solid var(--rule);
-    }
-    .commands .section-title { margin-bottom: 40px; }
-    .command-entry {
-      padding: 24px 0;
-      border-top: 1px solid var(--rule);
-      border-bottom: 1px solid var(--rule);
-    }
-    .command-entry code {
-      font-family: 'Space Mono', monospace;
-      font-size: 16px;
-      line-height: 1.4;
-      background: transparent;
+      border: var(--rule);
+      background: var(--cream);
       color: var(--ink);
-      display: block;
-      margin-bottom: 8px;
-    }
-    .command-entry span {
-      font-size: 16px;
-      line-height: 1.6;
-      color: var(--muted);
+      padding: 10px 12px 10px 16px;
+      text-align: left;
+      cursor: pointer;
+      font: 14px/1.45 var(--mono);
     }
 
-    /* Footer */
-    .site-footer {
-      padding: 24px 0 80px;
-      border-top: 1px solid var(--rule);
-    }
-    .footer-rule {
-      height: 1px;
-      background: var(--rule);
-      margin-bottom: 24px;
-    }
-    .site-footer p {
-      font-family: 'Space Mono', monospace;
-      font-size: 16px;
-      line-height: 1.6;
-      color: var(--muted);
+    .command:hover { background: var(--acid); }
+    .command__prompt { color: var(--orange-text); font-weight: 700; }
+    .command__value { overflow-wrap: anywhere; }
+
+    .command__copy {
+      min-height: 38px;
+      padding: 8px 12px;
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid var(--ink);
+      background: var(--paper);
+      font: inherit;
+      text-transform: uppercase;
     }
 
-    /* Responsive */
-    @media (max-width: 1024px) {
-      .grid-wrap { padding: 0 6vw; }
-      .site-header { height: 64px; }
-      .hero { min-height: auto; padding: 32px 0 80px; }
-      .hero-grid {
-        min-height: auto;
-      }
-      .hero-manifesto { max-width: 100%; font-size: 18px; }
-      .hero-command { font-size: 16px; }
-      .section-title { font-size: 40px; }
-      .problem { padding: 100px 0; }
-      .problem-grid { grid-template-columns: 1fr; }
-      .problem-left, .problem-right { grid-column: 1; }
-      .problem-right { padding-top: 32px; }
-      .problem blockquote { font-size: 28px; }
-      .quote-mark { font-size: 160px; top: -24px; left: -16px; }
-      .process-nodes { grid-template-columns: 1fr 1fr; gap: 48px 24px; }
-      .formula { font-size: 28px; }
-      .bar { grid-template-columns: 120px 1fr 40px; }
-      .install { padding: 100px 0 120px; }
-      .install .section-title { font-size: 32px; }
-      .command-block { padding: 20px 24px; }
-      .scoring { padding: 100px 0; }
-      .scorecard { padding: 32px; }
-      .differentiators { padding: 100px 0; }
-      .video { padding: 100px 0; }
-      .process { padding: 100px 0; }
-      .commands { padding: 100px 0; }
-      .node-label { max-width: 160px; }
-      .process-line { display: none; }
+    .hero-note {
+      margin: 0;
+      color: var(--ink-soft);
+      font: 12px/1.5 var(--mono);
+      letter-spacing: 0.01em;
     }
 
-    @media (max-width: 480px) {
-      .header-meta { gap: 16px; }
-      .version { font-size: 10px; }
-      .header-link { font-size: 10px; }
-      .process-nodes { grid-template-columns: 1fr; }
-      .process-line { display: block; top: calc(80px + 28px); bottom: calc(80px + 28px); left: 28px; right: auto; width: 1px; height: auto; transform: translateX(-50%) scaleY(0); transform-origin: top; }
-      .process-diagram.visible .process-line { transform: translateX(-50%) scaleY(1); }
-      .node { flex-direction: row; align-items: flex-start; text-align: left; gap: 20px; }
-      .node-label { order: 0; margin-top: 0; text-align: left; max-width: none; }
-      .node-label strong { font-size: 16px; }
-      .node-label span { font-size: 14px; }
-      .index-list li { grid-template-columns: 48px 1fr; gap: 16px; padding: 24px 0; }
-      .index-body strong { font-size: 20px; }
-      .bar { grid-template-columns: 1fr; gap: 8px; }
-      .bar-fill { order: 1; }
-      .bar-weight { order: 2; text-align: left; }
-      .formula { font-size: 24px; }
+    .runboard {
+      min-width: 0;
+      background: var(--ink);
+      color: var(--cream);
+      border-left: var(--rule);
+      padding: clamp(24px, 3vw, 46px);
+    }
+
+    .runboard__top {
+      min-height: 44px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+      border-bottom: 1px solid var(--line);
+      padding: 14px 0;
+      font: 12px/1.45 var(--mono);
+      letter-spacing: 0.015em;
+    }
+
+    .runboard__status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+    }
+
+    .status-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--acid);
+      box-shadow: 0 0 0 3px rgba(208, 240, 90, 0.28);
+    }
+
+    .process-board {
+      margin-top: 28px;
+      min-height: 575px;
+      display: grid;
+      grid-template-columns: 88px 1fr;
+      align-content: center;
+      border: 1px solid var(--line);
+    }
+
+    .stage-number, .stage {
+      min-height: 112px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .stage-number:nth-last-of-type(2), .stage:last-child { border-bottom: 0; }
+
+    .stage-number {
+      display: grid;
+      place-items: center;
+      border-right: 1px solid var(--line);
+      color: var(--acid);
+      font: 700 29px/1 var(--display);
+    }
+
+    .stage {
+      display: grid;
+      grid-template-columns: minmax(180px, 0.7fr) minmax(260px, 1.3fr);
+      gap: 28px;
+      align-items: center;
+      padding: 18px 24px;
+    }
+
+    .stage h2 {
+      margin: 0;
+      font: 700 clamp(36px, 3vw, 48px)/0.9 var(--display);
+      text-transform: uppercase;
+    }
+
+    .stage p { margin: 0; max-width: 430px; line-height: 1.55; }
+
+    .stage__tag {
+      display: inline-flex;
+      margin-top: 10px;
+      padding: 4px 8px;
+      border: 1px solid currentColor;
+      color: var(--acid);
+      font: 11px/1.4 var(--mono);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .stage--direction { background: var(--blue); color: var(--cream); }
+    .stage--direction .stage__tag { color: var(--acid); }
+    .stage--build { background: var(--cream); color: var(--ink); }
+    .stage--build .stage__tag { color: var(--blue-deep); }
+    .stage--evaluate { background: var(--orange); color: var(--ink); }
+    .stage--evaluate .stage__tag { color: var(--ink); }
+
+    .iteration-strip {
+      min-height: 86px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 26px;
+      border-top: 1px solid var(--line);
+      margin-top: 24px;
+      padding: 20px 0 8px;
+      font: 12px/1.45 var(--mono);
+    }
+
+    .iterations { display: flex; gap: 8px; }
+    .iteration {
+      min-width: 44px;
+      min-height: 36px;
+      display: grid;
+      place-items: center;
+      padding: 4px 8px;
+      border: 1px solid var(--line);
+    }
+    .iteration--selected { background: var(--acid); color: var(--ink); border-color: var(--acid); }
+
+    .section { border-bottom: var(--rule); padding: 8px; }
+    .section__inner { padding-block: clamp(80px, 10vw, 150px); }
+
+    .section-title, .install h2 {
+      margin: 0;
+      font: 700 clamp(58px, 7vw, 104px)/0.86 var(--display);
+      letter-spacing: -0.02em;
+      text-transform: uppercase;
+      text-wrap: balance;
+    }
+
+    .section-lead {
+      max-width: 58ch;
+      margin: 32px 0 64px;
+      font-size: clamp(20px, 1.8vw, 28px);
+      line-height: 1.5;
+    }
+
+    .split-mechanism {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border: var(--rule);
+    }
+
+    .mechanism-column + .mechanism-column { border-left: var(--rule); }
+
+    .mechanism-column__head {
+      min-height: 60px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      padding: 12px 20px;
+      border-bottom: var(--rule);
+      background: var(--blue);
+      color: var(--cream);
+    }
+
+    .mechanism-column--source .mechanism-column__head { background: var(--acid); color: var(--ink); }
+    .mechanism-column__head h3 { margin: 0; font: 600 28px/1 var(--display); text-transform: uppercase; }
+    .mechanism-column__head span { font: 11px/1.4 var(--mono); text-transform: uppercase; }
+
+    .mechanism-list { list-style: none; margin: 0; padding: 0; }
+    .mechanism-list li {
+      min-height: 136px;
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 18px;
+      padding: 26px 24px;
+      border-bottom: 1px solid var(--line);
+    }
+    .mechanism-list li:last-child { border-bottom: 0; }
+    .mechanism-mark { font: 700 24px/1 var(--display); }
+    .mechanism-list strong { font: 700 22px/1 var(--display); text-transform: uppercase; }
+    .mechanism-list p { margin: 7px 0 0; max-width: 58ch; color: var(--ink-soft); }
+
+    .section--blue { background: var(--blue); color: var(--cream); }
+    .section--blue .section-lead { color: var(--cream); }
+
+    .run-sequence { border-top: 1px solid rgba(251, 248, 239, 0.75); }
+    .run-step {
+      min-height: 112px;
+      display: grid;
+      grid-template-columns: 80px minmax(180px, 0.55fr) minmax(360px, 1.45fr);
+      align-items: center;
+      gap: 24px;
+      border-bottom: 1px solid rgba(251, 248, 239, 0.55);
+      padding: 22px 0;
+    }
+    .run-step__number { color: var(--acid); font: 700 30px/1 var(--display); }
+    .run-step h3 { margin: 0; font: 600 26px/1 var(--display); text-transform: uppercase; }
+    .run-step p { margin: 0; max-width: 58ch; }
+
+    .changes { border-top: var(--rule); }
+    .change-row {
+      min-height: 106px;
+      display: grid;
+      grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.7fr) 90px;
+      gap: 30px;
+      align-items: center;
+      border-bottom: var(--rule);
+      padding: 24px 0;
+    }
+    .change-row h3 { margin: 0; font: 600 24px/1 var(--display); text-transform: uppercase; }
+    .change-row p { margin: 0; max-width: 58ch; color: var(--ink-soft); }
+    .change-row__state {
+      justify-self: end;
+      min-width: 72px;
+      padding: 4px 8px;
+      background: var(--acid);
+      border: 1px solid var(--ink);
+      text-align: center;
+      font: 11px/1.4 var(--mono);
+      text-transform: uppercase;
+    }
+
+    .demo-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(300px, 0.85fr);
+      border: var(--rule);
+    }
+    .demo-frame {
+      min-height: 500px;
+      position: relative;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      background: var(--ink);
+      color: var(--cream);
+    }
+    .demo-frame img { width: 100%; height: 100%; object-fit: cover; }
+    .demo-frame__fallback {
+      display: none;
+      max-width: 620px;
+      padding: 48px;
+      text-align: center;
+      font: 700 clamp(48px, 6vw, 88px)/1.45 var(--display);
+    }
+    .demo-frame.media-missing .demo-frame__fallback { display: block; }
+    .demo-notes { display: flex; flex-direction: column; justify-content: space-between; padding: 34px; }
+    .demo-notes h3 { margin: 0 0 24px; font: 700 34px/0.95 var(--display); text-transform: uppercase; }
+    .demo-notes ul { margin: 0; padding-left: 20px; }
+    .demo-notes li + li { margin-top: 16px; }
+    .demo-notes > a {
+      min-height: 48px;
+      margin-top: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 18px;
+      background: var(--ink);
+      color: var(--cream);
+      text-decoration: none;
+      font: 12px/1.4 var(--mono);
+    }
+
+    .install { background: var(--acid); }
+    .install-grid {
+      display: grid;
+      grid-template-columns: minmax(300px, 0.8fr) minmax(500px, 1.2fr);
+      gap: clamp(48px, 8vw, 140px);
+      align-items: center;
+    }
+    .install-panel { border: var(--rule); background: var(--cream); }
+    .install-panel__top { padding: 14px 18px; border-bottom: var(--rule); font: 12px/1.4 var(--mono); text-transform: uppercase; }
+    .install-panel pre { margin: 0; padding: 28px; white-space: pre-wrap; overflow-wrap: anywhere; font: 13px/1.65 var(--mono); }
+    .install-links { display: grid; grid-template-columns: 1fr 1fr; border-top: var(--rule); }
+    .install-links a {
+      min-height: 54px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      text-decoration: none;
+      font: 12px/1.4 var(--mono);
+    }
+    .install-links a:first-child { background: var(--blue); color: var(--cream); }
+    .install-links a + a { border-left: var(--rule); }
+
+    .site-footer { background: var(--ink); color: var(--cream); }
+    .footer-inner { min-height: 210px; display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 48px; padding-block: 42px; }
+    .footer-statement {
+      max-width: 760px;
+      margin: 0;
+      font: 700 clamp(46px, 5vw, 74px)/1.4 var(--display);
+      letter-spacing: -0.015em;
+      text-wrap: balance;
+    }
+    .footer-meta { display: grid; gap: 10px; justify-items: end; font: 12px/1.45 var(--mono); }
+    .footer-meta a { min-height: 44px; display: flex; align-items: center; }
+
+    .visually-hidden {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0, 0, 0, 0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
+    }
+
+    @media (max-width: 1200px) {
+      .hero { grid-template-columns: 1fr; }
+      .hero-copy { min-height: auto; padding-block: 70px 56px; }
+      .runboard { border-left: 0; border-top: var(--rule); }
+      .process-board { min-height: 0; }
+      .install-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 720px) {
+      body { font-size: 17px; }
+      .site-header__inner { min-height: 64px; grid-template-columns: 1fr auto; }
+      .header-meta { display: none; }
+      .header-link { min-width: 104px; min-height: 64px; }
+      .wordmark { font-size: 22px; }
+      .hero-copy { padding-top: 48px; }
+      .hero-copy h1 { font-size: clamp(66px, 20vw, 92px); line-height: 0.82; }
+      .hero-summary { margin-top: 36px; font-size: 20px; }
+      .hero-actions { margin-top: 34px; }
+      .command { grid-template-columns: auto 1fr; padding: 12px 16px; }
+      .command__copy { grid-column: 1 / -1; justify-content: center; min-height: 44px; }
+      .runboard { padding: 24px 20px 30px; }
+      .runboard__top { min-height: 58px; flex-direction: column; gap: 9px; }
+      .process-board { grid-template-columns: 56px 1fr; margin-top: 20px; }
+      .stage-number, .stage { min-height: 0; }
+      .stage-number { font-size: 24px; }
+      .stage { grid-template-columns: 1fr; gap: 14px; padding: 22px 18px; }
+      .stage h2 { font-size: 38px; }
+      .stage p { font-size: 16px; }
+      .iteration-strip { grid-template-columns: 1fr; gap: 12px; }
+      .split-mechanism { grid-template-columns: 1fr; }
+      .mechanism-column + .mechanism-column { border-left: 0; border-top: var(--rule); }
+      .run-step { grid-template-columns: 48px 1fr; gap: 14px; }
+      .run-step p { grid-column: 2; }
+      .change-row { grid-template-columns: 1fr auto; gap: 12px 20px; }
+      .change-row p { grid-column: 1 / -1; }
+      .change-row__state { grid-column: 2; grid-row: 1; }
+      .demo-layout { grid-template-columns: 1fr; }
+      .demo-frame { min-height: 330px; }
+      .demo-notes { border-top: var(--rule); }
+      .install-links { grid-template-columns: 1fr; }
+      .install-links a + a { border-left: 0; border-top: var(--rule); }
+      .footer-inner { grid-template-columns: 1fr; align-items: start; }
+      .footer-meta { justify-items: start; }
+      .section-title, .install h2 { font-size: clamp(56px, 17vw, 82px); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
     }
   </style>
 </head>
 <body>
-<header class="site-header">
-    <div class="grid-wrap">
-      <a class="wordmark" href="/" style="font-family: 'Fraunces', serif; font-weight: 700; font-size: 20px; letter-spacing: -0.01em;">Design Studio</a>
-      <div class="header-meta">
-        <span class="version">v1</span>
-        <span class="header-rule" aria-hidden="true"></span>
-        <a class="header-link" href="#install">Install</a>
-      </div>
+  <a class="skip-link" href="#main">Skip to main content</a>
+
+  <header class="site-header">
+    <div class="shell site-header__inner">
+      <a class="wordmark" href="#main" aria-label="Design Studio home">
+        <span>Design</span><span class="wordmark__slash" aria-hidden="true">/</span><span>Studio</span>
+      </a>
+      <div class="header-meta">v1.4 · bounded multi-agent harness</div>
+      <a class="header-link" href="https://github.com/George-RD/design-studio">GitHub ↗</a>
     </div>
   </header>
 
-  <main>
-    <section class="hero">
-      <div class="grid-wrap">
-        <div class="hero-grid">
-          <div class="hero-left">
-            <h1 class="hero-title reveal">Design Studio</h1>
-            <p class="hero-manifesto reveal">Give it a brief. Get a website that looks like a real studio made it. Four agents split the work: one plans, one designs, one builds, one checks. They work apart. So the design never bends to fit the code.</p>
-            <div class="hero-rule reveal" aria-hidden="true"></div>
-            <div class="hero-command reveal">
-              <span class="prompt">›</span>
-              <code>claude plugin install https://github.com/George-RD/design-studio</code>
-            </div>
-          </div>
+  <main id="main">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <div>
+          <h1 id="hero-title">
+            <span class="hero-line">Stop</span>
+            <span class="hero-line">letting</span>
+            <span class="hero-line hero-line--blue">the code</span>
+            <span class="hero-line">design</span>
+            <span class="hero-line">the page.</span>
+          </h1>
+          <p class="hero-summary">Design Studio keeps visual direction and evaluation away from source code, then preserves every attempt until the strongest one earns the final build.</p>
         </div>
-      </div>
-      <div class="hero-grid-lines" aria-hidden="true">
-        <span></span><span></span><span></span><span></span><span></span><span></span>
-        <span></span><span></span><span></span><span></span><span></span><span></span>
-      </div>
-    </section>
 
-    <section class="problem">
-      <div class="grid-wrap">
-        <div class="problem-grid">
-          <div class="problem-left">
-            <span class="quote-mark" aria-hidden="true">“</span>
-            <div class="clip-reveal"><blockquote class="section-reveal">Most tools make the same page over and over: a centred headline, a button, a grid of cards. It looks safe. It is also forgettable.</blockquote></div>
-          </div>
-          <div class="problem-right">
-            <p class="section-reveal">The trap is code-anchoring bias. When AI reads its own code first, it just tweaks what is already there. It never asks what the page should feel like. Design Studio breaks the loop. The brief, the design, the build, and the check each happen in a separate room. The result looks like a studio made it. Because one did.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="process">
-      <div class="grid-wrap">
-        <p class="section-label section-reveal">How it works</p>
-        <h2 class="section-title section-reveal">Process</h2>
-        <p class="process-lead section-reveal">Four jobs. Four agents. One loop. Each agent only sees what it needs. That gap is the point: the designer never gets anchored to the code.</p>
-        <div class="process-diagram">
-          <div class="process-line process-line-animated" aria-hidden="true"></div>
-          <div class="process-nodes">
-            <div class="node">
-              <div class="node-circle"><span>01</span></div>
-              <div class="node-label">
-                <strong>Plan</strong>
-                <span>Take a brief and turn it into a creative direction.</span>
-              </div>
-            </div>
-            <div class="node">
-              <div class="node-circle"><span>02</span></div>
-              <div class="node-label">
-                <strong>Design</strong>
-                <span>Describe the page in words, not code.</span>
-              </div>
-            </div>
-            <div class="node">
-              <div class="node-circle"><span>03</span></div>
-              <div class="node-label">
-                <strong>Build</strong>
-                <span>Translate the description into production code.</span>
-              </div>
-            </div>
-            <div class="node">
-              <div class="node-circle"><span>04</span></div>
-              <div class="node-label">
-                <strong>Evaluate</strong>
-                <span>Open the page, use it, score it, and feed back.</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <p class="process-loop section-reveal"><strong>Then it loops.</strong> Each round scores the page and feeds the notes back. It stops when the design is good enough to ship.</p>
-      </div>
-    </section>
-
-    <section class="video">
-      <div class="grid-wrap">
-        <p class="section-label section-reveal">See the work</p>
-        <h2 class="section-title section-reveal">Proof</h2>
-        <div class="video-frame section-reveal">
-          <video poster="poster.jpg" playsinline muted preload="metadata">
-            <source src="video-1080p.mp4" type="video/mp4" />
-          </video>
-          <button class="video-play" aria-label="Play overview video">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <polygon points="8,5 19,12 8,19" />
-            </svg>
+        <div class="hero-actions">
+          <button class="command" type="button" aria-label="Copy Design Studio create command" data-copy="/design-studio:create a landing page with a point of view">
+            <span class="command__prompt" aria-hidden="true">$</span>
+            <span class="command__value">/design-studio:create a landing page with a point of view</span>
+            <span class="command__copy" aria-hidden="true">Copy command</span>
           </button>
+          <p class="hero-note">Claude Code plugin · portable workflow contract for other agent harnesses</p>
+          <p class="visually-hidden" id="copy-status" role="status" aria-live="polite"></p>
         </div>
-        <p class="video-caption section-reveal">23-second overview</p>
+      </div>
+
+      <div class="runboard" role="group" aria-label="Design Studio run board">
+        <div class="runboard__top">
+          <span>Run 014 / standard budget 4</span>
+          <span class="runboard__status"><span class="status-dot" aria-hidden="true"></span>Iteration 3 evaluated</span>
+        </div>
+
+        <div class="process-board">
+          <div class="stage-number" aria-hidden="true">01</div>
+          <div class="stage">
+            <div><h2>Frame</h2><span class="stage__tag">Repository aware</span></div>
+            <p>Product truth, audience, constraints and proof become a testable surface brief.</p>
+          </div>
+
+          <div class="stage-number" aria-hidden="true">02</div>
+          <div class="stage stage--direction">
+            <div><h2>Direct</h2><span class="stage__tag">Code blind</span></div>
+            <p>Three viable worlds are explored. The user selects. A visual contract is written without implementation anchors.</p>
+          </div>
+
+          <div class="stage-number" aria-hidden="true">03</div>
+          <div class="stage stage--build">
+            <div><h2>Build</h2><span class="stage__tag">Source enabled</span></div>
+            <p>The Builder translates the contract into working code, states, responsive behaviour and an immutable iteration.</p>
+          </div>
+
+          <div class="stage-number" aria-hidden="true">04</div>
+          <div class="stage stage--evaluate">
+            <div><h2>Judge</h2><span class="stage__tag">Render blind</span></div>
+            <p>A fresh Evaluator uses the live page, tests interactions and scores what survived contact with the browser.</p>
+          </div>
+        </div>
+
+        <div class="iteration-strip">
+          <span>Preserved builds</span>
+          <div class="iterations" role="img" aria-label="Four preserved iterations, iteration three selected">
+            <span class="iteration">01</span><span class="iteration">02</span><span class="iteration iteration--selected">03</span><span class="iteration">04</span>
+          </div>
+          <span>03 → site + DNA + tokens</span>
+        </div>
       </div>
     </section>
 
-    <section class="differentiators">
-      <div class="grid-wrap">
-        <p class="section-label section-reveal">The studio difference</p>
-        <h2 class="section-title section-reveal">What Makes It Different</h2>
-        <ul class="index-list">
-          <li class="section-reveal">
-            <span class="index-num">01</span>
-            <div class="index-body">
-              <strong>Originality by separation</strong>
-              <span>The creative eye never reads the code. The builder never sees the brief. This isolation is what stops the work from drifting back to the default.</span>
-            </div>
-          </li>
-          <li class="section-reveal">
-            <span class="index-num">02</span>
-            <div class="index-body">
-              <strong>Real browser proof</strong>
-              <span>The evaluator opens the result in a browser, clicks, scrolls, and reads it. A page that works only in theory is not good enough.</span>
-            </div>
-          </li>
-          <li class="section-reveal">
-            <span class="index-num">03</span>
-            <div class="index-body">
-              <strong>Zone-by-zone judgement</strong>
-              <span>Every section is scored on its own. A strong hero cannot hide a broken footer.</span>
-            </div>
-          </li>
-          <li class="section-reveal">
-            <span class="index-num">04</span>
-            <div class="index-body">
-              <strong>Adversarial testing</strong>
-              <span>Before the final score, the evaluator tries to break the layout. Overflow, dead buttons, and mobile collapse are caught early.</span>
-            </div>
-          </li>
-          <li class="section-reveal">
-            <span class="index-num">05</span>
-            <div class="index-body">
-              <strong>Taste as a constraint</strong>
-              <span>Design Studio refuses to ship work that looks like a template. Originality and design quality are weighted above everything else.</span>
-            </div>
-          </li>
-        </ul>
+    <section class="section" aria-labelledby="split-title">
+      <div class="shell section__inner">
+        <h2 class="section-title" id="split-title">The split is the product.</h2>
+        <p class="section-lead">A single agent naturally designs around whatever code it has already read. Design Studio gives creative judgment and implementation different rooms, then makes the browser the meeting point.</p>
+
+        <div class="split-mechanism">
+          <article class="mechanism-column">
+            <div class="mechanism-column__head"><h3>Blind room</h3><span>No source context</span></div>
+            <ul class="mechanism-list">
+              <li><span class="mechanism-mark" aria-hidden="true">D</span><div><strong>Visual Director</strong><p>Builds the visual world from product truth, constraints, screenshots and critique.</p></div></li>
+              <li><span class="mechanism-mark" aria-hidden="true">E</span><div><strong>Evaluator</strong><p>Uses the rendered product, interactions and verified viewports. It never grades effort.</p></div></li>
+            </ul>
+          </article>
+
+          <article class="mechanism-column mechanism-column--source">
+            <div class="mechanism-column__head"><h3>Source room</h3><span>Implementation context</span></div>
+            <ul class="mechanism-list">
+              <li><span class="mechanism-mark" aria-hidden="true">P</span><div><strong>Planner</strong><p>Finds what is already true so the user is not re-interviewed and claims are not invented.</p></div></li>
+              <li><span class="mechanism-mark" aria-hidden="true">B</span><div><strong>Builder</strong><p>Chooses technical means, preserves behaviour and implements the selected direction faithfully.</p></div></li>
+            </ul>
+          </article>
+        </div>
       </div>
     </section>
 
-    <section class="scoring" style="background: var(--surface-dark); color: var(--paper);">
-      <div class="grid-wrap">
-        <p class="section-label section-reveal" style="color: #888;">The rubric</p>
-        <h2 class="section-title section-reveal" style="color: var(--paper);">How Scoring Works</h2>
-        <div class="scorecard section-reveal" style="background: var(--deep); border-color: #333;">
-          <p class="formula" style="color: var(--paper);">Score = (Design × 2 + Originality × 2 + Craft + Functionality) ÷ 6</p>
-          <div class="score-bars">
-            <div class="bar bar-accent">
-              <span class="bar-label">Design Quality</span>
-              <span class="bar-fill" aria-hidden="true"></span>
-              <span class="bar-weight">2x</span>
-            </div>
-            <div class="bar bar-accent">
-              <span class="bar-label">Originality</span>
-              <span class="bar-fill" aria-hidden="true"></span>
-              <span class="bar-weight">2x</span>
-            </div>
-            <div class="bar">
-              <span class="bar-label">Craft</span>
-              <span class="bar-fill" aria-hidden="true"></span>
-              <span class="bar-weight">1x</span>
-            </div>
-            <div class="bar">
-              <span class="bar-label">Functionality</span>
-              <span class="bar-fill" aria-hidden="true"></span>
-              <span class="bar-weight">1x</span>
-            </div>
+    <section class="section section--blue" aria-labelledby="run-title">
+      <div class="shell section__inner">
+        <h2 class="section-title" id="run-title">A run has an end.</h2>
+        <p class="section-lead">The loop is for material improvement, not endless polishing. A standard run gets four builds. The best eligible iteration receives one fresh finish review and one correction batch.</p>
+        <div class="run-sequence">
+          <article class="run-step"><span class="run-step__number">01</span><h3>Context</h3><p>Load product truth and the incumbent system. Classify the surface as persuade, operate, read or experience. Record assumptions instead of hiding them.</p></article>
+          <article class="run-step"><span class="run-step__number">02</span><h3>Direction</h3><p>Explore three equal, viable candidates. The user chooses when available; unattended runs use a recorded seed rather than the Director's private preference.</p></article>
+          <article class="run-step"><span class="run-step__number">03</span><h3>Preflight</h3><p>Deterministic checks catch contrast, overflow, focus and generated-UI tells. Impeccable is used when installed. Mechanical rules never award visual quality.</p></article>
+          <article class="run-step"><span class="run-step__number">04</span><h3>Decision</h3><p>The Evaluator reports observations. The Orchestrator alone applies the ordered REFINE, PIVOT, SHIP or HALT rules against history and budget.</p></article>
+          <article class="run-step"><span class="run-step__number">05</span><h3>Evidence</h3><p>The final site, tokens and design DNA come from the selected build. Earlier iterations remain intact, including the one that beat the latest attempt.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="changes-title">
+      <div class="shell section__inner">
+        <h2 class="section-title" id="changes-title">1.4 makes the harness honest.</h2>
+        <p class="section-lead">The largest changes are architectural. They fix places where the old workflow promised evidence it did not preserve or gave two agents authority over the same decision.</p>
+        <div class="changes">
+          <article class="change-row"><h3>Every build survives</h3><p>Iterations now write to their own immutable folders. Final selection can recover an earlier winner without depending on hidden commits.</p><span class="change-row__state">Fixed</span></article>
+          <article class="change-row"><h3>One decision owner</h3><p>The Evaluator cannot write REFINE, PIVOT or SHIP. It supplies blind evidence; the Orchestrator applies the run rules.</p><span class="change-row__state">Fixed</span></article>
+          <article class="change-row"><h3>Rules stay mechanical</h3><p>Exact contrast, spacing, overflow and token claims no longer come from screenshot-only reviewers. Deterministic evidence and visual judgment stay separate.</p><span class="change-row__state">Split</span></article>
+          <article class="change-row"><h3>Direction is chosen outside</h3><p>The Visual Director produces three viable candidates without ranking them. User choice or a reproducible seed replaces self-selection.</p><span class="change-row__state">New</span></article>
+          <article class="change-row"><h3>Finishing is bounded</h3><p>A fresh Evaluator gets one material-defect review and one correction verdict. Open items remain visible instead of triggering another private polish loop.</p><span class="change-row__state">Bounded</span></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="demo-title">
+      <div class="shell section__inner">
+        <h2 class="section-title" id="demo-title">Watch the rooms hand work across.</h2>
+        <p class="section-lead">The original short demo still shows the central move: direction leaves the implementation context, returns as a visual contract, and meets the code again only through the Builder and browser.</p>
+        <div class="demo-layout">
+          <div class="demo-frame">
+            <img src="video-1080p.gif" alt="Twenty-three second Design Studio workflow demonstration" />
+            <span class="demo-frame__fallback">Demo media loads from the repository build.</span>
+          </div>
+          <div class="demo-notes">
+            <div><h3>What to look for</h3><ul><li>The visual agent receives screenshots and product truth, never source.</li><li>The Builder records fidelity gaps rather than silently simplifying them.</li><li>The Evaluator uses the live product and reports evidence, not effort.</li><li>The Orchestrator can select an earlier build after the loop ends.</li></ul></div>
+            <a href="https://github.com/George-RD/design-studio">Inspect the workflow on GitHub ↗</a>
           </div>
         </div>
       </div>
     </section>
 
-    <section class="install" id="install">
-      <div class="grid-wrap">
-        <p class="section-label section-reveal">Get started</p>
-        <h2 class="section-title section-reveal">Install.</h2>
-        <p class="install-note section-reveal">You need Claude Code and Chrome with the claude-in-chrome MCP server running.</p>
-        <div class="command-block section-reveal" role="button" tabindex="0" aria-label="Copy install command">
-          <span class="prompt">›</span>
-          <code>claude plugin install https://github.com/George-RD/design-studio</code>
-          <span class="copy-label">copy</span>
-        </div>
-        <p class="install-note section-reveal">Or load it for one session: <code>claude --plugin-dir ./design-studio</code></p>
-        <p class="install-note section-reveal">After installing, run <code>/reload-plugins</code> in Claude Code.</p>
-      </div>
-    </section>
+    <section class="section install" aria-labelledby="install-title">
+      <div class="shell section__inner install-grid">
+        <h2 id="install-title">Give the design its own room.</h2>
+        <div class="install-panel">
+          <div class="install-panel__top">Install in Claude Code</div>
+          <pre><code>/plugin marketplace add George-RD/design-studio
+/plugin install design-studio@design-studio
+/reload-plugins
 
-    <section class="commands">
-      <div class="grid-wrap">
-        <p class="section-label section-reveal">Reference</p>
-        <h2 class="section-title section-reveal">Commands</h2>
-        <div class="command-entry section-reveal">
-          <code>/design-studio:create &lt;your brief&gt;</code>
-          <span>Run the full design loop from a short description.</span>
+/design-studio:create your next surface</code></pre>
+          <div class="install-links"><a href="https://github.com/George-RD/design-studio">Get the plugin ↗</a><a href="https://github.com/pbakaus/impeccable">Optional Impeccable gate ↗</a></div>
         </div>
       </div>
     </section>
   </main>
 
   <footer class="site-footer">
-    <div class="grid-wrap">
-      <div class="footer-rule" aria-hidden="true"></div>
-      <p>MIT License</p>
-      <p>Built for the design-engineering community</p>
+    <div class="shell footer-inner">
+      <p class="footer-statement">The browser judges the result. The code does not choose the idea.</p>
+      <div class="footer-meta"><span>Design Studio v1.4</span><a href="https://github.com/George-RD/design-studio">MIT · Source on GitHub</a></div>
     </div>
   </footer>
 
   <script>
-    (function() {
-      // Hero entry animation
-      document.querySelectorAll('.hero .reveal').forEach(function(el) {
-        el.classList.add('visible');
-      });
+    const command = document.querySelector('[data-copy]');
+    const status = document.getElementById('copy-status');
+    const demoImage = document.querySelector('.demo-frame img');
 
-      // Scroll-triggered section reveals
-      var observer = new IntersectionObserver(function(entries) {
-        entries.forEach(function(entry) {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('visible');
-            observer.unobserve(entry.target);
-          }
-        });
-      }, { threshold: 0.3 });
-
-      document.querySelectorAll('.section-reveal, .process-diagram, .clip-reveal').forEach(function(el) {
-        observer.observe(el);
-      });
-
-      // Video autoplay when scrolled into view (muted so browsers allow it)
-      var frame = document.querySelector('.video-frame');
-      var video = frame ? frame.querySelector('video') : null;
-      var playBtn = frame ? frame.querySelector('.video-play') : null;
-
-      if (video) {
-        video.muted = true;
-        if (playBtn) {
-          playBtn.addEventListener('click', function() {
-            video.setAttribute('controls', '');
-            video.play();
-            playBtn.style.display = 'none';
-          });
-        }
-
-        var reduceMotion = window.matchMedia &&
-          window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-        if ('IntersectionObserver' in window && !reduceMotion) {
-          frame.classList.add('js-autovideo'); // hide play button for JS users
-          var vObserver = new IntersectionObserver(function(entries) {
-            entries.forEach(function(entry) {
-              if (entry.isIntersecting) {
-                var p = video.play();
-                if (p && p.then) {
-                  p.then(function() {
-                    // Playback started: keep the manual button hidden
-                    if (playBtn) playBtn.style.display = 'none';
-                  }).catch(function(err) {
-                    // Only a real policy block reveals the button. Our own
-                    // pause() rejects with AbortError, which we ignore.
-                    if (playBtn && (!err || err.name !== 'AbortError')) {
-                      playBtn.style.display = 'flex';
-                    }
-                  });
-                }
-              } else {
-                // Pause and rewind when scrolled away so it replays on return
-                video.pause();
-                try { video.currentTime = 0; } catch (e) {}
-              }
-            });
-          }, { threshold: 0.4 });
-          vObserver.observe(video);
-        }
-      }
-      // Copy command
-      var commandBlock = document.querySelector('.command-block');
-      var code = commandBlock ? commandBlock.querySelector('code') : null;
-      var copyLabel = commandBlock ? commandBlock.querySelector('.copy-label') : null;
-
-      if (commandBlock) {
-        var doCopy = function() {
-          if (!code || !copyLabel) return;
-          var text = code.textContent;
-          if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(text).then(function() {
-              var original = copyLabel.textContent;
-              copyLabel.textContent = 'copied';
-              setTimeout(function() { copyLabel.textContent = original; }, 1500);
-            });
-          }
-        };
-
-        commandBlock.addEventListener('click', doCopy);
-        commandBlock.addEventListener('keydown', function(e) {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            doCopy();
-          }
-        });
-      }
-    })();
-  </script>
-  <style>
-    .kofi-fixed {
-      position: fixed; left: 24px; bottom: 24px; z-index: 9999;
-      display: inline-flex; align-items: center; gap: 8px;
-      font-family: 'Space Mono', monospace; font-size: 12px;
-      text-transform: uppercase; letter-spacing: 1.4px;
-      text-decoration: none; padding: 12px 18px;
-      background: var(--accent); color: #fff; border-radius: 4px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.18);
-      transition: transform 200ms ease, box-shadow 200ms ease;
+    function markMediaMissing() {
+      if (!demoImage?.isConnected) return;
+      demoImage.parentElement.classList.add('media-missing');
+      demoImage.remove();
     }
-    .kofi-fixed:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(0,0,0,0.24); }
-    @media (max-width: 520px) { .kofi-fixed { font-size: 11px; padding: 10px 14px; left: 14px; bottom: 14px; } }
-  </style>
-  <a class="kofi-fixed" href="https://ko-fi.com/george_builds" target="_blank" rel="noopener">☕ Buy me a coffee</a>
+
+    if (demoImage) {
+      demoImage.addEventListener('error', markMediaMissing);
+      if (demoImage.complete && demoImage.naturalWidth === 0) {
+        markMediaMissing();
+      }
+    }
+
+    async function copyText(value) {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(value);
+        return;
+      }
+      const textarea = document.createElement('textarea');
+      textarea.value = value;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      try {
+        textarea.select();
+        if (!document.execCommand('copy')) {
+          throw new Error('copy command rejected');
+        }
+      } finally {
+        textarea.remove();
+      }
+    }
+
+    command?.addEventListener('click', async () => {
+      const value = command.dataset.copy || '';
+      const label = command.querySelector('.command__copy');
+      try {
+        await copyText(value);
+        label.textContent = 'Copied';
+        status.textContent = 'Command copied.';
+      } catch {
+        label.textContent = 'Select text';
+        status.textContent = 'Copy was blocked. Select the command text manually.';
+      }
+      window.setTimeout(() => { label.textContent = 'Copy command'; }, 1800);
+    });
+  </script>
 </body>
 </html>

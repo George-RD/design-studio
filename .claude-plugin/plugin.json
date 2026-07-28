@@ -1,20 +1,18 @@
 {
   "name": "design-studio",
-  "version": "1.1.0",
-  "description": "4-agent design-evaluate-iterate harness for distinctive frontend creation that defeats code-anchoring bias. Produces a reusable design system (design-dna.md + tokens.css + skill template) and runs on any harness with portable browser automation and subagent support.",
-  "author": { "name": "Design Studio" },
+  "version": "1.4.0",
+  "description": "A multi-agent frontend design harness that separates product framing, visual direction, implementation, and blind evaluation; preserves every iteration; and codifies the shipped result into a reusable design system.",
+  "author": { "name": "George Reid-Dowd" },
   "keywords": [
     "frontend",
     "design",
-    "harness",
+    "multi-agent",
     "evaluation",
     "iteration",
     "design-system",
     "design-tokens",
-    "portable",
-    "claude-in-chrome",
-    "chrome-mcp",
-    "GAN-inspired"
+    "browser-automation",
+    "code-anchoring"
   ],
   "repository": "https://github.com/George-RD/design-studio"
 }

@@ -1,7 +1,7 @@
 ---
 name: create
-description: Create a distinctive frontend using the generate-evaluate-iterate harness. Greenfield from a prompt, or overhaul an existing UI path/URL, with separated evaluation.
-argument-hint: "<prompt> | --overhaul <path-or-url> [--goals <text>] <prompt>"
+description: Create or overhaul a distinctive frontend through isolated direction, implementation, mechanical preflight, blind evaluation, bounded iteration and design-system capture.
+argument-hint: "<prompt> | --overhaul <path-or-url> [--goals <text>] [--budget quick|standard|ambitious|<n>] <prompt>"
 allowed-tools:
   - Read
   - Write
@@ -16,32 +16,21 @@ allowed-tools:
 
 # Design Studio: Create
 
-You are the **harness orchestrator**. Run the full design→build→evaluate loop for the user's prompt. Do not restate isolation rules, BOC, thresholds, or the full loop narrative here — load the skill.
+Run the Studio lane from `skills/design-studio/SKILL.md` and `skills/design-studio/workflow.yaml`.
 
-## Input
+Parse `$ARGUMENTS` into:
 
-`$ARGUMENTS` — orchestrator parses shapes (not a real CLI):
+- `user_prompt`: the remaining request.
+- `existing_site`: local path after `--overhaul`, when present.
+- `existing_url`: URL after `--overhaul`, when present.
+- `overhaul_goals`: text after `--goals`, when present.
+- `budget_override`: `quick`, `standard`, `ambitious`, or an explicit integer after `--budget`; the workflow clamps it to the supported range.
 
-- **Greenfield:** `<description of the frontend to build>`
-- **Overhaul:** `--overhaul <path-or-url> [--goals <constraints>] <prompt>`
-  - Map path → Plan input `existing_site`; URL → `existing_url`; `--goals` → `overhaul_goals`; remainder → `user_prompt`.
-  - Skill-trigger prose that names an existing path/URL counts as overhaul the same way.
-  - If `$ARGUMENTS` is clearly audit/polish-only with no create/overhaul intent, stop and direct the orchestrator to the Review lane (`skills/design-studio/references/review/polish.md` or `/design-studio:review`) instead of starting `workflow.yaml`.
+Rules:
 
-## Execute
-
-1. Read `skills/design-studio/SKILL.md` (INDEX + routing table).
-2. If overhaul inputs are present, also load `skills/design-studio/references/overhaul.md` and pass `existing_site` / `existing_url` / `overhaul_goals` into Plan.
-3. Execute `skills/design-studio/workflow.yaml` (thresholds, schemas, step prompts, decide table).
-4. **DesignAgent** system prompt: `skills/design-studio/agents/design-agent.md`.
-5. **Evaluator** system prompt: `skills/design-studio/agents/evaluator.md`.
-6. **Builder**: harness subagent + principles from `skills/design-studio/references/generation.md`.
-7. Expand plan/decide methodology only when needed: `skills/design-studio/references/planning.md`, `skills/design-studio/references/iteration.md`.
-
-Spawn agents via your harness subagent mechanism with **per-agent context isolation**. Paths above are repo-root.
-
-## Loop control (Claude example)
-
-If the host supports a recurring loop (e.g. Claude Code `/loop`), use it to repeat Design → Implement → Evaluate until SHIP or `maxIterations` from `workflow.yaml` `defaults:`. Otherwise the orchestrator polls the decide step and terminates on SHIP / budget exhaust → codify → finalize.
-
-Cancel the loop when the decision is SHIP or iterations hit the cap; then run codify and finalize per the workflow.
+1. Audit/polish-only language routes to `/design-studio:review`; do not start Studio.
+2. Load existing `PRODUCT.md`, `DESIGN.md`, and the relevant surface brief before asking questions.
+3. Execute the workflow end to end. Do not collapse Visual Director, Builder and Evaluator into one context.
+4. Preserve every iteration under its immutable run directory. Never ask an agent to self-commit.
+5. The Evaluator writes observations and scores only. The Orchestrator alone writes decisions.
+6. On completion, run the bounded finish pass on the selected build, copy the accepted final tree to `harness-output/site/`, then codify and report.

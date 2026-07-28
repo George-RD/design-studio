@@ -1,0 +1,209 @@
+name: Validate Design Studio
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out exact revision
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Validate contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          ruby -ryaml -rjson -e 'puts JSON.generate(YAML.load_file("skills/design-studio/workflow.yaml"))' > /tmp/workflow.json
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          import re
+
+          root = Path('.')
+          plugin = json.loads((root / '.claude-plugin/plugin.json').read_text())
+          marketplace = json.loads((root / '.claude-plugin/marketplace.json').read_text())
+          evals = json.loads((root / 'skills/design-studio/evals/evals.json').read_text())
+          workflow = json.loads(Path('/tmp/workflow.json').read_text())['workflow']
+          skill = (root / 'skills/design-studio/SKILL.md').read_text()
+          skill_version = re.search(r'^version:\s*([^\s]+)', skill, re.M).group(1)
+
+          marketplace_plugin = next(p for p in marketplace['plugins'] if p['name'] == 'design-studio')
+          versions = {
+              plugin['version'],
+              marketplace_plugin['version'],
+              evals['version'],
+              workflow['version'],
+              skill_version,
+          }
+          if versions != {'1.4.0'}:
+              raise SystemExit(f'version mismatch: {versions}')
+
+          ids = [step['id'] for step in workflow['steps']]
+          if len(ids) != len(set(ids)):
+              raise SystemExit('duplicate workflow step id')
+          known = set(ids)
+          terminal = {'complete', 'halted'}
+          missing = []
+          for step in workflow['steps']:
+              for key in ('next', 'otherwise'):
+                  target = step.get(key)
+                  if target and target not in known and target not in terminal:
+                      missing.append((step['id'], key, target))
+              for target in (step.get('transitions') or {}).values():
+                  if target not in known and target not in terminal:
+                      missing.append((step['id'], 'transition', target))
+              for branch in step.get('branches') or []:
+                  target = branch.get('next')
+                  if target and target not in known and target not in terminal:
+                      missing.append((step['id'], 'branch', target))
+          if missing:
+              raise SystemExit(f'unknown workflow targets: {missing}')
+
+          required_steps = {
+              'prepare_refine_iteration',
+              'prepare_pivot_iteration',
+              'finish_correction_decide',
+          }
+          if not required_steps.issubset(known):
+              raise SystemExit(f'missing workflow steps: {sorted(required_steps - known)}')
+
+          if len(evals.get('evals', [])) < 21:
+              raise SystemExit('expected at least 21 design-studio evals')
+
+          html = (root / 'docs/index.html').read_text()
+          required_html = [
+              'role="group" aria-label="Design Studio run board"',
+              'role="img" aria-label="Four preserved iterations',
+              'aria-label="Copy Design Studio create command"',
+              '/plugin marketplace add George-RD/design-studio',
+              '/plugin install design-studio@design-studio',
+              'demoImage.complete && demoImage.naturalWidth === 0',
+              "if (!document.execCommand('copy'))",
+              '@media (max-width: 1200px)',
+          ]
+          absent = [marker for marker in required_html if marker not in html]
+          if absent:
+              raise SystemExit(f'missing documentation contract: {absent}')
+
+          forbidden = ['status-pulse', 'font: 10px', 'claude plugin install https://github.com/George-RD/design-studio']
+          present = [marker for marker in forbidden if marker in html]
+          if present:
+              raise SystemExit(f'forbidden documentation pattern remains: {present}')
+          PY
+
+      - name: Start documentation server
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4173 --directory docs > /tmp/design-studio-docs.log 2>&1 &
+          echo $! > /tmp/design-studio-docs.pid
+          for attempt in {1..20}; do
+            if curl --fail --silent http://127.0.0.1:4173/ > /dev/null; then
+              exit 0
+            fi
+            sleep 0.5
+          done
+          cat /tmp/design-studio-docs.log
+          exit 1
+
+      - name: Install pinned Impeccable
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --prefix /tmp/impeccable --ignore-scripts --no-audit --no-fund impeccable@3.3.1
+          test -x /tmp/impeccable/node_modules/.bin/impeccable
+
+      - name: Run exact Impeccable scans
+        shell: bash
+        run: |
+          set -uo pipefail
+          chrome_path="$(command -v google-chrome-stable || command -v google-chrome || command -v chromium || true)"
+          if [ -n "$chrome_path" ]; then
+            export PUPPETEER_EXECUTABLE_PATH="$chrome_path"
+          fi
+
+          detector=/tmp/impeccable/node_modules/.bin/impeccable
+          mkdir -p .impeccable-audit
+          set +e
+          "$detector" detect --json docs/index.html > .impeccable-audit/source.json
+          source_status=$?
+          "$detector" detect --json --viewport 1440x900 http://127.0.0.1:4173/ > .impeccable-audit/desktop-1440x900.json
+          desktop_status=$?
+          "$detector" detect --json --viewport 1150x900 http://127.0.0.1:4173/ > .impeccable-audit/intermediate-1150x900.json
+          intermediate_status=$?
+          "$detector" detect --json --viewport 390x844 http://127.0.0.1:4173/ > .impeccable-audit/mobile-390x844.json
+          mobile_status=$?
+          set -e
+
+          python3 - "$source_status" "$desktop_status" "$intermediate_status" "$mobile_status" <<'PY'
+          from pathlib import Path
+          import json
+          import sys
+
+          labels = ['source', 'desktop-1440x900', 'intermediate-1150x900', 'mobile-390x844']
+          statuses = dict(zip(labels, map(int, sys.argv[1:])))
+          lines = ['# Exact Impeccable audit', '', '| Pass | Exit | Primary | Advisory |', '|---|---:|---:|---:|']
+          failed = False
+
+          for label, status in statuses.items():
+              path = Path('.impeccable-audit') / f'{label}.json'
+              try:
+                  findings = json.loads(path.read_text())
+                  if not isinstance(findings, list):
+                      raise TypeError(f'expected array, got {type(findings).__name__}')
+                  if any(not isinstance(item, dict) for item in findings):
+                      raise TypeError('every finding must be an object')
+              except Exception as exc:
+                  findings = []
+                  failed = True
+                  lines.append(f'| {label} | {status} | parse error | — |')
+                  lines.append(f'<!-- {exc} -->')
+                  continue
+
+              advisories = [item for item in findings if item.get('severity') == 'advisory']
+              primary = [item for item in findings if item.get('severity') != 'advisory']
+              lines.append(f'| {label} | {status} | {len(primary)} | {len(advisories)} |')
+              if status not in (0, 2) or primary:
+                  failed = True
+
+          lines.extend(['', f'**Verdict: {"HOLD" if failed else "PASS"}.**', ''])
+          Path('.impeccable-audit/summary.md').write_text('\n'.join(lines))
+          Path('/tmp/impeccable-result').write_text('failure' if failed else 'success')
+          PY
+
+      - name: Upload exact audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: impeccable-audit
+          path: .impeccable-audit/
+          if-no-files-found: warn
+
+      - name: Enforce exact audit result
+        shell: bash
+        run: test "$(cat /tmp/impeccable-result)" = success
+
+      - name: Stop documentation server
+        if: always()
+        shell: bash
+        run: |
+          if [ -f /tmp/design-studio-docs.pid ]; then
+            kill "$(cat /tmp/design-studio-docs.pid)" 2>/dev/null || true
+          fi
