@@ -11,7 +11,7 @@
         "Visual Director context contains no source files",
         "directions.md contains exactly three unranked viable candidates",
         "direction-selection.json records selectedId, method and seed",
-        "selected-direction.md records the chosen source-free visual summary",
+        "iteration 1 direction/selected-direction.md records the chosen source-free visual summary",
         "iteration 1 has site, serve.json and design-flags.json",
         "mechanical-findings.json exists, or the run records an explicit mechanical-preflight limitation",
         "observation.json and critique.md exist when browser evaluation runs",
@@ -174,7 +174,7 @@
         "direction-selection method is pinned-brief",
         "candidateIds contains only the pinned direction",
         "seed is null",
-        "selected-direction.md records the pinned source-free summary",
+        "the pinned iteration direction/selected-direction.md records the pinned source-free summary",
         "no originality-driven pivot replaces the pinned direction"
       ]
     },
@@ -228,7 +228,7 @@
       "prompt": "Run the fresh finish review and assess fidelity to the chosen direction.",
       "expected_output": "The finish reviewer receives the source-free selected direction summary without receiving the full design description or implementation history.",
       "assertions": [
-        "selected-direction.md is an explicit finish-review input",
+        "finish/selected-direction.md is copied from the selected iteration and is an explicit finish-review input",
         "design-description.md remains excluded",
         "prior scores and critiques remain excluded",
         "fidelity findings cite visible evidence"
@@ -243,6 +243,17 @@
         "the 412px screenshot is not labeled 390px",
         "visual_status is unverified",
         "no ready, ready_with_nits or hold verdict is produced from a single required viewport"
+      ]
+    },
+    {
+      "id": 22,
+      "prompt": "A run pivots after iteration 2, but final selection later chooses iteration 2 instead of the post-pivot build.",
+      "expected_output": "The finish reviewer receives iteration 2’s own preserved direction summary, not the later pivot direction.",
+      "assertions": [
+        "each pivot direction has its own iteration direction/selected-direction.md",
+        "finish/selection.json identifies iteration 2 and its direction summary path",
+        "finish/selected-direction.md is copied from iterations/2/direction/selected-direction.md",
+        "the later pivot summary remains preserved but is not used to judge iteration 2"
       ]
     }
   ]
