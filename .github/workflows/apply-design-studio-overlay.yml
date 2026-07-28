@@ -1,9 +1,13 @@
 name: Apply reviewed Design Studio 1.4 overlay
 
 on:
-  push:
+  pull_request:
     branches:
-      - agent/impeccable-meta-merge-1-4
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
 
 permissions:
   contents: write
@@ -16,6 +20,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.head_ref || github.ref_name }}
 
       - name: Extract reviewed overlay
         shell: bash
@@ -88,4 +93,4 @@ jobs:
             exit 0
           fi
           git commit -m 'feat: integrate Impeccable patterns into Design Studio'
-          git push origin "HEAD:${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
