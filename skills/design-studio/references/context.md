@@ -1,6 +1,6 @@
 # Context model
 
-Design Studio uses three authorities with different lifetimes. Do not collapse them into one brief.
+Design Studio uses four authorities with different lifetimes. Do not collapse them into one brief.
 
 ## PRODUCT.md — durable product truth
 
@@ -14,9 +14,7 @@ Recommended shape:
 <!-- design-studio:product-schema 1 -->
 
 ## Platform
-web
-
-Design Studio 1.4 evaluates browser-rendered web surfaces. Do not record `ios`, `android` or another native platform here unless the harness gains a native evaluator and workflow first.
+web | ios | android | adaptive
 
 ## Users and situation
 [Who uses it, where, and what job they are doing.]
@@ -87,16 +85,33 @@ Keep it small:
 - job, primary action or task;
 - real content, proof and assets available;
 - constraints and untouched areas;
-- selected direction and memorable moment;
 - unresolved surface decisions.
 
-Do not duplicate global product truth or full token documentation here.
+Do not duplicate global product truth, the selected visual contract or full token documentation here. The surface brief is written during planning and remains stable across direction exploration.
+
+## selected-direction.md — chosen visual contract summary
+
+After direction selection, write `harness-output/runs/<run-id>/selected-direction.md` as a source-free summary of the chosen candidate.
+
+Include:
+
+- selected candidate ID and selection method;
+- visual thesis and creative tension;
+- first-viewport composition;
+- visitor or task path;
+- visual grammar, typography and colour roles;
+- responsive behaviour and interaction intent;
+- signature moment;
+- known risk and anti-goals.
+
+This file is the durable run-level bridge between direction selection and later stages. The Visual Director may expand it into each iteration's `design-description.md`. The fresh finish reviewer may receive it to assess fidelity without receiving source or implementation history. The regular iteration Evaluator does not receive it.
 
 ## Authority order
 
 1. Explicit current user instruction.
 2. Confirmed product truth and pinned brand commitments.
 3. Current surface brief.
-4. Existing proven `DESIGN.md` when the task preserves the world.
-5. Repository evidence, treated as a hypothesis until confirmed.
-6. Model preference, which has no authority.
+4. Selected direction for the active run.
+5. Existing proven `DESIGN.md` when the task preserves the world.
+6. Repository evidence, treated as a hypothesis until confirmed.
+7. Model preference, which has no authority.
