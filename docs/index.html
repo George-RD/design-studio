@@ -133,7 +133,7 @@
     .hero {
       min-height: calc(100svh - 73px);
       display: grid;
-      grid-template-columns: minmax(520px, 0.86fr) minmax(680px, 1.14fr);
+      grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr);
       border-bottom: var(--rule);
     }
 
@@ -402,7 +402,7 @@
     .change-row {
       min-height: 106px;
       display: grid;
-      grid-template-columns: minmax(180px, 0.8fr) minmax(420px, 1.7fr) 90px;
+      grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.7fr) 90px;
       gap: 30px;
       align-items: center;
       border-bottom: var(--rule);
@@ -588,7 +588,7 @@
         </div>
 
         <div class="hero-actions">
-          <button class="command" type="button" data-copy="/design-studio:create a landing page with a point of view">
+          <button class="command" type="button" aria-label="Copy Design Studio create command" data-copy="/design-studio:create a landing page with a point of view">
             <span class="command__prompt" aria-hidden="true">$</span>
             <span class="command__value">/design-studio:create a landing page with a point of view</span>
             <span class="command__copy" aria-hidden="true">Copy command</span>
@@ -598,7 +598,7 @@
         </div>
       </div>
 
-      <div class="runboard" aria-label="Design Studio run board">
+      <div class="runboard" role="group" aria-label="Design Studio run board">
         <div class="runboard__top">
           <span>Run 014 / standard budget 4</span>
           <span class="runboard__status"><span class="status-dot" aria-hidden="true"></span>Iteration 3 evaluated</span>
@@ -632,7 +632,7 @@
 
         <div class="iteration-strip">
           <span>Preserved builds</span>
-          <div class="iterations" aria-label="Four preserved iterations, iteration three selected">
+          <div class="iterations" role="img" aria-label="Four preserved iterations, iteration three selected">
             <span class="iteration">01</span><span class="iteration">02</span><span class="iteration iteration--selected">03</span><span class="iteration">04</span>
           </div>
           <span>03 → site + DNA + tokens</span>
@@ -715,8 +715,8 @@
         <h2 id="install-title">Give the design its own room.</h2>
         <div class="install-panel">
           <div class="install-panel__top">Install in Claude Code</div>
-          <pre><code>claude plugin install https://github.com/George-RD/design-studio
-
+          <pre><code>/plugin marketplace add George-RD/design-studio
+/plugin install design-studio@design-studio
 /reload-plugins
 
 /design-studio:create your next surface</code></pre>
@@ -738,10 +738,18 @@
     const status = document.getElementById('copy-status');
     const demoImage = document.querySelector('.demo-frame img');
 
-    demoImage?.addEventListener('error', () => {
+    function markMediaMissing() {
+      if (!demoImage?.isConnected) return;
       demoImage.parentElement.classList.add('media-missing');
       demoImage.remove();
-    });
+    }
+
+    if (demoImage) {
+      demoImage.addEventListener('error', markMediaMissing);
+      if (demoImage.complete && demoImage.naturalWidth === 0) {
+        markMediaMissing();
+      }
+    }
 
     async function copyText(value) {
       if (navigator.clipboard && window.isSecureContext) {
@@ -754,9 +762,14 @@
       textarea.style.position = 'fixed';
       textarea.style.opacity = '0';
       document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand('copy');
-      textarea.remove();
+      try {
+        textarea.select();
+        if (!document.execCommand('copy')) {
+          throw new Error('copy command rejected');
+        }
+      } finally {
+        textarea.remove();
+      }
     }
 
     command?.addEventListener('click', async () => {
