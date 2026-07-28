@@ -54,7 +54,7 @@ Load `references/context.md` before planning.
 - `PRODUCT.md` is durable product truth: users, purpose, positioning, capabilities, constraints, real evidence and brand commitments.
 - `DESIGN.md` is the current proven visual system. It is authority for extensions; during a requested redesign it is evidence and an anti-reference unless the user says to preserve it.
 - `harness-output/runs/<run-id>/surface-brief.md` contains only the current surface's mode, job, action, content/proof and constraints.
-- `harness-output/runs/<run-id>/selected-direction.md` records the chosen source-free visual thesis after selection; regular iteration evaluation does not receive it, while the fresh finish review may use it to assess fidelity.
+- `harness-output/runs/<run-id>/iterations/<n>/direction/selected-direction.md` records the chosen source-free visual thesis for that iteration; regular iteration evaluation does not receive it. Final selection copies the winning iteration’s summary to `finish/selected-direction.md` for the fresh fidelity review.
 
 Inspect before asking. Ask only for material gaps. Mark unattended inferences as assumptions. Never fabricate customers, prices, benchmarks, capabilities or testimonials.
 
@@ -64,13 +64,13 @@ Run `workflow.yaml` end to end.
 
 1. **Context and Plan** — resolve product truth, classify the surface as `persuade`, `operate`, `read` or `experience`, capture a baseline for overhauls, define success criteria and select a finite iteration budget.
 2. **Explore** — Visual Director produces three viable, materially different directions without ranking them. All must fit the truth and constraints.
-3. **Select** — an exact pinned direction wins first; explicit unattended requests never trigger a question; otherwise the user selects when an answer mechanism is available or the Orchestrator uses a reproducible seed. Record the choice in `direction-selection.json` and its source-free visual summary in `selected-direction.md`. The Visual Director does not pick its own winner.
+3. **Select** — an exact pinned direction wins first; explicit unattended requests never trigger a question; otherwise the user selects when an answer mechanism is available or the Orchestrator uses a reproducible seed. Record the choice in `direction-selection.json` and its source-free visual summary in that iteration’s `selected-direction.md`. The Visual Director does not pick its own winner.
 4. **Direct** — Visual Director expands the selected direction into a visual contract: thesis, first viewport, visitor path, visual world, type, colour, rhythm, motion, responsive behaviour and signature interaction.
 5. **Build** — Builder implements into the current immutable iteration directory and writes `serve.json` plus `design-flags.json`. It never commits or overwrites another iteration.
 6. **Mechanical preflight** — run `references/quality-gates.md`. Prefer Impeccable's deterministic detector when available; otherwise use the browser-computed fallback. Mechanical checks may block craft/functionality but never assign visual quality or originality.
 7. **Blind evaluation** — Evaluator interacts with the live render at verified desktop and mobile viewports, captures zones, tests states and writes `observation.json` plus `critique.md`. It emits no workflow decision.
-8. **Decide** — Orchestrator applies the ordered decision table to history and budget. REFINE creates a new iteration and copies the chosen direction metadata forward; PIVOT creates a new iteration with a materially different direction; SHIP moves to tiered final selection.
-9. **Finish** — floor-passing, mechanically clean iterations outrank higher averages with a failed criterion. A fresh evaluator reviews the selected build using the original brief, `selected-direction.md` and live render. Apply at most one correction batch. Serve and verify the corrected copy through its own rewritten `corrected-serve.json`; accept it only when findings resolve and no material or mechanical regression remains.
+8. **Decide** — Orchestrator applies the ordered decision table to history and budget. REFINE creates a new iteration and copies the chosen direction metadata forward; PIVOT creates a new iteration with a materially different direction and its own preserved summary; SHIP moves to tiered final selection.
+9. **Finish** — floor-passing, mechanically clean iterations outrank higher averages with a failed criterion. Final selection copies the winning iteration’s direction summary to `finish/selected-direction.md`; a fresh evaluator reviews that summary with the original brief and live render. Apply at most one correction batch. Serve and verify the corrected copy through its own rewritten `corrected-serve.json`; accept it only when findings resolve and no material or mechanical regression remains. If either correction viewport is unavailable, record an unevaluated correction verdict with null scores rather than fabricating a comparison.
 10. **Codify** — copy the selected build to `harness-output/site/`; document `DESIGN.md`, design DNA and tokens from the built result; write `report.md`.
 
 ## Budget selection
@@ -94,12 +94,12 @@ run.json
 spec.md
 sprint-contract.md
 surface-brief.md
-selected-direction.md
 scores.json
 baseline/
 iterations/<n>/
   direction/directions.md
   direction/direction-selection.json
+  direction/selected-direction.md
   direction/design-description.md
   site/
   serve.json
@@ -112,6 +112,7 @@ finish/
   selection.json
   selected-site/
   selected-serve.json
+  selected-direction.md
   corrected-site/          # only when correction runs
   corrected-serve.json     # only when correction runs
   correction-verdict.json  # only when correction runs
