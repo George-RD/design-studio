@@ -50,18 +50,53 @@ jobs:
           fi
 
           failed=0
-          npx -y impeccable@latest detect --json docs/index.html > /tmp/impeccable-source.json || failed=1
-          npx -y impeccable@latest detect --json --viewport 1440x900 http://127.0.0.1:4173/ > /tmp/impeccable-desktop.json || failed=1
-          npx -y impeccable@latest detect --json --viewport 390x844 http://127.0.0.1:4173/ > /tmp/impeccable-mobile.json || failed=1
+          set +e
+          npx -y impeccable@latest detect --json docs/index.html > /tmp/impeccable-source.json
+          source_status=$?
+          npx -y impeccable@latest detect --json --viewport 1440x900 http://127.0.0.1:4173/ > /tmp/impeccable-desktop.json
+          desktop_status=$?
+          npx -y impeccable@latest detect --json --viewport 390x844 http://127.0.0.1:4173/ > /tmp/impeccable-mobile.json
+          mobile_status=$?
+          set -e
 
-          echo '--- source ---'
-          cat /tmp/impeccable-source.json
-          echo '--- desktop ---'
-          cat /tmp/impeccable-desktop.json
-          echo '--- mobile ---'
-          cat /tmp/impeccable-mobile.json
+          python - "$source_status" "$desktop_status" "$mobile_status" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
 
-          exit "$failed"
+          statuses = {
+              'source': int(sys.argv[1]),
+              'desktop': int(sys.argv[2]),
+              'mobile': int(sys.argv[3]),
+          }
+
+          for label, status in statuses.items():
+              path = Path(f'/tmp/impeccable-{label}.json')
+              print(f'--- {label}: exit={status} ---')
+              try:
+                  findings = json.loads(path.read_text())
+              except Exception as exc:
+                  print(f'Could not parse detector JSON: {exc}')
+                  print(path.read_text()[:2000])
+                  continue
+
+              primary = [finding for finding in findings if not finding.get('advisory')]
+              advisory = [finding for finding in findings if finding.get('advisory')]
+              print(f'findings={len(findings)} primary={len(primary)} advisory={len(advisory)}')
+              for finding in findings:
+                  severity = 'ADVISORY' if finding.get('advisory') else 'PRIMARY'
+                  location = finding.get('file', '<render>')
+                  if finding.get('line'):
+                      location += f":{finding['line']}"
+                  print(
+                      f"{severity} | {location} | {finding.get('antipattern', 'unknown')} | "
+                      f"{finding.get('description', '')} | {finding.get('snippet', '')}"
+                  )
+          PY
+
+          if [ "$source_status" -ne 0 ] || [ "$desktop_status" -ne 0 ] || [ "$mobile_status" -ne 0 ]; then
+            exit 1
+          fi
 
       - name: Stop documentation server
         if: always()
