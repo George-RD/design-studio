@@ -104,14 +104,27 @@ Include:
 - signature moment;
 - known risk and anti-goals.
 
-This file is the durable run-level bridge between direction selection and later stages. The Visual Director may expand it into each iteration's `design-description.md`. The fresh finish reviewer may receive it to assess fidelity without receiving source or implementation history. The regular iteration Evaluator does not receive it.
+This file is the durable run-level bridge between direction selection and later stages. The Visual Director may expand it into each iteration's `design-description.md`. The fresh finish reviewer may receive it to assess fidelity without receiving source or implementation history. The regular iteration Evaluator does not receive it. Its authority is conditional: it proposes the active visual contract, but it cannot silently override a proven system when the request is to preserve or refine that system.
 
 ## Authority order
+
+The first three levels apply to every run:
 
 1. Explicit current user instruction.
 2. Confirmed product truth and pinned brand commitments.
 3. Current surface brief.
-4. Selected direction for the active run.
-5. Existing proven `DESIGN.md` when the task preserves the world.
+
+For an **extension, polish or preserve-world refinement**:
+
+4. Existing proven `DESIGN.md` for established tokens, layout grammar, components, interaction conventions and accessibility commitments.
+5. `selected-direction.md`, constrained to evolve the requested surface without replacing the proven system.
+
+For a **greenfield surface or explicit redesign/new-world run**:
+
+4. `selected-direction.md` for the active visual choices.
+5. Existing `DESIGN.md` only for retained brand commitments, useful evidence and anti-reference lessons; incumbent styling has no automatic veto over the new direction.
+
+Then, in either mode:
+
 6. Repository evidence, treated as a hypothesis until confirmed.
 7. Model preference, which has no authority.
