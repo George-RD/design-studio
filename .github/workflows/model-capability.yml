@@ -1,0 +1,73 @@
+name: Probe comparison model capabilities
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/probe_github_models.py"
+      - "test/test_github_models_capability.py"
+      - "benchmarks/milestone-0/MODEL_HARNESS.md"
+      - ".github/workflows/model-capability.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  capability-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out exact revision
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Validate probe contracts
+        run: python3 -m unittest discover -s test -p 'test_github_models_capability.py'
+
+  live-capability-probe:
+    needs: capability-contract
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      models: read
+    steps:
+      - name: Check out exact revision
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Probe catalog, structured output and vision
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >-
+          python3 scripts/probe_github_models.py
+          --output-dir harness-output/benchmarks/milestone-0/model-capability
+
+      - name: Print sanitized capability report
+        if: always()
+        run: |
+          if test -f harness-output/benchmarks/milestone-0/model-capability/capability-report.json; then
+            cat harness-output/benchmarks/milestone-0/model-capability/capability-report.json
+          else
+            echo "Capability report was not created."
+            exit 1
+          fi
+
+      - name: Upload capability evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: github-models-capability-${{ github.run_id }}
+          path: harness-output/benchmarks/milestone-0/model-capability
+          if-no-files-found: error
+          retention-days: 14

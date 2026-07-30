@@ -67,6 +67,7 @@ The architectural change is useful only when all of these are true:
   - [x] review and polish pass;
   - [x] visually ambitious experience suitable for a later Scroll World comparison.
 - [x] Define a reproducible, tamper-evident lane-run and evidence protocol. Evidence: [comparison run protocol](benchmarks/milestone-0/RUN_PROTOCOL.md), [run harness](scripts/run_boundary_benchmark.py) and [contract tests](test/test_boundary_benchmark_run.py).
+- [x] Verify a repository-scoped text-and-vision model execution surface for comparison agents. Evidence: [capability gate](benchmarks/milestone-0/MODEL_HARNESS.md), [sanitized receipt](benchmarks/milestone-0/evidence/github-models-capability.json) and [GitHub Actions run 30556498881](https://github.com/George-RD/design-studio/actions/runs/30556498881).
 - [ ] Run the same fixed briefs through:
   - [ ] Impeccable alone;
   - [ ] current Design Studio;
