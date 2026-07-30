@@ -1,47 +1,68 @@
-# Meta: improve the harness
+# Meta: improve Design Studio
 
-Design Studio is a living experiment. Model capability changes which scaffolding remains useful, but it does not justify changing the workflow from anecdotes alone.
+Design Studio is a living experiment. Model capability changes which controls remain useful, but anecdotes alone do not justify changing the workflow.
 
 ## Sources of truth
 
-- `skills/design-studio/SKILL.md` owns routing and public behaviour.
-- `skills/design-studio/workflow.yaml` owns paths, schemas, transitions, budgets and decisions.
+- `SKILL.md` owns routing and public behaviour.
+- `workflow.yaml` owns paths, schemas, transitions, budgets and decisions.
 - agent files own role behaviour and isolation.
-- reference leaves own procedures.
-- run traces are evidence of actual behaviour.
+- focused references own procedures.
+- run traces and external preference are evidence of actual behaviour.
 
-Keep duplicated policy to a minimum. Version plugin metadata, skill, workflow and eval suite together.
+Keep duplicated policy small. Version plugin metadata, skill, workflow and eval suite together.
 
-## What to inspect
+## Inspect complete runs
 
-Sample complete run directories, not only final screenshots. Compare:
+Sample run directories, not only final screenshots. Compare:
 
-- prompt and product context;
-- the three direction candidates and selection method;
-- design descriptions;
-- design flags and mechanical findings;
+- prompt, roots, capabilities and product context;
+- direction assignment timing, three candidates and final selection;
+- design descriptions and Builder fidelity flags;
+- detector snapshots and finding lifecycle;
 - screenshots, observations and critiques;
-- decisions and final selection;
-- finish findings and open items;
-- codified design DNA/tokens.
+- event journal, resume points and failures;
+- decisions, final selection and acceptance receipt;
+- codified design DNA and tokens.
 
 Look for recurring failure modes:
 
+- the wrong app or context root is selected;
+- capabilities are assumed rather than probed;
+- a resumed run repeats a completed build or trusts a partial directory;
 - candidates converge despite different names;
-- the Visual Director uses implementation language or appears source-anchored;
-- the Builder softens ambitious instructions without flags;
-- the Evaluator gives high scores to competent templates;
+- unattended selection correlates with candidate order;
+- Visual Director uses implementation language or appears source-anchored;
+- Builder softens ambitious instructions without flags;
+- Evaluator gives high scores to competent templates;
+- fixed detector findings remain open, or reintroduced findings remain closed;
 - mechanical facts appear in screenshot-only critique;
-- two components claim decision authority;
 - later iterations become more complex while functionality falls;
-- the latest iteration is selected despite an earlier stronger build;
-- finish review restarts an unbounded taste loop.
+- latest wins despite an earlier stronger build;
+- finish review restarts an unbounded taste loop;
+- acceptance and codified output point to different trees.
+
+## Why the runtime controls exist
+
+The controls should answer real failure classes:
+
+| Failure class | Workflow response |
+|---|---|
+| Nested app or monorepo runs from the wrong directory | evidence-backed `roots.json` |
+| Tool or browser access is assumed | `capabilities.json` before planning |
+| Agent candidate ordering becomes hidden preference | precommitted slot hidden from Visual Director |
+| A crash loses state or repeats expensive work | append-only events plus artifact-validated resume |
+| Detector cache keeps stale issues or misses regressions | complete current snapshots with stable signatures |
+| A corrected directory is accepted because it exists | final acceptance receipt with postconditions |
+| Customer copy improves mechanically but loses meaning | frozen baseline plus qualitative copy gates |
+
+Delete a control when representative evidence shows it no longer earns its cost.
 
 ## Tune criteria without creating a house style
 
-Scoring language steers generation. Define qualities—clarity, cohesion, specificity, craft, task fit—not preferred aesthetics. Named movements, fonts, palettes and composition examples belong in a user's brief or a single candidate derivation, not in always-loaded scoring prompts.
+Scoring language steers generation. Define qualities such as clarity, cohesion, specificity, craft and task fit. Named movements, fonts, palettes and composition examples belong in the user brief or one candidate, not always-loaded scoring prompts.
 
-When runs look alike, audit prompt examples and rubric nouns before adding more anti-pattern bans.
+When runs look alike, audit prompt examples, candidate diversity axes and rubric nouns before adding more bans.
 
 ## Calibrate the Evaluator
 
@@ -53,42 +74,49 @@ Across representative first iterations:
 - high Originality on swappable pages suggests poor product-specificity calibration;
 - post-ship user bugs suggest weak adversarial gates.
 
-Use blind benchmark screenshots with known defects to test catch rate. Do not train the evaluator on its own previous prose only.
+Use blind benchmark screenshots with known defects to test catch rate. Do not train the Evaluator only on its own previous prose.
 
 ## Ablation protocol
 
-For a material model or harness upgrade:
+For a material model or workflow upgrade:
 
-1. select several representative prompts and fixed product contexts;
+1. select representative prompts and fixed product contexts;
 2. run the current workflow and record cost, time, scores and independent human preference;
 3. remove or simplify exactly one layer;
-4. repeat with the same seeds and budgets;
+4. repeat with the same seeds, assignment slots and budgets;
 5. retain the layer only when quality, reliability or debuggability improves enough to justify its cost.
 
-Test planner depth, candidate count, zone screenshots, iteration budget and finish review separately. Test the code-blind Visual Director/Builder split last: it addresses anchoring rather than context-window size.
+Test planner depth, candidate count, precommit assignment, zone screenshots, iteration budget, finish review and resume separately. Test the code-blind Visual Director and Builder split last because it addresses anchoring rather than context size.
 
 ## Metrics worth tracking
 
+- root-resolution override and failure rate;
+- capability downgrade rate;
+- resume success and repeated-step rate;
+- candidate-slot selection distribution;
 - first-iteration score distribution;
 - user-selected direction distribution;
 - REFINE and PIVOT success rate;
-- best iteration versus latest iteration frequency;
-- open primary finding rate;
+- best iteration versus latest frequency;
+- open primary finding rate and stale-finding rate;
 - finish-review defect yield;
+- acceptance postcondition failure rate;
 - final user preference against one-pass and Impeccable-only baselines;
 - time, tokens and browser operations per accepted run;
-- number of waivers and whether they trace to real commitments.
+- waiver count and whether each traces to a real commitment.
 
-A higher internal score is not proof of a better harness. Prefer blinded external preference and real task success.
+A higher internal score is not proof of a better workflow. Prefer blinded external preference and real task success.
 
 ## Change discipline
 
 A workflow change is complete only when:
 
-- schemas and transitions still terminate deterministically;
+- schemas and transitions terminate deterministically;
+- roots and capability evidence are explicit;
 - isolation tests pass;
-- immutable paths still preserve earlier builds;
+- resume cannot overwrite completed iterations;
+- detector snapshots cannot retain stale open state;
 - eval cases cover the new behaviour and likely near-misses;
 - docs describe current capability rather than roadmap;
 - version metadata agrees;
-- one greenfield and one overhaul smoke run complete in a browser-capable harness.
+- one greenfield and one overhaul smoke run complete in a browser-capable tool.

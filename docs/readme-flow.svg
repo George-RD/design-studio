@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" role="img" aria-labelledby="title desc">
+  <title id="title">Design Studio run flow</title>
+  <desc id="desc">Frame, direct, build, judge and decide, with direction and judgement kept away from source.</desc>
+  <style>
+    .step { font: 800 28px/1 Arial Narrow, Arial, sans-serif; }
+    .meta { font: 700 13px/1.2 Courier New, monospace; letter-spacing: 1px; }
+    .copy { font: 400 16px/1.35 Arial, sans-serif; }
+    .runner { animation: run 8s cubic-bezier(.65,0,.35,1) infinite; }
+    @keyframes run {
+      0%,12% { transform: translateX(0); }
+      20%,32% { transform: translateX(222px); }
+      40%,52% { transform: translateX(444px); }
+      60%,72% { transform: translateX(666px); }
+      80%,92% { transform: translateX(888px); }
+      100% { transform: translateX(0); }
+    }
+    @media (prefers-reduced-motion: reduce) { .runner { animation: none; } }
+  </style>
+  <rect width="1200" height="300" fill="#171814"/>
+  <text x="42" y="43" class="meta" fill="#d0f05a">ONE RUN · FINITE BUDGET · EVERY BUILD PRESERVED</text>
+  <path d="M74 231H1126" stroke="#a8aa9e"/>
+
+  <g transform="translate(42 74)">
+    <rect width="190" height="126" fill="#fbf8ef" stroke="#a8aa9e"/>
+    <text x="20" y="34" class="meta" fill="#c83212">01 · SOURCE</text>
+    <text x="20" y="72" class="step" fill="#171814">FRAME</text>
+    <text x="20" y="101" class="copy" fill="#4f524a">Truth and scope</text>
+  </g>
+  <g transform="translate(264 74)">
+    <rect width="190" height="126" fill="#1457d9" stroke="#a8aa9e"/>
+    <text x="20" y="34" class="meta" fill="#d0f05a">02 · BLIND</text>
+    <text x="20" y="72" class="step" fill="#fbf8ef">DIRECT</text>
+    <text x="20" y="101" class="copy" fill="#fbf8ef">Choose the world</text>
+  </g>
+  <g transform="translate(486 74)">
+    <rect width="190" height="126" fill="#fbf8ef" stroke="#a8aa9e"/>
+    <text x="20" y="34" class="meta" fill="#1457d9">03 · SOURCE</text>
+    <text x="20" y="72" class="step" fill="#171814">BUILD</text>
+    <text x="20" y="101" class="copy" fill="#4f524a">Implement faithfully</text>
+  </g>
+  <g transform="translate(708 74)">
+    <rect width="190" height="126" fill="#f04b23" stroke="#a8aa9e"/>
+    <text x="20" y="34" class="meta" fill="#171814">04 · BLIND</text>
+    <text x="20" y="72" class="step" fill="#171814">JUDGE</text>
+    <text x="20" y="101" class="copy" fill="#171814">Use the browser</text>
+  </g>
+  <g transform="translate(930 74)">
+    <rect width="190" height="126" fill="#d0f05a" stroke="#a8aa9e"/>
+    <text x="20" y="34" class="meta" fill="#171814">05 · EVIDENCE</text>
+    <text x="20" y="72" class="step" fill="#171814">DECIDE</text>
+    <text x="20" y="101" class="copy" fill="#171814">Refine, pivot or ship</text>
+  </g>
+
+  <g class="runner">
+    <rect x="53" y="216" width="42" height="30" fill="#d0f05a" stroke="#171814"/>
+    <path d="M65 231H83" stroke="#171814" stroke-width="3"/>
+  </g>
+  <text x="43" y="278" class="meta" fill="#a8aa9e">THE BEST ELIGIBLE BUILD WINS. LATEST IS NOT A RULE.</text>
+</svg>

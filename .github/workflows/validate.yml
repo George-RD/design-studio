@@ -26,12 +26,13 @@ jobs:
         with:
           node-version: 24
 
-      - name: Validate contracts
+      - name: Validate contracts and copy
         shell: bash
         run: |
           set -euo pipefail
           ruby -ryaml -rjson -e 'puts JSON.generate(YAML.load_file("skills/design-studio/workflow.yaml"))' > /tmp/workflow.json
           python3 - <<'PY'
+          from html.parser import HTMLParser
           from pathlib import Path
           import json
           import re
@@ -52,7 +53,7 @@ jobs:
               workflow['version'],
               skill_version,
           }
-          if versions != {'1.4.0'}:
+          if versions != {'1.5.0'}:
               raise SystemExit(f'version mismatch: {versions}')
 
           ids = [step['id'] for step in workflow['steps']]
@@ -77,15 +78,40 @@ jobs:
               raise SystemExit(f'unknown workflow targets: {missing}')
 
           required_steps = {
+              'resolve_roots',
+              'probe_capabilities',
+              'prepare_direction_assignment',
               'prepare_refine_iteration',
               'prepare_pivot_iteration',
               'finish_correction_decide',
+              'accept',
           }
           if not required_steps.issubset(known):
               raise SystemExit(f'missing workflow steps: {sorted(required_steps - known)}')
 
-          if len(evals.get('evals', [])) < 21:
-              raise SystemExit('expected at least 21 design-studio evals')
+          order = {step_id: index for index, step_id in enumerate(ids)}
+          if order['prepare_direction_assignment'] > order['explore_direction']:
+              raise SystemExit('unattended direction assignment must precede candidate generation')
+          if order['accept'] > order['codify']:
+              raise SystemExit('acceptance receipt must precede codify')
+
+          required_paths = {'roots', 'capabilities', 'events', 'directionAssignment', 'finishAcceptance'}
+          absent_paths = required_paths - set(workflow.get('paths', {}))
+          if absent_paths:
+              raise SystemExit(f'missing workflow paths: {sorted(absent_paths)}')
+
+          if len(evals.get('evals', [])) < 29:
+              raise SystemExit('expected at least 29 design-studio evals')
+
+          required_refs = [
+              'skills/design-studio/references/runtime-integrity.md',
+              'skills/design-studio/references/copy.md',
+              'skills/design-studio/references/quality-gates.md',
+              'skills/design-studio/agents/design-agent.md',
+          ]
+          missing_refs = [path for path in required_refs if not (root / path).is_file()]
+          if missing_refs:
+              raise SystemExit(f'missing focused references: {missing_refs}')
 
           html = (root / 'docs/index.html').read_text()
           required_html = [
@@ -94,19 +120,101 @@ jobs:
               'aria-label="Copy Design Studio create command"',
               '/plugin marketplace add George-RD/design-studio',
               '/plugin install design-studio@design-studio',
-              'demoImage.complete && demoImage.naturalWidth === 0',
-              "if (!document.execCommand('copy'))",
-              '@media (max-width: 1200px)',
+              'data-handoff-demo',
+              'aria-label="Pause workflow animation"',
+              'href="styles.css"',
+              'src="app.js"',
           ]
           absent = [marker for marker in required_html if marker not in html]
           if absent:
               raise SystemExit(f'missing documentation contract: {absent}')
 
-          forbidden = ['status-pulse', 'font: 10px', 'claude plugin install https://github.com/George-RD/design-studio']
-          present = [marker for marker in forbidden if marker in html]
+          forbidden = [
+              'status-pulse',
+              'font: 10px',
+              'claude plugin install https://github.com/George-RD/design-studio',
+              'video-1080p.gif',
+              '<video',
+              'remotion-video',
+          ]
+          present = [marker for marker in forbidden if marker in html.lower()]
           if present:
               raise SystemExit(f'forbidden documentation pattern remains: {present}')
+
+          if (root / 'docs/video-1080p.gif').exists() or (root / 'remotion-video').exists():
+              raise SystemExit('obsolete video assets or Remotion toolchain remain')
+
+          for asset in ('docs/readme-banner.svg', 'docs/readme-flow.svg'):
+              text = (root / asset).read_text()
+              if '<svg' not in text or 'prefers-reduced-motion' not in text:
+                  raise SystemExit(f'{asset} must remain a useful static SVG with reduced-motion-aware animation')
+
+          readme = (root / 'README.md').read_text()
+          if len(readme.splitlines()) > 130:
+              raise SystemExit('README exceeded the concise 130-line budget')
+          for asset in ('docs/readme-banner.svg', 'docs/readme-flow.svg'):
+              if asset not in readme:
+                  raise SystemExit(f'README does not use {asset}')
+
+          class VisibleText(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.skip = 0
+                  self.parts = []
+              def handle_starttag(self, tag, attrs):
+                  if tag in {'script', 'style'}:
+                      self.skip += 1
+              def handle_endtag(self, tag):
+                  if tag in {'script', 'style'} and self.skip:
+                      self.skip -= 1
+              def handle_data(self, data):
+                  if not self.skip:
+                      self.parts.append(data)
+
+          parser = VisibleText()
+          parser.feed(html)
+          public_copy = ' '.join(parser.parts)
+          readme_copy = re.sub(r'```.*?```', ' ', readme, flags=re.S)
+          readme_copy = re.sub(r'`[^`]*`', ' ', readme_copy)
+          readme_copy = re.sub(r'<[^>]+>', ' ', readme_copy)
+          public_copy += ' ' + readme_copy
+          public_copy = re.sub(r'\s+', ' ', public_copy).lower()
+
+          tier1 = {
+              'delve', 'landscape', 'tapestry', 'paradigm', 'leverage', 'harness',
+              'navigate', 'realm', 'embark', 'journey', 'myriad', 'plethora',
+              'multifaceted', 'revolutionize', 'synergy', 'ecosystem', 'resonate',
+              'streamline',
+          }
+          found = sorted(word for word in tier1 if re.search(rf'\b{re.escape(word)}(?:s|d|ed|ing)?\b', public_copy))
+          if found:
+              raise SystemExit(f'Growth Arsenal Tier-1 copy terms remain in public prose: {found}')
+          if '—' in public_copy:
+              raise SystemExit('public copy contains an em dash')
+          for phrase in ('not just ', 'in today\'s fast-paced', 'game-changing', 'unlock the power'):
+              if phrase in public_copy:
+                  raise SystemExit(f'formulaic public-copy phrase remains: {phrase}')
+
+          css_paths = [root / 'docs/styles.css', root / 'docs/styles-base.css', root / 'docs/styles-workflow.css', root / 'docs/styles-responsive.css']
+          missing_css = [str(path) for path in css_paths if not path.is_file()]
+          if missing_css:
+              raise SystemExit(f'missing documentation styles: {missing_css}')
+          css = '\n'.join(path.read_text() for path in css_paths)
+          stylesheet = (root / 'docs/styles.css').read_text()
+          for marker in ('styles-base.css', 'styles-workflow.css', 'styles-responsive.css'):
+              if marker not in stylesheet:
+                  raise SystemExit(f'missing stylesheet import: {marker}')
+          app_js = (root / 'docs/app.js').read_text()
+          for marker in ('@media (max-width: 1200px)', '@media (prefers-reduced-motion: reduce)'):
+              if marker not in css:
+                  raise SystemExit(f'missing responsive CSS contract: {marker}')
+          for marker in ("if (!document.execCommand('copy'))", "'Play workflow animation'"):
+              if marker not in app_js:
+                  raise SystemExit(f'missing documentation script contract: {marker}')
+          if '<style>' in html or '<script>' in html:
+              raise SystemExit('docs CSS and JS must stay in maintainable external files')
           PY
+          node --check docs/app.js
 
       - name: Start documentation server
         shell: bash
@@ -127,7 +235,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npm install --prefix /tmp/impeccable --ignore-scripts --no-audit --no-fund impeccable@3.3.1
+          npm install --prefix /tmp/impeccable --ignore-scripts --no-audit --no-fund impeccable@3.5.0
           test -x /tmp/impeccable/node_modules/.bin/impeccable
 
       - name: Run exact Impeccable scans
@@ -173,7 +281,7 @@ jobs:
               except Exception as exc:
                   findings = []
                   failed = True
-                  lines.append(f'| {label} | {status} | parse error | — |')
+                  lines.append(f'| {label} | {status} | parse error | - |')
                   lines.append(f'<!-- {exc} -->')
                   continue
 

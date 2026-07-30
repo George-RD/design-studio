@@ -1,10 +1,16 @@
 # Context model
 
-Design Studio uses four authorities with different lifetimes. Do not collapse them into one brief.
+Design Studio keeps durable truth, proven design, current surface strategy and operational run facts separate. Do not collapse them into one brief.
 
-## PRODUCT.md — durable product truth
+## roots.json and capabilities.json: operational truth
 
-`PRODUCT.md` records facts that future runs should not rediscover or invent. Inspect the repository before asking the user. Update an existing file rather than creating a competing authority.
+`roots.json` answers where the repository, app and governing context live. `capabilities.json` answers which tools and target contracts were actually available for this run.
+
+They are written before planning and are not creative inputs. Load `runtime-integrity.md` for resolution and resume rules.
+
+## PRODUCT.md: durable product truth
+
+`PRODUCT.md` records facts future runs should not rediscover or invent. Inspect the repository before asking the user. Update an existing file rather than creating a competing authority.
 
 Recommended shape:
 
@@ -44,19 +50,33 @@ web | ios | android | adaptive
 [Known user needs or required standard.]
 ```
 
-Ask only about material gaps the request and repository do not answer. Keep interview rounds small. Record undecided facts instead of inventing them. A redesign changes visual authority, not confirmed product truth.
+Ask only about material gaps the request and repository do not answer. Record undecided facts instead of inventing them. A redesign changes visual authority, not confirmed product truth.
 
 Do not put palettes, component recipes, page layouts or an invented visual world in `PRODUCT.md`. Never invent prices, customers, benchmarks, capabilities, endpoints or testimonials.
 
-## DESIGN.md — proven visual system
+## COPY.md: durable language system
 
-`DESIGN.md` records the visual system demonstrated by a shipped build.
+`COPY.md` is optional. When present, it records language decisions that should survive individual pages:
 
-- **Extension or refinement:** existing `DESIGN.md` is authority unless the user changes it.
-- **Requested redesign:** preserve explicit brand commitments, but treat the incumbent visual world as evidence and an anti-reference rather than something to average into the replacement.
-- **Missing file:** inspect code, tokens, components and assets before deciding there is no visual authority.
+- audience vocabulary and terms to repeat consistently;
+- voice and sentence character;
+- claim boundaries and proof rules;
+- action labels and microcopy conventions;
+- journey-specific guidance;
+- localisation, accessibility and AI-disclosure rules;
+- phrases and structures to avoid.
 
-For a new or replaced world, write `DESIGN.md` after the build and finish review. Ground it in the final screenshots and canonical tokens, not an early intention.
+Load it into planning and the surface brief. Do not let it override confirmed product facts. Do not create it for a one-line edit unless the user asks to preserve language rules across future work.
+
+## DESIGN.md: proven visual system
+
+`DESIGN.md` records the visual system demonstrated by an accepted build.
+
+- **Extension or refinement**: existing `DESIGN.md` is authority unless the user changes it.
+- **Requested redesign**: preserve explicit brand commitments, but treat the incumbent visual world as evidence and an anti-reference rather than something to average into the replacement.
+- **Missing file**: inspect code, tokens, components and assets before deciding there is no visual authority.
+
+For a new or replaced world, write `DESIGN.md` only after acceptance. Ground it in final screenshots and canonical tokens, not an early intention.
 
 Recommended content:
 
@@ -70,32 +90,34 @@ Recommended content:
 - motion and interaction;
 - responsive behaviour;
 - signature motifs;
-- content/voice rules;
+- content and voice rules that belong to visual application;
 - anti-goals and intentional exceptions;
-- provenance: run ID, selected iteration and token paths.
+- provenance: run ID, accepted iteration and token paths.
 
-## surface-brief.md — current surface strategy
+## surface-brief.md: current surface strategy
 
 Write `harness-output/runs/<run-id>/surface-brief.md` for the requested route, screen or artifact.
 
 Keep it small:
 
-- scope and mode: persuade / operate / read / experience;
+- scope and mode: persuade, operate, read or experience;
 - audience and situation;
 - job, primary action or task;
 - real content, proof and assets available;
-- constraints and untouched areas;
+- copy baseline and constraints when text changes;
+- visual and behavioural constraints;
+- untouched areas;
 - unresolved surface decisions.
 
-Do not duplicate global product truth, the selected visual contract or full token documentation here. The surface brief is written during planning and remains stable across direction exploration.
+Do not duplicate global product truth, the selected visual contract or full token documentation. The surface brief remains stable across direction exploration.
 
-## selected-direction.md — chosen visual contract summary
+## selected-direction.md: chosen visual contract summary
 
-After direction selection, write `harness-output/runs/<run-id>/iterations/<n>/direction/selected-direction.md` as a source-free summary of the chosen candidate for that iteration.
+After selection, write `iterations/<n>/direction/selected-direction.md` as a source-free summary of the chosen candidate.
 
 Include:
 
-- selected candidate ID and selection method;
+- candidate ID, selection method and whether selection was precommitted;
 - visual thesis and creative tension;
 - first-viewport composition;
 - visitor or task path;
@@ -104,27 +126,32 @@ Include:
 - signature moment;
 - known risk and anti-goals.
 
-This file is the immutable direction bridge for one iteration. The Visual Director may expand it into that iteration's `design-description.md`. REFINE copies it forward unchanged; PIVOT writes a new summary for the new direction. Final selection copies the selected iteration's summary into `finish/selected-direction.md` so the fresh reviewer assesses the winning build against the direction it actually implemented. The regular iteration Evaluator does not receive it. Its authority is conditional: it proposes the active visual contract, but it cannot silently override a proven system when the request is to preserve or refine that system.
+This file is the immutable direction bridge for one iteration. REFINE copies it forward. PIVOT writes a new summary. Final selection copies the chosen iteration's summary into `finish/selected-direction.md` so fresh review uses the direction that build actually implemented. Regular iteration evaluation does not receive it.
+
+## events.jsonl and acceptance.json: run evidence
+
+`events.jsonl` records how the workflow progressed and where a resume should continue. `finish/acceptance.json` proves which final tree became authoritative. Neither file may contain invented visual scores.
 
 ## Authority order
 
-The first three levels apply to every run:
+Every run starts with:
 
 1. Explicit current user instruction.
 2. Confirmed product truth and pinned brand commitments.
-3. Current surface brief.
+3. `COPY.md` for language decisions, when present.
+4. Current surface brief.
 
 For an **extension, polish or preserve-world refinement**:
 
-4. Existing proven `DESIGN.md` for established tokens, layout grammar, components, interaction conventions and accessibility commitments.
-5. `selected-direction.md`, constrained to evolve the requested surface without replacing the proven system.
+5. Existing proven `DESIGN.md`.
+6. `selected-direction.md`, constrained to evolve the requested surface without replacing the proven system.
 
-For a **greenfield surface or explicit redesign/new-world run**:
+For a **greenfield surface or explicit redesign**:
 
-4. `selected-direction.md` for the active visual choices.
-5. Existing `DESIGN.md` only for retained brand commitments, useful evidence and anti-reference lessons; incumbent styling has no automatic veto over the new direction.
+5. `selected-direction.md` for active visual choices.
+6. Existing `DESIGN.md` only for retained commitments, useful evidence and anti-reference lessons.
 
 Then, in either mode:
 
-6. Repository evidence, treated as a hypothesis until confirmed.
-7. Model preference, which has no authority.
+7. Repository evidence, treated as a hypothesis until confirmed.
+8. Model preference, which has no authority.

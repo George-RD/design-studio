@@ -1,72 +1,57 @@
 workflow:
   name: design-studio
-  version: 1.4.0
+  version: 1.5.0
   description: >-
-    Multi-agent design workflow with durable context, code-blind direction and evaluation,
-    immutable iteration evidence, deterministic mechanical gates, one decision authority,
-    bounded iteration and post-build design-system capture.
+    Rooted, resumable multi-agent frontend design. Product framing and implementation may see source;
+    visual direction and browser judgement do not. Every build is preserved, mechanical findings are
+    current snapshots, and only an accepted final tree becomes authoritative.
 
   invariants:
-    - Visual Director and Evaluator never receive source code.
-    - Evaluator never receives the full design description, design flags, prior scores or implementation effort.
-    - Evaluator writes observations and scores only; Orchestrator writes workflow decisions.
-    - Every completed iteration directory is immutable.
-    - No agent self-commits. Version-control actions belong to the calling harness or user.
-    - Mechanical findings cannot award Design Quality or Originality.
-    - No visual decision is made when either required browser viewport was not actually reached.
-    - A finish correction can replace the selected build only after evidence proves it did not regress.
+    - Visual Director never receives source, selectors, implementation diffs, the unattended seed or assigned candidate index.
+    - Evaluator never receives source, implementation effort, full design description, design flags or prior scores.
+    - Evaluator reports evidence and scores only; Orchestrator owns REFINE, PIVOT, SHIP and HALT.
+    - Unattended assignment is committed before candidate generation and hidden from Visual Director.
+    - Every completed iteration is immutable; events.jsonl is append-only.
+    - Mechanical findings are complete current snapshots, not an accumulated open cache.
+    - No visual winner is selected without a runnable target and both required browser viewports.
+    - No accepted tree is codified until finish/acceptance.json proves its postconditions.
+    - No agent self-commits; version-control actions belong to the calling harness or user.
 
   capabilities:
-    required:
-      - file_io
-      - shell
-      - isolated_subagents
-      - browser_automation
-    optional:
-      - impeccable_cli
-      - image_generation
-      - structured_user_questions
-      - version_control
+    required: [file_io, shell, isolated_subagents]
+    visualDecision: [runnable_target, browser_automation]
+    optional: [impeccable_cli, business_copy_style, image_generation, structured_user_questions, version_control]
 
   defaults:
     budgetClass: standard
-    iterationBudgets:
-      quick: 2
-      standard: 4
-      ambitious: 6
+    iterationBudgets: { quick: 2, standard: 4, ambitious: 6 }
     explicitBudgetMinimum: 1
     explicitBudgetMaximum: 8
-    pivotBudget:
-      quick: 0
-      standard: 1
-      ambitious: 2
-      explicit: 1
-    shipFloor:
-      designQuality: 7
-      originality: 7
-      craft: 7
-      functionality: 7
-    viewports:
-      desktop: [1440, 900]
-      mobile: [390, 844]
+    pivotBudget: { quick: 0, standard: 1, ambitious: 2, explicit: 1 }
+    shipFloor: { designQuality: 7, originality: 7, craft: 7, functionality: 7 }
+    viewports: { desktop: [1440, 900], mobile: [390, 844] }
     finishCorrectionRounds: 1
     directionCount: 3
-    requireUserDirectionChoiceWhenAvailable: true
 
   paths:
     runRoot: harness-output/runs/{runId}
     runManifest: harness-output/runs/{runId}/run.json
+    roots: harness-output/runs/{runId}/roots.json
+    capabilities: harness-output/runs/{runId}/capabilities.json
+    events: harness-output/runs/{runId}/events.jsonl
     product: PRODUCT.md
     design: DESIGN.md
+    copy: COPY.md
     spec: harness-output/runs/{runId}/spec.md
     sprintContract: harness-output/runs/{runId}/sprint-contract.md
     surfaceBrief: harness-output/runs/{runId}/surface-brief.md
-    selectedDirection: harness-output/runs/{runId}/iterations/{N}/direction/selected-direction.md
     baseline: harness-output/runs/{runId}/baseline/
     scores: harness-output/runs/{runId}/scores.json
     iterationRoot: harness-output/runs/{runId}/iterations/{N}
+    directionAssignment: harness-output/runs/{runId}/iterations/{N}/direction/direction-assignment.json
     directions: harness-output/runs/{runId}/iterations/{N}/direction/directions.md
     directionSelection: harness-output/runs/{runId}/iterations/{N}/direction/direction-selection.json
+    selectedDirection: harness-output/runs/{runId}/iterations/{N}/direction/selected-direction.md
     designDescription: harness-output/runs/{runId}/iterations/{N}/direction/design-description.md
     site: harness-output/runs/{runId}/iterations/{N}/site/
     serveConfig: harness-output/runs/{runId}/iterations/{N}/serve.json
@@ -83,6 +68,7 @@ workflow:
     finishCorrectedSite: harness-output/runs/{runId}/finish/corrected-site/
     finishCorrectedServeConfig: harness-output/runs/{runId}/finish/corrected-serve.json
     finishFinalTree: harness-output/runs/{runId}/finish/final-tree.json
+    finishAcceptance: harness-output/runs/{runId}/finish/acceptance.json
     compatibilitySite: harness-output/site/
     designDna: harness-output/design-system/design-dna.md
     tokens: harness-output/design-system/tokens.css
@@ -92,275 +78,139 @@ workflow:
   schemas:
     runManifest:
       type: object
-      required:
-        - runId
-        - status
-        - mode
-        - budgetClass
-        - iterationBudget
-        - pivotBudget
-        - currentIteration
-        - pivotsUsed
-        - correctionRoundsUsed
+      required: [runId, promptHash, status, mode, budgetClass, iterationBudget, pivotBudget, currentIteration, pivotsUsed, correctionRoundsUsed, currentStep]
       properties:
-        runId: { type: string }
         status: { enum: [initialising, running, halted, complete] }
         mode: { enum: [greenfield, overhaul] }
         budgetClass: { enum: [quick, standard, ambitious, explicit] }
         iterationBudget: { type: integer, minimum: 1, maximum: 8 }
-        pivotBudget: { type: integer, minimum: 0, maximum: 2 }
         currentIteration: { type: integer, minimum: 1 }
-        pivotsUsed: { type: integer, minimum: 0 }
-        correctionRoundsUsed: { type: integer, minimum: 0, maximum: 1 }
-        bestIteration: { type: [integer, 'null'] }
         finalStatus: { enum: [pending, quality-floor-met, best_available, complete-with-open-items, halted] }
-        terminationReason: { type: [string, 'null'] }
+
+    roots:
+      type: object
+      required: [targetKind, repoRoot, appRoot, contextRoot, evidence]
+      properties:
+        targetKind: { enum: [local, external-url] }
+        evidence: { type: array, minItems: 1 }
+
+    capabilities:
+      type: object
+      required: [probedAt, evaluationPlan, capabilities]
+      properties:
+        evaluationPlan: { enum: [full, build-once-unselected, mechanical-review] }
+        capabilities: { type: object }
+
+    directionAssignment:
+      type: object
+      required: [mode, candidateIds, committedBeforeExplore]
+      properties:
+        mode: { enum: [user-choice, deterministic-seed, pinned-brief] }
+        candidateIds: { type: array, minItems: 1, maxItems: 3 }
+        seed: { type: [string, 'null'] }
+        assignedIndex: { type: [integer, 'null'], minimum: 1, maximum: 3 }
+        committedBeforeExplore: { const: true }
 
     directionSelection:
       type: object
-      required: [selectedId, method, seed, candidateIds]
+      required: [selectedId, method, candidateIds, assignmentPath]
       properties:
-        selectedId: { type: string }
         method: { enum: [user, deterministic-seed, pinned-brief] }
-        seed: { type: [string, 'null'] }
-        candidateIds:
-          type: array
-          minItems: 1
-          maxItems: 3
-          items: { type: string }
-      allOf:
-        - if: { properties: { method: { const: pinned-brief } } }
-          then:
-            properties:
-              seed: { type: 'null' }
-              candidateIds: { type: array, minItems: 1, maxItems: 1 }
-        - if: { properties: { method: { const: user } } }
-          then:
-            properties:
-              seed: { type: 'null' }
-              candidateIds: { type: array, minItems: 3, maxItems: 3 }
-        - if: { properties: { method: { const: deterministic-seed } } }
-          then:
-            properties:
-              seed: { type: string, minLength: 1 }
-              candidateIds: { type: array, minItems: 3, maxItems: 3 }
-
-    designFlags:
-      type: object
-      required: [iteration, instructions]
-      properties:
-        iteration: { type: integer }
-        instructions:
-          type: array
-          items:
-            type: object
-            required: [instruction, status, evidence]
-            properties:
-              instruction: { type: string }
-              status: { enum: [implemented, equivalent, blocked] }
-              evidence: { type: string }
-              reason: { type: string }
 
     mechanicalFindings:
       type: object
-      required: [detector, passes, primary, advisory, waivers]
+      required: [detector, snapshotId, generatedAt, passes, findings]
       properties:
         detector: { enum: [impeccable, fallback] }
-        passes:
-          type: array
-          items:
-            type: object
-            required: [target, kind, completed]
-        primary: { type: array }
-        advisory: { type: array }
-        waivers:
-          type: array
-          items:
-            type: object
-            required: [findingId, authority, reason]
+        findings: { type: array }
 
     observation:
       type: object
       required: [iteration, status, actualViewports, interactionEvidence, gateResults, zones, scores, weightedAverage, keyIssues]
       forbidden: [decision, recommendation, trend, bestIteration]
       properties:
-        iteration: { type: integer }
         status: { enum: [evaluated, unevaluated] }
-        actualViewports:
-          type: object
-          required: [desktop, mobile]
-        interactionEvidence: { type: array }
-        gateResults: { type: object }
-        zones: { type: array }
         scores: { type: [object, 'null'] }
         weightedAverage: { type: [number, 'null'] }
-        keyIssues: { type: array }
-      allOf:
-        - if: { properties: { status: { const: evaluated } } }
-          then:
-            properties:
-              scores:
-                type: object
-                required: [designQuality, originality, craft, functionality]
-              weightedAverage:
-                type: number
-                description: (2*designQuality + 2*originality + craft + functionality) / 6, rounded to one decimal
-        - if: { properties: { status: { const: unevaluated } } }
-          then:
-            properties:
-              scores: { type: 'null' }
-              weightedAverage: { type: 'null' }
 
-    correctionVerdict:
+    acceptance:
       type: object
-      required:
-        - status
-        - findingResults
-        - actualViewports
-        - postCorrectionScores
-        - weightedAverage
-        - materialRegression
+      required: [status, selectedTree, sourceIteration, treeManifest, serveValidated, mechanicalSnapshotId, viewportEvidence, iterationIntegrity]
       properties:
-        status: { enum: [evaluated, unevaluated] }
-        findingResults:
-          type: array
-          items:
-            type: object
-            required: [findingId, status, evidence]
-            properties:
-              findingId: { type: string }
-              status: { enum: [resolved, partial, unresolved, unevaluated] }
-              evidence: { type: string }
-        actualViewports: { type: object }
-        postCorrectionScores: { type: [object, 'null'] }
-        weightedAverage: { type: [number, 'null'] }
-        materialRegression: { type: [boolean, 'null'] }
-      allOf:
-        - if: { properties: { status: { const: evaluated } } }
-          then:
-            properties:
-              postCorrectionScores:
-                type: object
-                required: [designQuality, originality, craft, functionality]
-              weightedAverage: { type: number }
-              materialRegression: { type: boolean }
-        - if: { properties: { status: { const: unevaluated } } }
-          then:
-            properties:
-              postCorrectionScores: { type: 'null' }
-              weightedAverage: { type: 'null' }
-              materialRegression: { type: 'null' }
-
-    scores:
-      type: object
-      required: [iterations, decisions, bestIteration]
-      properties:
-        iterations: { type: array }
-        decisions:
-          type: array
-          items:
-            type: object
-            required: [iteration, decision, terminationReason]
-            properties:
-              iteration: { type: integer }
-              decision: { enum: [REFINE, PIVOT, SHIP, HALT] }
-              terminationReason: { type: string }
-        bestIteration: { type: [integer, 'null'] }
+        status: { enum: [accepted, rejected] }
+        serveValidated: { type: boolean }
+        iterationIntegrity: { type: boolean }
 
   agents:
     Planner:
       seesSource: true
-      seesPriorScores: false
-      owns:
-        - product and surface framing
-        - constraints and success criteria
-        - budget recommendation
-      neverOwns:
-        - aesthetic selection
-        - workflow decision
-
+      owns: [product truth, roots evidence, surface scope, success criteria]
+      neverOwns: [aesthetic selection, workflow decision]
     VisualDirector:
       seesSource: false
-      seesPriorScores: false
-      inputs:
-        - product truth
-        - surface brief
-        - sprint contract
-        - baseline or current screenshots
-        - visual-only critique summary when refining
-      owns:
-        - three unranked viable directions
-        - selected direction visual contract
-      neverOwns:
-        - candidate ranking
-        - implementation
-        - workflow decision
-
+      seesAssignment: false
+      owns: [three equal directions, selected source-free visual contract]
+      neverOwns: [candidate ranking, implementation, workflow decision]
     Builder:
       seesSource: true
-      seesPriorScores: false
-      owns:
-        - implementation technique
-        - semantics, accessibility and state completeness
-        - serve contract
-        - design-flags evidence
-      neverOwns:
-        - replacing the selected visual direction
-        - overwriting completed iterations
-        - version-control actions
-
+      owns: [implementation, semantics, states, serve contract, fidelity evidence]
+      neverOwns: [direction replacement, completed iteration mutation, version-control actions]
     Evaluator:
       seesSource: false
       seesPriorScores: false
-      inputs:
-        - live rendered surface
-        - product purpose and audience
-        - surface success criteria
-        - mechanical finding summary
-      owns:
-        - browser interaction evidence
-        - zone and whole-page scores
-        - visual critique
-      neverOwns:
-        - implementation advice framed as code
-        - REFINE, PIVOT, SHIP or HALT
-
+      owns: [browser interaction evidence, zone scores, visual critique]
+      neverOwns: [implementation advice framed as code, workflow decision]
     Orchestrator:
       seesSource: as-needed
-      seesPriorScores: true
-      owns:
-        - role isolation
-        - direction selection
-        - deterministic preflight
-        - workflow decision
-        - best-iteration selection
-        - finish, codify and report
+      owns: [roots, capabilities, event journal, assignment, workflow decisions, final selection, acceptance, codification]
 
   steps:
     - id: initialise
       agent: Orchestrator
-      inputs: [user_prompt, existing_site, existing_url, overhaul_goals, budget_override]
+      inputs: [user_prompt, existing_target, overhaul_goals, budget_override, optional_run_id]
       actions:
-        - Generate a stable runId from timestamp plus prompt hash.
-        - Create the run root without reusing a previous run directory.
-        - Resolve mode as overhaul when an existing path or URL is present; otherwise greenfield.
-        - Load references/context.md and inspect existing PRODUCT.md, DESIGN.md, product docs, routes, assets and runnable commands before asking questions.
-        - Resolve budget class, numeric budget and pivot budget; clamp an explicit numeric iteration budget to [defaults.explicitBudgetMinimum, defaults.explicitBudgetMaximum] and use defaults.pivotBudget.explicit.
-        - Write run.json with status initialising, currentIteration 1, the resolved pivotBudget, pivotsUsed 0, correctionRoundsUsed 0 and finalStatus pending.
-        - Write scores.json with empty iterations and decisions.
-      outputs: [runManifest, scores]
+        - Generate runId from timestamp plus prompt hash unless an explicit run ID is supplied.
+        - For a new run, create the run root, run.json, empty scores.json and append an initialise completed event.
+        - Clamp explicit build budgets to 1 through 8 and record the matching pivot budget.
+      outputs: [runManifest, scores, events]
+      next: resume_validate
+
+    - id: resume_validate
+      agent: Orchestrator
+      procedure: references/runtime-integrity.md
+      actions:
+        - For a new run, append a no-op completion receipt and continue.
+        - For a resumed run, validate prompt hash, roots, capabilities, event order, completed artifacts and iteration immutability.
+        - Continue from the first step without a valid completed receipt; never rerun a completed build in the same iteration.
+      next: resolve_roots
+
+    - id: resolve_roots
+      agent: Orchestrator
+      procedure: references/runtime-integrity.md
+      actions:
+        - Resolve repoRoot, appRoot and contextRoot from explicit target, serve contract, framework configuration, routes and repository evidence.
+        - Write roots.json with target kind and evidence; do not use package-manager naming as sole proof.
+      outputs: [roots]
+      next: probe_capabilities
+
+    - id: probe_capabilities
+      agent: Orchestrator
+      procedure: references/runtime-integrity.md
+      actions:
+        - Probe required and optional tools and write evidence for every capability.
+        - Set evaluationPlan full only when the target can run and both browser viewports can be attempted.
+        - When Studio cannot make a visual decision, set build-once-unselected and clamp iterationBudget to 1.
+      outputs: [capabilities, runManifest]
       next: plan
 
     - id: plan
       agent: Planner
-      inputs: [user_prompt, product evidence, design evidence, overhaul_goals]
+      inputs: [user_prompt, roots, capabilities, PRODUCT.md, optional COPY.md, optional DESIGN.md, repository evidence]
       actions:
-        - Confirm only material gaps not resolved by the repository or request.
-        - Create or update PRODUCT.md only with confirmed durable truth and labelled open decisions.
-        - Classify the requested surface as persuade, operate, read or experience.
-        - Write spec.md, sprint-contract.md and surface-brief.md.
-        - Include explicit preservation constraints and anti-goals.
-        - Set run.json status to running after the planning artifacts validate.
+        - Inspect before asking; confirm only material gaps.
+        - Create or update durable product truth without inventing claims.
+        - Classify the surface as persuade, operate, read or experience.
+        - Write spec.md, sprint-contract.md and surface-brief.md with preservation constraints, proof and copy baseline when text changes.
       outputs: [product, spec, sprintContract, surfaceBrief]
       next: baseline
 
@@ -369,325 +219,220 @@ workflow:
       when: mode == overhaul
       procedure: references/overhaul.md
       actions:
-        - Serve the incumbent surface when possible.
-        - Capture verified desktop and mobile screenshots plus interaction notes under baseline/.
-        - Give source only to the Builder and Orchestrator; give baseline images, product truth and constraints to the Visual Director.
-        - Record any capture limitation rather than fabricating a baseline.
+        - Serve the incumbent from appRoot and capture verified desktop and mobile renders plus interaction notes.
+        - Record capture limits instead of fabricating evidence.
       outputs: [baseline]
+      next: prepare_direction_assignment
+      otherwise: prepare_direction_assignment
+
+    - id: prepare_direction_assignment
+      agent: Orchestrator
+      procedure: references/runtime-integrity.md
+      actions:
+        - Fix candidate IDs before candidate generation.
+        - For unattended work, derive and record a stable seed and assignedIndex before directions.md exists.
+        - For user choice, record null seed and index; for an exact pinned direction, record one candidate and index 1.
+        - Exclude assignment seed and index from Visual Director context.
+      outputs: [directionAssignment]
       next: explore_direction
-      otherwise: explore_direction
 
     - id: explore_direction
       agent: VisualDirector
-      when: no exact pinned direction exists
-      inputs: [product, spec, sprintContract, surfaceBrief, baseline screenshots, prior attempted direction summaries and visual critique on PIVOT]
+      when: directionAssignment.mode != pinned-brief
+      inputs: [product, copy constraints, spec, sprintContract, surfaceBrief, baseline screenshots, rejected direction summaries on pivot]
       procedure: agents/design-agent.md
-      prompt: >-
-        Produce exactly three complete, viable and materially different directions. Do not rank,
-        recommend or select. Each candidate must express the product's own mechanism, survive the
-        target surface mode and constraints, name its honest risk, and avoid being a minor variation
-        of another candidate or any rejected prior direction.
+      actions:
+        - Produce exactly direction-1, direction-2 and direction-3 as equally detailed, viable and materially different candidates.
+        - Do not rank, recommend or infer the hidden assignment.
       outputs: [directions]
       next: select_direction
       otherwise: select_direction
 
     - id: select_direction
       agent: Orchestrator
-      inputs: [optional directions, user answer mechanism, exact pinned direction, runId, user_prompt]
-      orderedBranches:
-        - when: an exact direction is pinned
-          action: Record that direction as the sole candidate with method pinned-brief and seed null.
-        - when: the user explicitly requested unattended or no-question execution
-          action: Derive a stable seed from runId plus prompt hash, map it to one of the three candidates and record method deterministic-seed.
-        - when: a user answer mechanism is available
-          action: Present the three equal candidates, ask once and record method user with seed null.
-        - when: no user answer mechanism is available
-          action: Derive a stable seed from runId plus prompt hash, map it to one of the three candidates and record method deterministic-seed.
+      inputs: [directionAssignment, optional directions, optional user answer, exact pinned direction]
       actions:
-        - Record candidate IDs, selected ID, method and seed in direction-selection.json.
-        - Write the current iteration's direction/selected-direction.md with the selected candidate's thesis, visual world, first viewport, visitor path, responsive intent, signature moment, anti-goals and explicit risk; exclude source and implementation instructions.
-        - Never ask a question after an explicit unattended or no-question request, even when a question mechanism exists.
-        - Never use the Visual Director's private preference as the selection rule.
+        - User choice selects the explicit answer; deterministic selection uses the precommitted index; pinned brief selects its sole candidate.
+        - Write direction-selection.json and selected-direction.md with source-free thesis, viewport, path, grammar, responsive intent, signature moment, risk and anti-goals.
       outputs: [directionSelection, selectedDirection]
       next: direct
 
     - id: direct
       agent: VisualDirector
-      inputs:
-        - selected direction
-        - product truth
-        - sprint contract
-        - surface brief
-        - current screenshots and visual-only critique when previousDecision == REFINE
-      prompt: >-
-        Expand the selected direction into design-description.md. Include THESIS, FIRST VIEWPORT,
-        VISITOR PATH, VISUAL WORLD, TYPOGRAPHY, COLOUR, SPATIAL RHYTHM, MOTION, INTERACTION STATES,
-        RESPONSIVE BEHAVIOUR, SIGNATURE MOMENT and ANTI-GOALS. On REFINE, preserve the world and fix
-        the observed experience. Describe outcomes in visual language; do not mention source or selectors.
+      inputs: [selectedDirection, product, copy constraints, sprintContract, surfaceBrief, current screenshots and visual-only critique on REFINE]
+      actions:
+        - Expand the selected candidate into design-description.md using visual and experiential language only.
+        - On REFINE preserve the world; fix observed experience without replacing the thesis.
       outputs: [designDescription]
       next: build
 
     - id: build
       agent: Builder
-      inputs:
-        - designDescription
-        - spec
-        - sprintContract
-        - surfaceBrief
-        - existing project source or previous iteration site when REFINE
+      inputs: [roots, designDescription, spec, sprintContract, surfaceBrief, source substrate or previous iteration on REFINE]
       procedure: references/generation.md
-      prompt: >-
-        Implement faithfully into the new iteration site directory. Preserve product facts and working
-        behaviour. Add semantic structure, keyboard operation, focus, loading, empty, error and disabled
-        states where the surface needs them. Do not add decorative concepts not present in the direction.
-        Record every material instruction in design-flags.json with implemented, equivalent or blocked
-        status. Write serve.json. Do not commit and do not modify completed iterations.
+      actions:
+        - Implement only in the current immutable iteration tree.
+        - Preserve product facts, claim boundaries and working behaviour; add required semantics, states, responsiveness and reduced motion.
+        - Validate serve.json from appRoot and record every material instruction in design-flags.json.
       outputs: [site, serveConfig, designFlags]
       next: mechanical_preflight
 
     - id: mechanical_preflight
       agent: Orchestrator
-      inputs: [site, serveConfig, DESIGN.md, pinned brief]
+      inputs: [roots, capabilities, site, serveConfig, DESIGN.md, pinned brief]
       procedure: references/quality-gates.md
       actions:
-        - Prefer Impeccable source plus desktop URL plus mobile URL scans when its CLI is available.
-        - Otherwise run the browser-computed fallback gate and record detector fallback.
-        - Resolve primary findings through fixes or documented waivers.
-        - Write mechanical-findings.json; advisory findings cannot block.
+        - Run Impeccable source, desktop and mobile JSON scans when available; otherwise run the explicit fallback gate.
+        - Write a complete current snapshot with stable signatures. Previous open findings do not remain open when absent.
+        - Resolve primary findings through fixes or authority-backed waivers; advisory findings never block alone.
       outputs: [mechanicalFindings]
-      next: evaluate
+      branches:
+        - when: capabilities.evaluationPlan == build-once-unselected
+          next: halt_unverified
+        - when: default
+          next: evaluate
+
+    - id: halt_unverified
+      agent: Orchestrator
+      actions:
+        - Preserve the single build and current mechanical snapshot.
+        - Set finalStatus halted and terminationReason browser-unavailable.
+        - Do not select a winner, fabricate scores or codify a visual system.
+      termination: halted
 
     - id: evaluate
       agent: Evaluator
-      inputs:
-        - live URL from serveConfig
-        - spec purpose and audience
-        - sprintContract
-        - surfaceBrief without implementation details
-        - mechanicalFindings summary
-      explicitlyExcluded:
-        - source code
-        - designDescription
-        - designFlags
-        - selectedDirection
-        - prior observations and scores
-        - implementation effort
+      inputs: [live URL, product purpose, audience, surface success criteria, current mechanical summary]
+      explicitlyExcluded: [source, designDescription, designFlags, selectedDirection, assignment, prior observations, prior scores, implementation effort]
       procedure: agents/evaluator.md
+      actions:
+        - Verify actual 1440x900 and 390x844 viewport widths, test meaningful controls and states, and capture browser evidence.
+        - Write evaluated observation and critique, or an unevaluated observation with null scores and exact limitation.
       outputs: [screenshots, observation, critique]
-      failureOutput: observation with status unevaluated and null scores
       next: decide
 
     - id: decide
       agent: Orchestrator
       inputs: [observation, mechanicalFindings, scoreHistory, runManifest, directionSelection]
       orderedDecisionTable:
-        - when: browser evaluation did not complete or either requested viewport is unevaluable
-          decision: HALT
-          terminationReason: browser-unavailable
-        - when: server or iteration artifacts are invalid
-          decision: HALT
-          terminationReason: invalid-artifact
-        - when: no open primary mechanical finding and every final score meets its shipFloor
-          decision: SHIP
-          terminationReason: quality-floor-met
-        - when: open primary mechanical findings exist and N < iterationBudget
-          decision: REFINE
-          terminationReason: continue-current-direction
-        - when: originality <= 4 and directionSelection.method != pinned-brief and pivotsUsed < pivotBudget and N < iterationBudget
-          decision: PIVOT
-          terminationReason: replace-direction
-        - when: originality stayed below 6 within 0.5 points for two evaluated iterations and directionSelection.method != pinned-brief and pivotsUsed < pivotBudget and N < iterationBudget
-          decision: PIVOT
-          terminationReason: replace-direction
-        - when: N >= iterationBudget
-          decision: SHIP
-          terminationReason: budget-exhausted
-        - when: weightedAverage improved by at least 0.5 from the previous evaluated iteration
-          decision: REFINE
-          terminationReason: continue-current-direction
-        - when: default
-          decision: REFINE
-          terminationReason: continue-current-direction
+        - { when: browser evaluation incomplete or either required viewport missing, decision: HALT, terminationReason: browser-unavailable }
+        - { when: server or iteration artifacts invalid, decision: HALT, terminationReason: invalid-artifact }
+        - { when: no open primary finding and every score meets shipFloor, decision: SHIP, terminationReason: quality-floor-met }
+        - { when: open primary findings and N < iterationBudget, decision: REFINE, terminationReason: continue-current-direction }
+        - { when: originality <= 4 and selection is not pinned and pivots remain and N < iterationBudget, decision: PIVOT, terminationReason: replace-direction }
+        - { when: originality stayed below 6 within 0.5 for two evaluated iterations and pivots remain and N < iterationBudget, decision: PIVOT, terminationReason: replace-direction }
+        - { when: N >= iterationBudget, decision: SHIP, terminationReason: budget-exhausted }
+        - { when: default, decision: REFINE, terminationReason: continue-current-direction }
       actions:
-        - Append the observation summary and decision as separate records in scores.json.
-        - Recompute bestIteration using the same tiered ordering as finish_select.
-      transitions:
-        REFINE: prepare_refine_iteration
-        PIVOT: prepare_pivot_iteration
-        SHIP: finish_select
-        HALT: halt
+        - Append observation summary and decision as separate evidence records; recompute best iteration by the final tier rules.
+      transitions: { REFINE: prepare_refine_iteration, PIVOT: prepare_pivot_iteration, SHIP: finish_select, HALT: halt }
 
     - id: prepare_refine_iteration
       agent: Orchestrator
       actions:
-        - Increment currentIteration and create the new iteration root without modifying the completed iteration.
-        - Copy the previous iteration's direction/directions.md when it exists, direction/direction-selection.json and direction/selected-direction.md into the new iteration direction directory.
-        - Verify the copied selection and summary retain the same candidate ID, method and visual thesis.
-        - Set previousDecision REFINE and pass the prior screenshots plus visual-only critique to direct.
-      outputs: [iterationRoot, directions, directionSelection]
+        - Increment the iteration and create a new tree without modifying the completed one.
+        - Copy assignment, candidate set, selection and selected direction unchanged; pass screenshots and visual-only critique to direct.
       next: direct
 
     - id: prepare_pivot_iteration
       agent: Orchestrator
       actions:
-        - Increment currentIteration and pivotsUsed, then create the new iteration root without modifying completed iterations.
-        - Preserve the rejected direction summary, its scores and visual-only failure lessons for explore_direction.
-        - Do not copy the prior direction selection into the pivot iteration.
-        - Set previousDecision PIVOT.
-      outputs: [iterationRoot, rejectedDirectionSummary]
-      next: explore_direction
+        - Increment iteration and pivotsUsed; preserve rejected direction summary, scores and visual lessons.
+        - Do not copy the rejected assignment or selection into the new iteration.
+      next: prepare_direction_assignment
 
     - id: finish_select
       agent: Orchestrator
       actions:
-        - Build tier 1 from evaluated iterations with no open primary mechanical finding and every criterion meeting shipFloor.
-        - If tier 1 is non-empty, select only from tier 1.
-        - Otherwise build tier 2 from evaluated iterations with no open primary mechanical finding and select only from tier 2 when non-empty.
-        - Otherwise select from all evaluated immutable iterations and set finalStatus best_available.
-        - Within the active tier rank by weightedAverage, then the minimum criterion, then functionality, then latest iteration.
-        - Record the selected iteration, tier, scores, floor status and evidence paths in finish/selection.json.
-        - Copy, do not move, the selected site into finish/selected-site/.
-        - Copy the selected iteration's direction/selected-direction.md to finish/selected-direction.md.
-        - Copy the selected iteration's serve.json to finish/selected-serve.json and rewrite its working directory or site-root fields to target finish/selected-site/; validate it before capture.
-        - Capture fresh verified desktop and mobile screenshots.
-      outputs:
-        - finish/selection.json
-        - finish/selected-site/
-        - finish/selected-serve.json
-        - finish/selected-direction.md
-        - finish/screenshots/
+        - Tier 1 contains evaluated, mechanically clean iterations meeting every ship floor.
+        - Tier 2 contains evaluated, mechanically clean iterations. Otherwise use all evaluated immutable iterations and label best_available.
+        - Within the active tier rank by weighted average, minimum criterion, functionality, then latest iteration.
+        - Copy the selected site, rewritten serve contract and its own selected-direction.md into finish; recapture both viewports.
+      outputs: [finishSelection, finishSelectedSite, finishSelectedServeConfig, finishSelectedDirection]
       next: finish_review
 
     - id: finish_review
       agent: Evaluator
       freshContext: true
-      inputs:
-        - original user_prompt
-        - confirmed product purpose and constraints
-        - surfaceBrief
-        - finish/selected-direction.md
-        - live selected build from finishSelectedServeConfig
-        - fresh finish screenshots
-        - mechanical gate summary
-      explicitlyExcluded:
-        - full designDescription
-        - prior scores
-        - prior critiques
-        - implementation history
-        - source code
-      prompt: >-
-        Run a final material-defect review. Return pass or hold, with only findings that would change
-        comprehension, usability, responsive integrity, accessibility, visual coherence or fidelity to
-        the selected direction summary. Do not reopen taste decisions or propose a new direction.
-      outputs:
-        - finish/verdict.json
-        - finish/critique.md
+      inputs: [original prompt, confirmed purpose and constraints, surface brief, finish selected direction, live selected build, fresh screenshots, current mechanical summary]
+      explicitlyExcluded: [source, full designDescription, prior scores, prior critiques, implementation history]
+      actions:
+        - Return pass or hold with only material defects in comprehension, usability, responsive integrity, accessibility, coherence or direction fidelity.
+      outputs: [finish/verdict.json, finish/critique.md]
       next: finish_correct_or_finalise
 
     - id: finish_correct_or_finalise
       agent: Orchestrator
       branches:
-        - when: verdict == pass or materialFindings is empty
-          next: finalise
-        - when: verdict == hold and correctionRoundsUsed < finishCorrectionRounds
-          next: finish_fix
-        - when: verdict == hold and correctionRoundsUsed >= finishCorrectionRounds
-          next: finalise_with_open_items
+        - { when: verdict is pass or material findings empty, next: finalise }
+        - { when: verdict is hold and correction rounds remain, next: finish_fix }
+        - { when: default, next: finalise_with_open_items }
 
     - id: finish_fix
       agent: Builder
-      inputs:
-        - finish/selected-site/
-        - finish/selected-serve.json
-        - finish/verdict.json material findings only
-        - designDescription from selected iteration
       actions:
-        - Copy selected-site to finish/corrected-site before editing.
-        - Copy selected-serve.json to finish/corrected-serve.json and rewrite its working directory or site-root fields to target corrected-site.
-        - Validate corrected-serve.json by starting the corrected tree before running any checks.
-        - Apply one grouped correction batch without changing the direction.
-        - Increment correctionRoundsUsed.
-        - Rerun mechanical preflight against corrected-serve.json and recapture the same verified viewports.
-        - Ask a fresh Evaluator to write correction-verdict.json with status evaluated only after both required viewports are verified; then classify every original material finding, rescore all four criteria and state whether a material regression exists against selected-site. If either viewport is unavailable, write status unevaluated with null scores, average and regression instead of fabricating a comparison.
-      outputs:
-        - finish/corrected-site/
-        - finish/corrected-serve.json
-        - finish/corrected-mechanical-findings.json
-        - finish/corrected-screenshots/
-        - finish/correction-verdict.json
+        - Copy selected-site to corrected-site before editing and rewrite corrected-serve.json to the corrected tree.
+        - Apply one grouped correction batch without changing direction.
+        - Validate the corrected server, rerun a full current mechanical snapshot and recapture both viewports.
+        - Ask a fresh Evaluator to classify each original finding, rescore all criteria and state material regression; null all comparison fields when either viewport is missing.
+      outputs: [finishCorrectedSite, finishCorrectedServeConfig, finish/corrected-mechanical-findings.json, finish/correction-verdict.json]
       next: finish_correction_decide
 
     - id: finish_correction_decide
       agent: Orchestrator
-      inputs:
-        - finish/selection.json
-        - finish/correction-verdict.json
-        - corrected mechanical preflight
-        - corrected desktop and mobile screenshots
-      acceptanceRule: >-
-        Accept corrected-site only when correction-verdict.status is evaluated, every original material finding is resolved, the corrected
-        mechanical preflight has no open primary finding, both required viewports were reached,
-        materialRegression is false, and—when the selected iteration was floor-passing—every
-        post-correction score still meets shipFloor.
-      actions:
-        - Write finish/final-tree.json with selectedTree corrected-site or selected-site and the evidence-based rationale.
-        - Never accept corrected-site solely because its directory exists.
       branches:
-        - when: correction satisfies the complete acceptanceRule
-          selectedTree: corrected-site
+        - when: all original findings resolved, corrected snapshot clean, both viewports verified, no material regression and required floors preserved
           next: finalise
-        - when: correction-verdict.status is unevaluated, any material finding is partial, unresolved or unevaluated, a primary mechanical finding is open, a viewport is unevaluated, a material regression exists, or required post-correction floors fail
-          selectedTree: selected-site
+        - when: default
           next: finalise_with_open_items
+      actions:
+        - Write final-tree.json naming corrected-site only when the full acceptance rule passes; otherwise retain selected-site.
 
     - id: finalise_with_open_items
       agent: Orchestrator
       actions:
-        - Preserve unresolved finish findings and rejected-correction evidence.
-        - When a correction was attempted but not accepted, keep finish/selected-site as selectedTree in finish/final-tree.json.
-        - Set finalStatus complete-with-open-items.
+        - Preserve unresolved finish findings and rejected correction evidence.
+        - Set finalStatus complete-with-open-items and retain selected-site when correction was not accepted.
       next: finalise
 
     - id: finalise
       agent: Orchestrator
       actions:
-        - Choose the tree named by finish/final-tree.json when present; otherwise choose selected-site.
-        - Never choose corrected-site from directory existence alone.
-        - Replace harness-output/site/ with a copy of the accepted final tree.
-        - Preserve complete-with-open-items when already set.
-        - Otherwise set quality-floor-met when selected-site was chosen from tier 1, or when corrected-site was accepted and every post-correction score meets shipFloor; use best_available in all other cases.
-        - Keep every source iteration untouched.
-      outputs: [compatibilitySite]
-      next: codify
+        - Validate final-tree.json or default to selected-site; never choose corrected-site from directory existence.
+        - Record final status from selection tier and accepted correction evidence, without copying to compatibilitySite yet.
+      next: accept
+
+    - id: accept
+      agent: Orchestrator
+      procedure: references/runtime-integrity.md
+      actions:
+        - Verify final-tree agreement, source iteration, rewritten serve contract, measured viewports, current mechanical snapshot, open-item status, deterministic tree manifest and iteration immutability.
+        - Write finish/acceptance.json as accepted only when every postcondition passes.
+      outputs: [finishAcceptance]
+      branches:
+        - { when: acceptance.status == accepted, next: codify }
+        - { when: default, next: halt }
 
     - id: codify
       agent: Orchestrator
-      subactions:
-        - agent: VisualDirector
-          input: final screenshots plus selected visual contract, never source
-          output: harness-output/design-system/design-dna.md
-        - agent: Builder
-          input: final source
-          output: harness-output/design-system/tokens.css
-        - agent: Orchestrator
-          action: >-
-            Write or update DESIGN.md from the final rendered evidence, design DNA and canonical tokens.
-            Instantiate the existing design-system skill template. Do not replace PRODUCT.md facts.
-      outputs: [designDna, tokens, designSystemSkill, DESIGN.md]
+      actions:
+        - Replace harness-output/site only from the accepted final tree.
+        - Ask Visual Director for design DNA from final screenshots and the selected source-free contract.
+        - Ask Builder for canonical tokens from final source; write or update DESIGN.md with accepted provenance.
+      outputs: [compatibilitySite, designDna, tokens, designSystemSkill, DESIGN.md]
       next: report
 
     - id: report
       agent: Orchestrator
       actions:
-        - Write harness-output/report.md with assumptions, direction choice, iteration history, decisions, selected iteration, finish verdict, open items and design-system outputs.
-        - Update run.json status to complete and record the final paths.
-      outputs: [report, runManifest]
+        - Write report.md with roots, capabilities, assumptions, assignment, iteration history, decisions, selection, finish verdict, acceptance, open items and design-system outputs.
+        - Set run status complete, append the final completion event and record final paths.
+      outputs: [report, runManifest, events]
       termination: complete
 
     - id: halt
       agent: Orchestrator
       actions:
-        - Preserve all completed artifacts.
-        - Set run.json status halted and record the exact missing capability or failed contract.
-        - Do not invent a visual score or select a winner from unevaluated builds.
+        - Preserve all completed artifacts, append the exact failed contract and set finalStatus halted.
+        - Do not invent a visual score, winner or accepted tree.
       termination: halted
