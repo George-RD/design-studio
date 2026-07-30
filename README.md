@@ -7,6 +7,8 @@
   ·
   <a href="#install"><strong>Install</strong></a>
   ·
+  <a href="ROADMAP.md"><strong>Roadmap</strong></a>
+  ·
   <a href="https://github.com/George-RD/design-studio/issues"><strong>Issues</strong></a>
 </p>
 
@@ -100,11 +102,11 @@ harness-output/
 
 Completed iterations are immutable. A failed or interrupted run resumes from the first incomplete step after its recorded artifacts pass validation.
 
-## Optional Impeccable gate
+## Impeccable integration
 
-When the `impeccable` CLI is available, Design Studio uses its source, desktop and mobile detector passes for mechanical preflight. Each rerun is a complete current snapshot. Fixed findings leave the open set, and a reintroduced problem becomes open again.
+In the current v1.5 release, Impeccable is optional. When its CLI is available, Design Studio uses source, desktop and mobile detector passes for mechanical preflight. Without it, the workflow records `detector: fallback` and runs a smaller browser-computed gate.
 
-Without Impeccable, the workflow records `detector: fallback` and runs a smaller browser-computed gate. Detector output never counts as visual judgement.
+The v1.6 roadmap makes a compatible Impeccable install required, credited and versioned. Detector output remains mechanical evidence and never counts as visual judgement.
 
 ## Requirements
 
@@ -115,4 +117,4 @@ Without Impeccable, the workflow records `detector: fallback` and runs a smaller
 
 ## Licence
 
-MIT. Optional Impeccable integration is attributed in `NOTICE.md` and remains governed by Impeccable's Apache-2.0 licence.
+MIT. The current Impeccable integration is attributed in `NOTICE.md` and remains governed by Impeccable's Apache-2.0 licence.

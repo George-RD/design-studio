@@ -1,0 +1,42 @@
+/* Browser-grounded quality corrections. Keep visible text readable even when a card is inactive. */
+.agent-card {
+  opacity: 1;
+}
+
+.agent-card h3 {
+  line-height: 1.35;
+}
+
+.demo-notes > a {
+  text-transform: none;
+}
+
+.footer-statement {
+  line-height: 1.35;
+}
+
+/* At intermediate widths, keep each heading visibly bound to its own explanation. */
+@media (max-width: 1200px) {
+  .run-step {
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: 14px 20px;
+  }
+
+  .run-step p {
+    grid-column: 2;
+  }
+
+  .integrity-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px 20px;
+  }
+
+  .integrity-row p {
+    grid-column: 1 / -1;
+  }
+
+  .integrity-row__state {
+    grid-column: 2;
+    grid-row: 1;
+  }
+}
