@@ -31,4 +31,4 @@ jobs:
           persist-credentials: false
 
       - name: Validate frozen fixtures
-        run: python3 -m unittest test/test_benchmark_fixtures.py
+        run: python3 -m unittest discover -s test -p 'test_benchmark_fixtures.py'
