@@ -1,8 +1,9 @@
 # Comparison model capability gate
 
-- **Status:** Pending live GitHub Actions evidence
-- **Scope:** Milestone 0 comparison execution only
-- **Decision:** Do not start the twelve comparison runs until an isolated model harness proves the minimum text and visual-evaluation capabilities below.
+- **Status:** Verified for the Milestone 0 runner spike
+- **Verified:** 2026-07-30
+- **Scope:** Model access, strict structured output and image understanding only
+- **Decision:** The comparison runner may use this repository-scoped execution surface, but no benchmark lane is complete until the full workflow, browser, isolation and evidence contracts pass.
 
 ## Why this gate exists
 
@@ -32,6 +33,22 @@ The model harness is available only when one exact pull-request head proves all 
 
 A passing catalog check with a failing text or vision check does not satisfy the gate.
 
+## Verified result
+
+GitHub Actions run [`30556498881`](https://github.com/George-RD/design-studio/actions/runs/30556498881) passed on head `ec23c5aaa824d867584566fb18554347170eca53`.
+
+- The live catalog exposed 37 models.
+- The probe selected `openai/gpt-4.1`, model version `2025-04-14`.
+- The catalog reported text and image input with text output.
+- Strict structured text returned `{"probe":"github-models","status":"ok"}`.
+- Vision returned `{"leftColor":"red","rightColor":"blue"}` for the generated split-color PNG.
+- The two inference calls used 98 and 173 total tokens respectively.
+- The uploaded artifact digest was `sha256:12279c772ffdd738d328fd322b8a7f24705f0e2bad939bf0c5b337122c7b9c4a`.
+
+The permanent sanitized receipt is [`evidence/github-models-capability.json`](evidence/github-models-capability.json). The raw artifact expires after its configured retention period; the receipt preserves the model, run, digest, result and scope without storing credentials.
+
+This proves the minimum model API path only. It does not yet prove browser automation, screenshot capture, file-editing tools, source isolation, a complete Design Studio or Impeccable lane, or blind comparative preference.
+
 ## Failure semantics
 
 The probe distinguishes:
@@ -52,6 +69,7 @@ The workflow grants no write permission. It receives only `contents: read` and `
 - Contract: [`test/test_github_models_capability.py`](../../test/test_github_models_capability.py)
 - Probe: [`scripts/probe_github_models.py`](../../scripts/probe_github_models.py)
 - CI: [`.github/workflows/model-capability.yml`](../../.github/workflows/model-capability.yml)
-- Live result: `github-models-capability-<run-id>` workflow artifact
+- Permanent receipt: [`evidence/github-models-capability.json`](evidence/github-models-capability.json)
+- Raw result: `github-models-capability-30556498881` workflow artifact
 
-This document remains **Pending** until the live workflow passes on the exact PR head. A later evidence commit may record the selected model and workflow result, but must not mark any of the twelve benchmark lanes complete.
+The next work is a real lane wrapper that provides browser capture, controlled file tools, role isolation and the existing run-harness receipts. The twelve comparison lanes remain unfinished.
