@@ -256,7 +256,7 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
       const visible = (element) => {
         if (!element) return false;
         const style = getComputedStyle(element);
-        return !element.hidden && style.display !== 'none' && style.visibility !== 'hidden' && Number.parseFloat(style.opacity || '1') > 0.01 && element.getBoundingClientRect().height > 0;
+        return element.textContent.trim().length > 0 && !element.hidden && style.display !== 'none' && style.visibility !== 'hidden' && Number.parseFloat(style.opacity || '1') > 0.01 && element.getBoundingClientRect().height > 0;
       };
       const urlBefore = location.href;
       const successVisibleBefore = visible(success);
