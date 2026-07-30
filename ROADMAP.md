@@ -66,6 +66,7 @@ The architectural change is useful only when all of these are true:
   - [x] existing product-screen overhaul;
   - [x] review and polish pass;
   - [x] visually ambitious experience suitable for a later Scroll World comparison.
+- [x] Define a reproducible, tamper-evident lane-run and evidence protocol. Evidence: [comparison run protocol](benchmarks/milestone-0/RUN_PROTOCOL.md), [run harness](scripts/run_boundary_benchmark.py) and [contract tests](test/test_boundary_benchmark_run.py).
 - [ ] Run the same fixed briefs through:
   - [ ] Impeccable alone;
   - [ ] current Design Studio;
