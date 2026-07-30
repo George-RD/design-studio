@@ -90,6 +90,7 @@ class CdpClient {
     this.socket = null;
     this.nextId = 1;
     this.pending = new Map();
+    this.listeners = new Map();
   }
 
   async connect() {
@@ -100,6 +101,11 @@ class CdpClient {
     });
     this.socket.addEventListener('message', (event) => {
       const message = JSON.parse(String(event.data));
+      if (message.method) {
+        for (const listener of this.listeners.get(message.method) || []) {
+          listener(message.params || {});
+        }
+      }
       if (!message.id) return;
       const pending = this.pending.get(message.id);
       if (!pending) return;
@@ -111,6 +117,12 @@ class CdpClient {
       for (const pending of this.pending.values()) pending.reject(new BrowserBlockedError('DevTools websocket closed unexpectedly'));
       this.pending.clear();
     });
+  }
+
+  on(method, listener) {
+    const listeners = this.listeners.get(method) || [];
+    listeners.push(listener);
+    this.listeners.set(method, listeners);
   }
 
   send(method, params = {}) {
@@ -139,6 +151,47 @@ async function evaluate(client, expression) {
   });
   if (result.exceptionDetails) throw new BrowserContractError('page evaluation raised an exception');
   return result.result?.value;
+}
+
+async function measureMotion(client) {
+  return evaluate(client, `(async () => {
+    await new Promise((resolvePromise) => requestAnimationFrame(() => requestAnimationFrame(resolvePromise)));
+    const parseTimes = (value) => String(value || '').split(',').map((part) => {
+      const text = part.trim();
+      if (text.endsWith('ms')) return Number.parseFloat(text) || 0;
+      if (text.endsWith('s')) return (Number.parseFloat(text) || 0) * 1000;
+      return 0;
+    });
+    const maximum = (values) => values.length ? Math.max(...values) : 0;
+    let maxMs = 0;
+    let activeElementCount = 0;
+    const samples = [];
+    for (const element of document.querySelectorAll('*')) {
+      const style = getComputedStyle(element);
+      const transitionMs = maximum(parseTimes(style.transitionDuration)) + Math.max(0, maximum(parseTimes(style.transitionDelay)));
+      const animationMs = maximum(parseTimes(style.animationDuration)) + Math.max(0, maximum(parseTimes(style.animationDelay)));
+      const elementMaxMs = Math.max(transitionMs, animationMs);
+      if (elementMaxMs > 1) {
+        activeElementCount += 1;
+        maxMs = Math.max(maxMs, elementMaxMs);
+        if (samples.length < 8) samples.push({ tag: element.tagName.toLowerCase(), id: element.id || null, maxMs: elementMaxMs });
+      }
+    }
+    return {
+      prefersReducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
+      maxMs,
+      activeElementCount,
+      samples,
+    };
+  })()`);
+}
+
+function isExternalNetworkUrl(value) {
+  try {
+    return ['http:', 'https:', 'ws:', 'wss:', 'ftp:'].includes(new URL(value).protocol);
+  } catch {
+    return true;
+  }
 }
 
 async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
@@ -173,22 +226,54 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
     const target = await getPageTarget(devToolsPort);
     client = new CdpClient(target.webSocketDebuggerUrl);
     await client.connect();
+
+    const requestUrls = new Set();
+    client.on('Network.requestWillBeSent', (params) => {
+      const url = params?.request?.url;
+      if (typeof url === 'string' && url) requestUrls.add(url);
+    });
+
     await client.send('Page.enable');
     await client.send('Runtime.enable');
+    await client.send('Network.enable');
     await client.send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false });
-    await client.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
+    await client.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'no-preference' }] });
     const frameTree = await client.send('Page.getFrameTree');
     const frameId = frameTree.frameTree?.frame?.id;
     if (!frameId) throw new BrowserBlockedError('Chrome exposed no main frame');
     await client.send('Page.setDocumentContent', { frameId, html });
+
+    const normalMotion = await measureMotion(client);
+    await client.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
+    const reducedMotion = await measureMotion(client);
+    const motionSupported = normalMotion.maxMs <= 50 || reducedMotion.maxMs <= 50;
 
     const interaction = await evaluate(client, `(async () => {
       const form = document.querySelector('#capability-form');
       const input = document.querySelector('#capability-name');
       const success = document.querySelector('#capability-success');
       const submit = form?.querySelector('button[type="submit"], input[type="submit"]');
+      const visible = (element) => {
+        if (!element) return false;
+        const style = getComputedStyle(element);
+        return !element.hidden && style.display !== 'none' && style.visibility !== 'hidden' && element.getBoundingClientRect().height > 0;
+      };
+      const urlBefore = location.href;
+      const successVisibleBefore = visible(success);
       if (!form || !input || !success || !submit) {
-        return { missing: ['form', 'input', 'success', 'submit'].filter((key) => ({form, input, success, submit})[key] == null) };
+        return {
+          missing: ['form', 'input', 'success', 'submit'].filter((key) => ({form, input, success, submit})[key] == null),
+          successVisibleBefore,
+          successVisible: visible(success),
+          successText: success?.textContent?.trim() || null,
+          submittedValue: input?.value || null,
+          urlBefore,
+          urlAfter: location.href,
+          innerWidth: window.innerWidth,
+          scrollWidth: document.documentElement.scrollWidth,
+          clientWidth: document.documentElement.clientWidth,
+          reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
+        };
       }
       input.focus();
       input.value = 'Ada';
@@ -196,14 +281,15 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
       input.dispatchEvent(new Event('change', { bubbles: true }));
       if (typeof form.requestSubmit === 'function') form.requestSubmit(submit);
       else submit.click();
-      await new Promise((resolvePromise) => setTimeout(resolvePromise, 150));
-      const style = getComputedStyle(success);
-      const successVisible = !success.hidden && style.display !== 'none' && style.visibility !== 'hidden' && success.getBoundingClientRect().height > 0;
+      await new Promise((resolvePromise) => setTimeout(resolvePromise, 250));
       return {
         missing: [],
-        successVisible,
+        successVisibleBefore,
+        successVisible: visible(success),
         successText: success.textContent.trim(),
         submittedValue: input.value,
+        urlBefore,
+        urlAfter: location.href,
         innerWidth: window.innerWidth,
         scrollWidth: document.documentElement.scrollWidth,
         clientWidth: document.documentElement.clientWidth,
@@ -212,26 +298,43 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
         title: document.title,
       };
     })()`);
+    interaction.motion = {
+      supported: motionSupported,
+      normalMaxMs: normalMotion.maxMs,
+      reducedMaxMs: reducedMotion.maxMs,
+      normalActiveElementCount: normalMotion.activeElementCount,
+      reducedActiveElementCount: reducedMotion.activeElementCount,
+      normalSamples: normalMotion.samples,
+      reducedSamples: reducedMotion.samples,
+    };
 
+    await new Promise((resolvePromise) => setTimeout(resolvePromise, 100));
+    const requests = [...requestUrls].sort();
+    const externalRequests = requests.filter(isExternalNetworkUrl);
     const screenshot = await client.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false, fromSurface: true });
     await writeFile(join(resolvedOutput, 'browser-after-submit.png'), Buffer.from(screenshot.data, 'base64'));
 
     const failures = [];
     if (interaction?.missing?.length) failures.push(`missing required elements: ${interaction.missing.join(', ')}`);
+    if (interaction?.successVisibleBefore) failures.push('success state was visible before submission');
     if (!interaction?.successVisible) failures.push('success state did not become visible');
     if (interaction?.successText !== 'Capability complete') failures.push('success state text is not exact');
     if (interaction?.submittedValue !== 'Ada') failures.push('form value was not preserved through local submission');
+    if (interaction?.urlAfter !== interaction?.urlBefore) failures.push('submission changed the document URL');
     if (interaction?.innerWidth !== width) failures.push(`viewport width was ${interaction?.innerWidth}, expected ${width}`);
     if (interaction?.scrollWidth > interaction?.clientWidth) failures.push('document has horizontal overflow');
     if (!interaction?.reducedMotion) failures.push('reduced-motion emulation was not visible to the page');
+    if (!motionSupported) failures.push('reduced-motion path did not suppress active motion');
+    if (externalRequests.length) failures.push('external network request observed');
 
     return {
       schemaVersion: 1,
       status: failures.length ? 'failed' : 'passed',
       chrome: { path: chromePath },
-      url: 'about:blank#design-studio-capability',
+      url: interaction?.urlAfter || null,
       viewport: { width, height },
       interaction,
+      network: { requests, externalRequests },
       screenshot: 'browser-after-submit.png',
       failures,
     };
