@@ -168,6 +168,7 @@ class GitHubModelsCapabilityTests(unittest.TestCase):
     def test_api_error_classification_distinguishes_blockers(self) -> None:
         self.assertEqual("blocked", self.probe.classify_api_status(403))
         self.assertEqual("blocked", self.probe.classify_api_status(429))
+        self.assertEqual("blocked", self.probe.classify_api_status(None))
         self.assertEqual("failed", self.probe.classify_api_status(422))
         self.assertEqual("failed", self.probe.classify_api_status(500))
 
