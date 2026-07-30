@@ -308,7 +308,7 @@ def validate_vision_result(value: dict[str, Any]) -> None:
 
 
 def classify_api_status(status: int | None) -> str:
-    return "blocked" if status in BLOCKED_HTTP_STATUSES else "failed"
+    return "blocked" if status is None or status in BLOCKED_HTTP_STATUSES else "failed"
 
 
 def usage_from(response: Any) -> Any:
