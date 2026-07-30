@@ -7,6 +7,8 @@
   ·
   <a href="#install"><strong>Install</strong></a>
   ·
+  <a href="ROADMAP.md"><strong>Roadmap</strong></a>
+  ·
   <a href="https://github.com/George-RD/design-studio/issues"><strong>Issues</strong></a>
 </p>
 
