@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "status": "passed",
+  "verifiedAt": "2026-07-30T15:24:35.475883Z",
+  "workflow": {
+    "runId": 30556498881,
+    "headSha": "ec23c5aaa824d867584566fb18554347170eca53",
+    "artifactId": 8765002545,
+    "artifactName": "github-models-capability-30556498881",
+    "artifactDigest": "sha256:12279c772ffdd738d328fd322b8a7f24705f0e2bad939bf0c5b337122c7b9c4a",
+    "artifactExpiresAt": "2026-08-13T15:24:35Z"
+  },
+  "probe": {
+    "apiVersion": "2026-03-10",
+    "endpoints": {
+      "catalog": "https://models.github.ai/catalog/models",
+      "inference": "https://models.github.ai/inference/chat/completions"
+    },
+    "model": {
+      "id": "openai/gpt-4.1",
+      "name": "OpenAI GPT-4.1",
+      "version": "2025-04-14",
+      "registry": "azure-openai",
+      "capabilities": [
+        "agents",
+        "streaming",
+        "tool-calling",
+        "agentsV2"
+      ],
+      "supportedInputModalities": [
+        "text",
+        "image"
+      ],
+      "supportedOutputModalities": [
+        "text"
+      ],
+      "limits": {
+        "max_input_tokens": 1048576,
+        "max_output_tokens": 32768
+      }
+    },
+    "checks": {
+      "catalog": {
+        "status": "passed",
+        "modelCount": 37,
+        "selectedModel": "openai/gpt-4.1"
+      },
+      "structuredText": {
+        "status": "passed",
+        "result": {
+          "probe": "github-models",
+          "status": "ok"
+        },
+        "usage": {
+          "prompt_tokens": 86,
+          "completion_tokens": 12,
+          "total_tokens": 98
+        }
+      },
+      "vision": {
+        "status": "passed",
+        "result": {
+          "leftColor": "red",
+          "rightColor": "blue"
+        },
+        "usage": {
+          "prompt_tokens": 161,
+          "completion_tokens": 12,
+          "total_tokens": 173
+        }
+      }
+    }
+  },
+  "scope": {
+    "proves": [
+      "same-repository GitHub Actions can use a job-scoped models:read token",
+      "the live catalog exposes a text-and-image input model with text output",
+      "the selected endpoint returns strict JSON-schema text output",
+      "the selected endpoint can inspect a supplied PNG and return strict JSON-schema evidence"
+    ],
+    "doesNotProve": [
+      "a complete Design Studio or Impeccable benchmark lane",
+      "browser automation or screenshot capture",
+      "agent file editing or tool-loop execution",
+      "source isolation between Visual Director, Builder and Evaluator",
+      "blind output preference or comparative quality"
+    ]
+  }
+}
