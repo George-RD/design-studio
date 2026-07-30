@@ -15,6 +15,8 @@ The comparison runner therefore needs one additional capability gate before any 
 3. Chromium submits the generated form at `390x844`, verifies the success state, overflow and reduced-motion behavior, then captures a screenshot;
 4. a fresh source-blind Evaluator receives only the public brief and screenshot and returns a strict visual receipt.
 
+The live API calls follow GitHub's documented [models catalog](https://docs.github.com/en/rest/models/catalog) and [models inference](https://docs.github.com/en/rest/models/inference) interfaces rather than an undocumented compatibility endpoint.
+
 ## Acceptance contract
 
 The gate is accepted only when one exact pull-request head proves all of the following:
