@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
 import os
@@ -22,6 +23,10 @@ def load_runner():
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
+
+
+def sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def complete_evidence(acceptance_path: Path) -> dict:
@@ -149,7 +154,20 @@ class BoundaryBenchmarkRunTests(unittest.TestCase):
         self.assertTrue((run_dir / "work" / "styles.css").is_file())
         self.assertTrue((run_dir / "work" / "app.js").is_file())
         self.assertGreater(len(run["inputManifest"]["files"]), 2)
+        self.assertEqual(
+            sha256(root / "benchmarks" / "milestone-0" / "RUN_PROTOCOL.md"),
+            run["suite"]["protocolDigest"],
+        )
+        self.assertEqual(sha256(MODULE_PATH), run["harness"]["scriptDigest"])
         self.assertEqual(1, len((run_dir / "events.jsonl").read_text().splitlines()))
+
+    def test_prepare_rejects_missing_protocol(self) -> None:
+        temporary, root, output_root = self.make_repo()
+        self.addCleanup(temporary.cleanup)
+        (root / "benchmarks" / "milestone-0" / "RUN_PROTOCOL.md").unlink()
+
+        with self.assertRaisesRegex(self.runner.ContractError, "run protocol is missing"):
+            self.prepare(root, output_root)
 
     def test_prepare_rejects_tampered_fixture_without_creating_run(self) -> None:
         temporary, root, output_root = self.make_repo()
