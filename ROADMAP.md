@@ -60,7 +60,7 @@ The architectural change is useful only when all of these are true:
 
 **Goal:** establish what Design Studio uniquely contributes before refactoring around dependencies.
 
-- [ ] Write an architecture decision record for the Impeccable dependency, attribution policy and ownership boundary.
+- [x] Write an architecture decision record for the Impeccable dependency, attribution policy and ownership boundary. Evidence: [ADR 0001](docs/decisions/0001-impeccable-foundation.md).
 - [ ] Freeze representative fixtures:
   - [ ] new marketing surface;
   - [ ] existing product-screen overhaul;
