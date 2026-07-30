@@ -10,8 +10,10 @@ on:
       - "scripts/run_browser_capability.mjs"
       - "scripts/probe_github_models.py"
       - "test/test_boundary_agent_capability.py"
+      - "test/test_boundary_agent_regressions.py"
       - "test/test_github_models_capability.py"
       - "benchmarks/milestone-0/AGENT_HARNESS.md"
+      - "benchmarks/milestone-0/evidence/github-models-capability.json"
       - ".github/workflows/boundary-agent-capability.yml"
   workflow_dispatch:
 
@@ -36,7 +38,7 @@ jobs:
           node-version: 24
 
       - name: Validate agent and browser contracts
-        run: python3 -m unittest discover -s test -p 'test_boundary_agent_capability.py'
+        run: python3 -m unittest discover -s test -p 'test_boundary_agent*.py'
 
   live-agent-capability:
     needs: capability-contract
