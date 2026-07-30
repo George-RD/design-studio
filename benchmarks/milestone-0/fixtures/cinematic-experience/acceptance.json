@@ -1,0 +1,49 @@
+{
+  "mustDeliver": [
+    "One continuous signal-to-system-to-result narrative.",
+    "A visible progress cue and directly selectable evidence examples.",
+    "A complete reduced-motion and non-cinematic path.",
+    "Clear placeholders for future media without requiring generated assets.",
+    "A final plain-language method summary."
+  ],
+  "mustNot": [
+    "Invent metrics, testimonials, client logos or live links.",
+    "Depend on generated media, network access or a build step.",
+    "Hide essential content inside motion-only states.",
+    "Use motion without explanatory purpose."
+  ],
+  "functionalChecks": [
+    {
+      "id": "progress",
+      "action": "Move through all three narrative stages.",
+      "expected": "The progress cue and visible stage stay synchronized."
+    },
+    {
+      "id": "evidence-selection",
+      "action": "Select every evidence example by pointer and keyboard.",
+      "expected": "The selected evidence becomes clear without losing access to the others."
+    },
+    {
+      "id": "reduced-motion",
+      "action": "Enable reduced motion and reload.",
+      "expected": "All stages, evidence and navigation remain understandable and usable."
+    },
+    {
+      "id": "mobile-path",
+      "action": "Render and navigate at 390x844.",
+      "expected": "A complete non-cinematic path is available with no horizontal overflow."
+    },
+    {
+      "id": "animation-disabled",
+      "action": "Disable CSS animation and JavaScript motion.",
+      "expected": "Essential content and navigation remain present."
+    }
+  ],
+  "evaluationFocus": [
+    "narrative coherence",
+    "purposeful motion",
+    "originality",
+    "fallback quality",
+    "content clarity"
+  ]
+}

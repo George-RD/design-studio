@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "cinematic-experience",
+  "version": 1,
+  "kind": "new-visually-ambitious-experience",
+  "title": "Signal to Story systems portfolio",
+  "brief": "brief.md",
+  "acceptance": "acceptance.json",
+  "baseline": [],
+  "viewports": [
+    "1440x900",
+    "1150x900",
+    "390x844"
+  ],
+  "requiredCapabilities": [
+    "file-write",
+    "local-server",
+    "browser",
+    "interaction"
+  ],
+  "outputContract": {
+    "entrypoint": "index.html",
+    "mustRunWithoutBuildStep": true,
+    "externalNetworkRequired": false,
+    "mustProvideNonCinematicPath": true
+  }
+}

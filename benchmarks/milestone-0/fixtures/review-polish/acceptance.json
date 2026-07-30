@@ -1,0 +1,55 @@
+{
+  "mustPreserve": [
+    "Two-factor state changes and visible status.",
+    "Recovery email validation and local save acknowledgement.",
+    "The two supplied active sessions.",
+    "The session overflow control and declared element IDs."
+  ],
+  "mustDeliver": [
+    "Every interactive control has an accessible name and keyboard behaviour.",
+    "Programmatic labels, logical headings and visible focus.",
+    "No placeholder navigation.",
+    "Readable contrast and a reduced-motion path.",
+    "No horizontal document overflow at 390x844."
+  ],
+  "mustNot": [
+    "Redesign the page into a marketing surface.",
+    "Invent authentication or security capabilities.",
+    "Remove supplied data or controls.",
+    "Require network access."
+  ],
+  "functionalChecks": [
+    {
+      "id": "two-factor",
+      "action": "Toggle two-factor with pointer and keyboard.",
+      "expected": "State and visible status update in both cases."
+    },
+    {
+      "id": "recovery-email",
+      "action": "Submit an invalid email, then a valid email.",
+      "expected": "Invalid input is explained and valid input produces a local acknowledgement."
+    },
+    {
+      "id": "session-menu",
+      "action": "Reach and activate the session overflow control by keyboard.",
+      "expected": "The control has an understandable name and exposes a local menu or acknowledgement."
+    },
+    {
+      "id": "links",
+      "action": "Activate every link.",
+      "expected": "No control navigates to a placeholder # target."
+    },
+    {
+      "id": "reduced-motion",
+      "action": "Enable reduced motion.",
+      "expected": "Content appears without non-essential entrance motion."
+    }
+  ],
+  "evaluationFocus": [
+    "defect discovery",
+    "scope discipline",
+    "accessibility",
+    "interaction feedback",
+    "polish without redesign"
+  ]
+}

@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Northstar security</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <a href="#">Northstar</a>
+    <nav aria-label="Account">
+      <a href="#">Profile</a>
+      <a href="#" aria-current="page">Security</a>
+      <a href="#">Billing</a>
+    </nav>
+  </header>
+
+  <main>
+    <p class="kicker">Account</p>
+    <h1>Security</h1>
+    <p class="intro">Manage how you sign in and where your account is active.</p>
+
+    <section class="setting">
+      <div>
+        <h3>Two-factor authentication</h3>
+        <p>Add a second step when signing in.</p>
+      </div>
+      <div id="two-factor" class="switch" role="switch" aria-checked="false" tabindex="0">
+        <span></span>
+      </div>
+      <p id="two-factor-status">Off</p>
+    </section>
+
+    <section class="setting stacked">
+      <div>
+        <h3>Recovery email</h3>
+        <p>Used if you lose access to your primary address.</p>
+      </div>
+      <div class="inline-form">
+        <input id="recovery-email" type="email" placeholder="name@example.com">
+        <button id="save-email" type="button">Save</button>
+      </div>
+      <p id="email-error"></p>
+    </section>
+
+    <section id="sessions" class="setting stacked">
+      <div>
+        <h3>Active sessions</h3>
+        <p>Devices signed in during the last 30 days.</p>
+      </div>
+      <ul>
+        <li>
+          <div><strong>Safari on macOS</strong><span>Abu Dhabi · Current session</span></div>
+          <button id="session-menu" class="icon-button" type="button">•••</button>
+        </li>
+        <li>
+          <div><strong>Chrome on Windows</strong><span>Dubai · 2 days ago</span></div>
+          <a href="#">Sign out</a>
+        </li>
+      </ul>
+    </section>
+  </main>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body>
+</html>

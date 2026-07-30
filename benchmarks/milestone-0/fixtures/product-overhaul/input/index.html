@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HarborBoard</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">Project delivery</p>
+      <h1>HarborBoard</h1>
+    </div>
+    <button id="new-work" type="button">+ New work</button>
+  </header>
+
+  <main>
+    <section class="summary" aria-label="Queue summary">
+      <article><span>Inbox</span><strong>12</strong></article>
+      <article><span>Active</span><strong>8</strong></article>
+      <article><span>Blocked</span><strong>3</strong></article>
+      <article><span>Due today</span><strong>5</strong></article>
+    </section>
+
+    <section class="queue-card">
+      <div class="toolbar">
+        <label>
+          <span>Search</span>
+          <input id="search" type="search" placeholder="Title, project or owner">
+        </label>
+        <label>
+          <span>Status</span>
+          <select id="status-filter">
+            <option value="all">All</option>
+            <option value="inbox">Inbox</option>
+            <option value="active">Active</option>
+            <option value="blocked">Blocked</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="table-wrap">
+        <table id="work-table">
+          <thead>
+            <tr>
+              <th>Work item</th>
+              <th>Project</th>
+              <th>Status</th>
+              <th>Owner</th>
+              <th>Due</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr tabindex="0" data-status="blocked" data-title="Clarify chart datum" data-project="North Shoal" data-owner="Mina" data-due="Today">
+              <td>Clarify chart datum</td><td>North Shoal</td><td><span class="status blocked">Blocked</span></td><td>Mina</td><td>Today</td>
+            </tr>
+            <tr tabindex="0" data-status="active" data-title="Issue draft report" data-project="Falcon Bay" data-owner="Iain" data-due="Today">
+              <td>Issue draft report</td><td>Falcon Bay</td><td><span class="status active">Active</span></td><td>Iain</td><td>Today</td>
+            </tr>
+            <tr tabindex="0" data-status="inbox" data-title="Check incoming survey files" data-project="Pearl Reach" data-owner="Unassigned" data-due="Tomorrow">
+              <td>Check incoming survey files</td><td>Pearl Reach</td><td><span class="status inbox">Inbox</span></td><td>Unassigned</td><td>Tomorrow</td>
+            </tr>
+            <tr tabindex="0" data-status="active" data-title="Approve CAD revision" data-project="Marina East" data-owner="Sana" data-due="Fri">
+              <td>Approve CAD revision</td><td>Marina East</td><td><span class="status active">Active</span></td><td>Sana</td><td>Fri</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p id="empty-state" hidden>No work matches these filters.</p>
+      <p id="notice" role="status" aria-live="polite"></p>
+    </section>
+  </main>
+
+  <aside id="detail-drawer" aria-labelledby="drawer-title" aria-hidden="true">
+    <button id="drawer-close" type="button">Close</button>
+    <p class="eyebrow">Work item</p>
+    <h2 id="drawer-title">Details</h2>
+    <dl>
+      <div><dt>Project</dt><dd id="drawer-project"></dd></div>
+      <div><dt>Status</dt><dd id="drawer-status"></dd></div>
+      <div><dt>Owner</dt><dd id="drawer-owner"></dd></div>
+      <div><dt>Due</dt><dd id="drawer-due"></dd></div>
+    </dl>
+    <button type="button">Open full item</button>
+  </aside>
+
+  <script src="app.js"></script>
+</body>
+</html>

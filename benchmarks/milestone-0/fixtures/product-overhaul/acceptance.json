@@ -1,0 +1,53 @@
+{
+  "mustPreserve": [
+    "All declared element IDs.",
+    "Search, status filtering, New work acknowledgement and detail drawer behaviour.",
+    "Four summary values and every baseline work item.",
+    "Static local execution."
+  ],
+  "mustDeliver": [
+    "No horizontal document overflow at 390x844.",
+    "Status text remains understandable without colour.",
+    "Blocked and urgent work can be found quickly.",
+    "The drawer is keyboard reachable, closable and visibly focused."
+  ],
+  "mustNot": [
+    "Add unsupported data, stages, charts or automation.",
+    "Replace the working screen with a non-interactive concept.",
+    "Hide required queue columns from all mobile users without an accessible alternative."
+  ],
+  "functionalChecks": [
+    {
+      "id": "search",
+      "action": "Search for North Shoal.",
+      "expected": "Only the North Shoal item remains visible."
+    },
+    {
+      "id": "filter",
+      "action": "Select Blocked.",
+      "expected": "Only blocked work remains visible."
+    },
+    {
+      "id": "drawer",
+      "action": "Open the first visible row and close the drawer.",
+      "expected": "The correct details appear, focus can enter the drawer and closing restores a usable state."
+    },
+    {
+      "id": "new-work",
+      "action": "Activate New work.",
+      "expected": "A local acknowledgement appears without navigation or network access."
+    },
+    {
+      "id": "mobile-overflow",
+      "action": "Render at 390x844.",
+      "expected": "The document has no horizontal overflow and all data remains reachable."
+    }
+  ],
+  "evaluationFocus": [
+    "operational hierarchy",
+    "scan speed",
+    "status clarity",
+    "preservation quality",
+    "responsive adaptation"
+  ]
+}
