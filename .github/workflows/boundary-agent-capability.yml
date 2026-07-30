@@ -1,0 +1,88 @@
+name: Probe comparison agent capabilities
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/run_boundary_agent_capability.py"
+      - "scripts/boundary_agent_tools.py"
+      - "scripts/boundary_agent_builder.py"
+      - "scripts/run_browser_capability.mjs"
+      - "scripts/probe_github_models.py"
+      - "test/test_boundary_agent_capability.py"
+      - "test/test_github_models_capability.py"
+      - "benchmarks/milestone-0/AGENT_HARNESS.md"
+      - ".github/workflows/boundary-agent-capability.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  capability-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out exact revision
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Validate agent and browser contracts
+        run: python3 -m unittest discover -s test -p 'test_boundary_agent_capability.py'
+
+  live-agent-capability:
+    needs: capability-contract
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      models: read
+    steps:
+      - name: Check out exact revision
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Probe controlled tools, browser and role isolation
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >-
+          python3 scripts/run_boundary_agent_capability.py
+          --output-dir harness-output/benchmarks/milestone-0/agent-capability
+
+      - name: Print sanitized capability report
+        if: always()
+        run: |
+          if test -f harness-output/benchmarks/milestone-0/agent-capability/capability-report.json; then
+            cat harness-output/benchmarks/milestone-0/agent-capability/capability-report.json
+          else
+            echo "Capability report was not created."
+            exit 1
+          fi
+
+      - name: Upload capability evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: boundary-agent-capability-${{ github.run_id }}
+          path: harness-output/benchmarks/milestone-0/agent-capability
+          if-no-files-found: error
+          retention-days: 14
