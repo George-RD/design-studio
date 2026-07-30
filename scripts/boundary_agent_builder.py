@@ -212,7 +212,7 @@ def validate_output(output_dir: Path) -> dict[str, Any]:
         raise AgentContractError(
             f"index.html is missing required element IDs: {missing_ids}"
         )
-    if "Capability complete" not in parser.text:
+    if "Capability complete" not in html:
         raise AgentContractError(
             "index.html is missing the exact success-state text"
         )
