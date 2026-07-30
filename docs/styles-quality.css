@@ -4,7 +4,7 @@
 }
 
 .agent-card h3 {
-  line-height: 1.3;
+  line-height: 1.35;
 }
 
 .demo-notes > a {
@@ -12,7 +12,7 @@
 }
 
 .footer-statement {
-  line-height: 1.3;
+  line-height: 1.35;
 }
 
 /* At intermediate widths, keep each heading visibly bound to its own explanation. */
