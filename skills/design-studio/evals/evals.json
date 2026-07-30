@@ -1,16 +1,16 @@
 {
   "skill_name": "design-studio",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "evals": [
     {
       "id": 1,
       "prompt": "Create a landing page for a small coffee shop using Design Studio.",
-      "expected_output": "Studio loads or creates product and surface context, explores three directions, records selection, builds into an immutable iteration and attempts mechanical plus visual evaluation.",
+      "expected_output": "Studio resolves roots and capabilities, loads or creates product and surface context, explores three directions, records selection, builds into an immutable iteration and attempts mechanical plus visual evaluation.",
       "assertions": [
-        "run.json, spec.md, sprint-contract.md and surface-brief.md exist under one run ID",
-        "Visual Director context contains no source files",
-        "directions.md contains exactly three unranked viable candidates",
-        "direction-selection.json records selectedId, method and seed",
+        "run.json, roots.json, capabilities.json, events.jsonl, spec.md, sprint-contract.md and surface-brief.md exist under one run ID",
+        "Visual Director context contains no source files or direction assignment index",
+        "directions.md contains exactly three unranked viable candidates with fixed IDs",
+        "direction-selection.json records selectedId, method, seed, assignedIndex and committedBeforeExplore",
         "iteration 1 direction/selected-direction.md records the chosen source-free visual summary",
         "iteration 1 has site, serve.json and design-flags.json",
         "mechanical-findings.json exists, or the run records an explicit mechanical-preflight limitation",
@@ -23,6 +23,7 @@
       "prompt": "Overhaul ./site. Keep the information architecture and factual copy, but replace the visual direction.",
       "expected_output": "Overhaul preserves product truth and behaviour, captures baseline renders, and treats incumbent styling as evidence rather than visual authority.",
       "assertions": [
+        "roots.json resolves the local app before baseline capture",
         "baseline artifact or explicit capture limitation exists",
         "Visual Director receives baseline screenshots but not source",
         "Builder receives existing source as substrate",
@@ -37,7 +38,7 @@
         "observation.json contains status, interactionEvidence, zones, scores and actualViewports",
         "observation.json contains no decision, recommendation or trend",
         "Evaluator context excludes source, design-description, selected-direction and prior scores",
-        "Orchestrator writes any REFINE/PIVOT/SHIP/HALT record separately"
+        "Orchestrator writes any REFINE, PIVOT, SHIP or HALT record separately"
       ]
     },
     {
@@ -52,8 +53,10 @@
     {
       "id": 5,
       "prompt": "Polish ./site without redesigning it.",
-      "expected_output": "Review runs mechanical preflight and browser-grounded conditional lenses, then writes a readiness report without Studio decisions.",
+      "expected_output": "Review resolves the target, runs current mechanical preflight and browser-grounded conditional lenses, then writes a readiness report without Studio decisions.",
       "assertions": [
+        "harness-output/review/roots.json exists",
+        "harness-output/review/capabilities.json exists",
         "harness-output/review/report.md exists",
         "harness-output/review/mechanical-findings.json exists",
         "no new design-description is required",
@@ -64,23 +67,24 @@
     {
       "id": 6,
       "prompt": "Review ./site, but no browser automation is connected.",
-      "expected_output": "Mechanical evidence is retained and visual readiness remains explicitly unverified in the Review lane.",
+      "expected_output": "Mechanical evidence is retained and visual readiness remains explicitly unverified in Review.",
       "assertions": [
+        "capabilities.json records browserAutomation unavailable",
         "mechanical preflight is attempted",
         "harness-output/review/report.md exists",
         "report verdict is unverified",
         "visual_status is unverified",
-        "no Studio observation, scores record or HALT decision is required",
         "no visual score is fabricated"
       ]
     },
     {
       "id": 7,
       "prompt": "Run three iterations and refine after each evaluation.",
-      "expected_output": "Each iteration has a separate immutable directory; refinement carries the selected direction metadata forward without modifying earlier iterations.",
+      "expected_output": "Each iteration has a separate immutable directory; refinement carries direction metadata forward without modifying earlier iterations.",
       "assertions": [
         "iterations/1, iterations/2 and iterations/3 each retain their own site and artifacts",
-        "each refined iteration has its own copied direction-selection.json and inherited directions.md when applicable",
+        "each refined iteration has copied direction-assignment.json, direction-selection.json and selected-direction.md",
+        "events.jsonl has one completed build receipt per iteration",
         "top-level harness-output/site is not used as mutable iteration state",
         "no agent self-commit is requested"
       ]
@@ -88,13 +92,15 @@
     {
       "id": 8,
       "prompt": "Run unattended; choose a direction without asking me.",
-      "expected_output": "The Orchestrator uses a recorded reproducible seed rather than the Visual Director's unrecorded preference.",
+      "expected_output": "Orchestrator commits a reproducible assignment before candidate generation rather than using Visual Director preference.",
       "assertions": [
-        "all three candidates are viable and unranked",
-        "selection method is deterministic-seed",
-        "seed and selectedId are recorded",
-        "no question is asked even when a structured question mechanism exists",
-        "replaying the same run ID and prompt chooses the same candidate"
+        "direction-assignment.json exists before directions.md",
+        "assignment mode is deterministic-seed",
+        "seed and assignedIndex are recorded",
+        "seed and assignedIndex are absent from Visual Director context",
+        "all three candidates are viable, fixed-ID and unranked",
+        "selection uses the precommitted assignedIndex",
+        "replaying the same run ID, prompt hash and iteration chooses the same slot"
       ]
     },
     {
@@ -106,16 +112,18 @@
         "finish/selected-site is copied from iterations/2/site",
         "finish/selected-serve.json targets finish/selected-site",
         "iterations/2 remains unchanged",
-        "report explains why the selected iteration is not latest"
+        "report explains why selected iteration is not latest"
       ]
     },
     {
       "id": 10,
       "prompt": "Run the mechanical gate when Impeccable is installed.",
-      "expected_output": "Design Studio consumes Impeccable JSON for source, desktop and mobile passes without treating detector output as visual judgment.",
+      "expected_output": "Design Studio consumes Impeccable JSON for source, desktop and mobile passes as a current snapshot without treating detector output as visual judgement.",
       "assertions": [
         "mechanical-findings detector is impeccable",
+        "version, snapshotId and generatedAt are recorded",
         "source, 1440x900 and 390x844 passes are recorded",
+        "findings have stable signatures and current statuses",
         "advisory findings do not block",
         "Design Quality and Originality are absent from mechanical output"
       ]
@@ -123,7 +131,7 @@
     {
       "id": 11,
       "prompt": "The brand deliberately uses Inter and a centered composition. Preserve that commitment.",
-      "expected_output": "Pinned brief wins; deterministic findings may be waived with authority, while the evaluator judges appropriateness and craft rather than punishing compliance.",
+      "expected_output": "Pinned brief wins; deterministic findings may be waived with authority, while Evaluator judges appropriateness and craft rather than punishing compliance.",
       "assertions": [
         "waiver names the relevant PRODUCT.md or DESIGN.md commitment",
         "common patterns receive no automatic originality credit",
@@ -137,14 +145,14 @@
       "assertions": [
         "no fifth build is started",
         "terminationReason is budget-exhausted",
-        "finalStatus is best_available unless the accepted final tree has evidence for every floor",
-        "open finish findings remain in the report"
+        "finalStatus is best_available unless accepted final tree has evidence for every floor",
+        "open finish findings remain in report"
       ]
     },
     {
       "id": 13,
       "prompt": "Finish review finds three material defects.",
-      "expected_output": "One grouped correction batch and one verdict pass occur; the process does not reopen indefinite polishing.",
+      "expected_output": "One grouped correction batch and one verdict pass occur; process does not reopen indefinite polishing.",
       "assertions": [
         "finish correction rounds do not exceed one by default",
         "each original finding is resolved, partial or unresolved",
@@ -158,53 +166,54 @@
       "prompt": "Validate the Design Studio plugin version metadata.",
       "expected_output": "Plugin, marketplace, skill, workflow and eval versions agree.",
       "assertions": [
-        ".claude-plugin/plugin.json version is 1.4.0",
-        ".claude-plugin/marketplace.json plugin version is 1.4.0",
-        "SKILL.md version is 1.4.0",
-        "workflow.yaml version is 1.4.0",
-        "evals.json version is 1.4.0"
+        ".claude-plugin/plugin.json version is 1.5.0",
+        ".claude-plugin/marketplace.json plugin version is 1.5.0",
+        "SKILL.md version is 1.5.0",
+        "workflow.yaml version is 1.5.0",
+        "evals.json version is 1.5.0"
       ]
     },
     {
       "id": 15,
       "prompt": "Build this exact approved direction as specified; do not show alternatives.",
-      "expected_output": "An exact pinned direction bypasses candidate exploration, records a pinned selection with no seed, and proceeds to the visual contract.",
+      "expected_output": "Exact pinned direction bypasses exploration, records a pinned assignment and selection, and proceeds to visual contract.",
       "assertions": [
         "directions.md is not required",
+        "direction-assignment mode is pinned-brief",
         "direction-selection method is pinned-brief",
-        "candidateIds contains only the pinned direction",
-        "seed is null",
-        "the pinned iteration direction/selected-direction.md records the pinned source-free summary",
-        "no originality-driven pivot replaces the pinned direction"
+        "candidateIds contains only pinned direction",
+        "seed is null and assignedIndex is 1",
+        "selected-direction.md records pinned source-free summary",
+        "no originality-driven pivot replaces pinned direction"
       ]
     },
     {
       "id": 16,
-      "prompt": "The finish correction resolves one issue but introduces a primary mechanical failure and leaves another finding partial.",
-      "expected_output": "The corrected tree is rejected; the previously selected build remains final and all open correction findings are reported.",
+      "prompt": "Finish correction resolves one issue but introduces a primary mechanical failure and leaves another finding partial.",
+      "expected_output": "Corrected tree is rejected; previously selected build remains final and all open correction findings are reported.",
       "assertions": [
         "finish/final-tree.json selects selected-site",
         "corrected-site remains preserved as rejected evidence",
         "harness-output/site is copied from selected-site, not corrected-site",
         "finalStatus is complete-with-open-items",
-        "report names the regression or unresolved acceptance condition"
+        "report names regression or unresolved acceptance condition"
       ]
     },
     {
       "id": 17,
       "prompt": "Run with --budget 0.",
-      "expected_output": "The explicit numeric iteration budget is clamped to the supported minimum before run.json is written.",
+      "expected_output": "Explicit numeric build budget is clamped to supported minimum before run.json is written.",
       "assertions": [
         "budgetClass is explicit",
         "iterationBudget is 1",
-        "run.json satisfies the declared minimum",
-        "pivotBudget uses the explicit default"
+        "run.json satisfies declared minimum",
+        "pivotBudget uses explicit default"
       ]
     },
     {
       "id": 18,
       "prompt": "Iteration 1 scores 10/10/10/1 and iteration 2 scores 7/7/7/7; both are mechanically clean. Finish the run.",
-      "expected_output": "The floor-passing iteration is selected before a higher weighted-average iteration with catastrophic Functionality.",
+      "expected_output": "Floor-passing iteration is selected before higher weighted-average iteration with catastrophic Functionality.",
       "assertions": [
         "iteration 2 is in tier 1 and iteration 1 is not",
         "finish/selection.json selects iteration 2",
@@ -215,20 +224,20 @@
     {
       "id": 19,
       "prompt": "The selected build uses a non-default working directory and the finish correction changes its copied tree.",
-      "expected_output": "The correction is served and checked from corrected-site rather than accidentally reusing the selected iteration URL.",
+      "expected_output": "Correction is served and checked from corrected-site rather than reusing selected iteration URL.",
       "assertions": [
         "finish/corrected-serve.json exists",
-        "its working directory or site root targets finish/corrected-site",
-        "the corrected serve contract is validated before mechanical and visual checks",
-        "the original iteration serve.json remains unchanged"
+        "working directory or site root targets finish/corrected-site",
+        "corrected serve contract validates before mechanical and visual checks",
+        "original iteration serve.json remains unchanged"
       ]
     },
     {
       "id": 20,
       "prompt": "Run the fresh finish review and assess fidelity to the chosen direction.",
-      "expected_output": "The finish reviewer receives the source-free selected direction summary without receiving the full design description or implementation history.",
+      "expected_output": "Finish reviewer receives source-free selected direction summary without full design description or implementation history.",
       "assertions": [
-        "finish/selected-direction.md is copied from the selected iteration and is an explicit finish-review input",
+        "finish/selected-direction.md is copied from selected iteration and is explicit finish-review input",
         "design-description.md remains excluded",
         "prior scores and critiques remain excluded",
         "fidelity findings cite visible evidence"
@@ -237,23 +246,111 @@
     {
       "id": 21,
       "prompt": "Review ./site when desktop reaches 1440px but mobile emulation remains at 412px.",
-      "expected_output": "Review preserves the partial evidence but returns unverified because both required viewports were not reached.",
+      "expected_output": "Review preserves partial evidence but returns unverified because both required viewports were not reached.",
       "assertions": [
         "actual desktop and mobile widths are recorded",
-        "the 412px screenshot is not labeled 390px",
+        "412px screenshot is not labeled 390px",
         "visual_status is unverified",
-        "no ready, ready_with_nits or hold verdict is produced from a single required viewport"
+        "no ready, ready_with_nits or hold verdict is produced from one required viewport"
       ]
     },
     {
       "id": 22,
       "prompt": "A run pivots after iteration 2, but final selection later chooses iteration 2 instead of the post-pivot build.",
-      "expected_output": "The finish reviewer receives iteration 2’s own preserved direction summary, not the later pivot direction.",
+      "expected_output": "Finish reviewer receives iteration 2's own preserved direction summary, not later pivot direction.",
       "assertions": [
-        "each pivot direction has its own iteration direction/selected-direction.md",
+        "each pivot direction has its own assignment, selection and selected-direction.md",
         "finish/selection.json identifies iteration 2 and its direction summary path",
         "finish/selected-direction.md is copied from iterations/2/direction/selected-direction.md",
-        "the later pivot summary remains preserved but is not used to judge iteration 2"
+        "later pivot summary remains preserved but is not used to judge iteration 2"
+      ]
+    },
+    {
+      "id": 23,
+      "prompt": "The repository root is a CLI package, but the requested Svelte app lives under website/ and its PRODUCT.md is at the repository root.",
+      "expected_output": "Root resolution separates repository, app and context roots from concrete evidence before planning or serving.",
+      "assertions": [
+        "roots.json records repoRoot at repository root",
+        "roots.json records appRoot at website/",
+        "roots.json records contextRoot at repository root",
+        "evidence names explicit target or dev-server configuration",
+        "package-manager or monorepo name is not sole evidence",
+        "Builder serve working directory uses appRoot"
+      ]
+    },
+    {
+      "id": 24,
+      "prompt": "Create the surface, but browser automation and a reachable preview are unavailable.",
+      "expected_output": "Capability preflight prevents a full unevaluable budget while preserving one honest unselected build and mechanical evidence.",
+      "assertions": [
+        "capabilities.json records browserAutomation unavailable and runnableTarget unavailable or unknown",
+        "evaluationPlan is build-once-unselected",
+        "iterationBudget is reduced to 1",
+        "one build and mechanical snapshot may be preserved",
+        "run halts with browser-unavailable",
+        "no best iteration, visual score or selected winner is fabricated"
+      ]
+    },
+    {
+      "id": 25,
+      "prompt": "Resume run run-014 after iteration 2 finished building but before mechanical preflight began.",
+      "expected_output": "Resume validates prior receipts, preserves iteration 2 and continues at mechanical preflight without repeating build.",
+      "assertions": [
+        "resumed event is appended to events.jsonl",
+        "promptHash and roots validate",
+        "completed build receipt names iteration 2 artifacts",
+        "iteration 2 site remains unchanged",
+        "no second completed build event is written for iteration 2",
+        "currentStep becomes mechanical_preflight"
+      ]
+    },
+    {
+      "id": 26,
+      "prompt": "Generate three unattended directions where direction-1 is the most conventional and direction-3 is the most ambitious.",
+      "expected_output": "Candidate character and ordering cannot change the selection slot because assignment was committed and hidden before generation.",
+      "assertions": [
+        "direction-assignment.json predates directions.md",
+        "assignedIndex is not inferred from candidate content",
+        "Visual Director did not see seed or assignedIndex",
+        "selection matches assignedIndex even when another candidate appears safer or more detailed",
+        "all three candidates still meet viability and equal-detail contracts"
+      ]
+    },
+    {
+      "id": 27,
+      "prompt": "A low-contrast finding is fixed in scan B, then reintroduced in scan C.",
+      "expected_output": "Mechanical snapshots show current truth: resolved in B and open again in C without stale cache union.",
+      "assertions": [
+        "scan A has open finding with stable signature",
+        "scan B current open set excludes that finding",
+        "scan B comparison history marks it resolved or not-reproduced",
+        "scan C records same signature open again",
+        "waiver is not inherited unless scope, value and authority still match"
+      ]
+    },
+    {
+      "id": 28,
+      "prompt": "Rewrite the homepage hero. COPY.md exists, and Growth Arsenal business-copy-style is installed.",
+      "expected_output": "Planning loads durable language rules, freezes incumbent copy and uses Growth Arsenal without allowing lint metrics to decide meaning.",
+      "assertions": [
+        "capabilities.json records copyWorkflow business-copy-style",
+        "surface-brief.md names copy job, baseline and claim constraints",
+        "COPY.md is loaded but does not override PRODUCT.md facts",
+        "baseline and candidate receive paired qualitative comparison",
+        "at least one judgement dimension remains outside deterministic lint",
+        "no unsupported claim is introduced"
+      ]
+    },
+    {
+      "id": 29,
+      "prompt": "Finalise a corrected build whose directory exists but whose rewritten serve contract still points to selected-site.",
+      "expected_output": "Acceptance postconditions fail; Design Studio preserves evidence and refuses to codify the wrong tree.",
+      "assertions": [
+        "final-tree.json alone does not make corrected-site authoritative",
+        "acceptance.json is not written as passing",
+        "serve contract mismatch is recorded",
+        "workflow halts before codify",
+        "harness-output/site and DESIGN.md are not replaced from unaccepted corrected-site"
       ]
     }
   ]

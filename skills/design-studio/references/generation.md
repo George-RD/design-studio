@@ -1,16 +1,33 @@
 # Builder contract
 
-The Builder translates the selected visual contract into a working surface. It decides technical means, never a different design.
+Builder translates the selected visual contract into a working surface. It decides technical means, never a different design.
 
 ## Inputs
 
-- `design-description.md` from the Visual Director;
+- `roots.json`, especially `appRoot` and `contextRoot`;
+- `design-description.md` from Visual Director;
 - product truth, spec, sprint contract and surface brief;
-- source substrate for greenfield/overhaul;
-- the previous iteration site only on REFINE;
+- copy baseline and constraints when text changes;
+- source substrate for greenfield or overhaul;
+- previous iteration site only on REFINE;
 - existing `DESIGN.md` only when the task extends or refines that system.
 
 On PIVOT, start from a clean copy of product behaviour and content. Do not carry visual structure, tokens or decorative code from the abandoned direction merely because reuse is convenient.
+
+## Root discipline
+
+Run project commands from the working directory recorded in `roots.json` or a validated `serve.json`. Do not infer the app root again inside Builder.
+
+`serve.json` must state:
+
+- command and arguments;
+- working directory;
+- expected URL or port;
+- readiness condition;
+- shutdown method when needed;
+- source tree it serves.
+
+Reject a serve contract that points outside the recorded local repository unless the target is explicitly external.
 
 ## Immutable output
 
@@ -18,10 +35,10 @@ Write only inside the current `iterations/<N>/` directory. Earlier iteration fil
 
 Required outputs:
 
-- `site/` — runnable source;
-- `serve.json` — command, URL/port, working directory and readiness condition;
-- `design-flags.json` — one entry for every material visual instruction;
-- any build notes needed by the Orchestrator, never by the blind Evaluator.
+- `site/`: runnable source;
+- `serve.json`: validated run contract;
+- `design-flags.json`: one entry for every material visual instruction;
+- build notes needed by Orchestrator, never blind Evaluator.
 
 Never self-commit, change branches or push. Git history is not the iteration store.
 
@@ -31,23 +48,25 @@ Translate every material instruction into a testable requirement before coding. 
 
 For each instruction, record:
 
-- `implemented` — rendered as specified;
-- `equivalent` — different technique, same visible/interactive outcome, with reason;
-- `blocked` — cannot be delivered within current constraints, with evidence and closest safe behaviour.
+- `implemented`: rendered as specified;
+- `equivalent`: different technique, same visible or interactive outcome, with reason;
+- `blocked`: cannot be delivered within current constraints, with evidence and closest safe behaviour.
 
-Never silently soften scale, mute colour, conventionalise composition, omit a signature interaction or add decorative concepts not in the direction.
+Never silently soften scale, mute colour, conventionalise composition, omit a signature interaction or add decorative concepts absent from the direction.
 
-## Product and usability floor
+## Product, copy and usability floor
 
 Creative fidelity does not excuse broken product behaviour. Preserve or add as required:
 
+- confirmed product facts and claim boundaries;
+- incumbent copy unless an evaluated rewrite replaces it;
 - semantic structure and landmarks;
 - working keyboard path and visible focus;
 - labels, names, descriptions and meaningful alternatives;
 - responsive recomposition at verified viewports;
 - loading, empty, error, disabled, success and degraded states where reachable;
 - reduced-motion behaviour;
-- honest synthetic/demo labels where real content is unavailable;
+- honest synthetic or demo labels when real content is unavailable;
 - clear action hierarchy and recoverable errors;
 - performance safeguards for expensive effects.
 
@@ -55,20 +74,21 @@ Accessibility and state completeness are implementation obligations, not unsolic
 
 ## Tokens and assets
 
-Keep design tokens in one canonical source so the codify step can extract them without guessing. Use the project's conventions when they are compatible with the direction.
+Keep design tokens in one canonical source so codify can extract them without guessing. Use project conventions when they are compatible with direction.
 
-Author or source the assets the composition needs. Do not substitute gradients, glass, generic icon tiles or empty chrome where the contract requires real imagery, diagrams or demonstrations. Verify remote assets resolve and provide fallbacks.
+Author or source the assets the composition needs. Do not substitute gradients, blur, generic icon tiles or empty chrome where the contract requires real imagery, diagrams or demonstrations. Verify remote assets resolve and provide fallbacks.
 
 ## Pre-handoff checks
 
 Before mechanical preflight:
 
-1. run the build and basic tests;
-2. verify the `serve.json` contract from a clean shell;
-3. compare every design flag against the rendered surface;
+1. run build and basic tests from the recorded app root;
+2. verify `serve.json` from a clean shell;
+3. compare every design flag against rendered output;
 4. test primary interactions and states;
 5. verify no earlier iteration changed;
 6. inspect desktop and mobile once for obvious overflow or breakage;
-7. remove debug controls and invented claims.
+7. remove debug controls and invented claims;
+8. append completion only after output validation.
 
-Do not perform the blind aesthetic score yourself. The Evaluator owns that pass.
+Do not perform blind aesthetic scoring. Evaluator owns that pass.

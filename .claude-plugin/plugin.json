@@ -1,7 +1,7 @@
 {
   "name": "design-studio",
-  "version": "1.4.0",
-  "description": "A multi-agent frontend design harness that separates product framing, visual direction, implementation, and blind evaluation; preserves every iteration; and codifies the shipped result into a reusable design system.",
+  "version": "1.5.0",
+  "description": "A multi-agent frontend design workflow that roots the target, separates visual direction and browser judgement from source code, preserves resumable evidence, and codifies the accepted result into a reusable design system.",
   "author": { "name": "George Reid-Dowd" },
   "keywords": [
     "frontend",
@@ -12,7 +12,8 @@
     "design-system",
     "design-tokens",
     "browser-automation",
-    "code-anchoring"
+    "code-anchoring",
+    "resumable-workflows"
   ],
   "repository": "https://github.com/George-RD/design-studio"
 }

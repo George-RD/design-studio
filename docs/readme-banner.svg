@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 320" role="img" aria-labelledby="title desc">
+  <title id="title">Design Studio</title>
+  <desc id="desc">A visual contract moves between a blind design room and a source-aware build room.</desc>
+  <style>
+    .display { font: 800 86px/1 Arial Narrow, Arial, sans-serif; letter-spacing: -2px; }
+    .label { font: 700 15px/1.2 Courier New, monospace; letter-spacing: 1.4px; }
+    .body { font: 400 21px/1.4 Arial, sans-serif; }
+    .packet { animation: handoff 7s cubic-bezier(.65,0,.35,1) infinite; }
+    .pulse { animation: pulse 7s linear infinite; }
+    @keyframes handoff {
+      0%, 14% { transform: translateX(0); }
+      25%, 39% { transform: translateX(315px); }
+      50%, 64% { transform: translateX(630px); }
+      75%, 89% { transform: translateX(315px); }
+      100% { transform: translateX(0); }
+    }
+    @keyframes pulse { 0%,100% { opacity: .35; } 50% { opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) { .packet, .pulse { animation: none; } }
+  </style>
+  <rect width="1200" height="320" fill="#e7eef4"/>
+  <path d="M0 58H1200M0 262H1200" stroke="#171814"/>
+  <path d="M760 58V262" stroke="#171814"/>
+  <text x="58" y="139" class="display" fill="#171814">DESIGN</text>
+  <text x="423" y="139" class="display" fill="#f04b23">/</text>
+  <text x="464" y="139" class="display" fill="#1457d9">STUDIO</text>
+  <text x="62" y="193" class="body" fill="#4f524a">Keep code out of the design decision.</text>
+
+  <text x="800" y="94" class="label" fill="#1457d9">BLIND ROOM</text>
+  <text x="1026" y="94" class="label" fill="#171814">SOURCE ROOM</text>
+  <rect x="794" y="111" width="152" height="74" fill="#1457d9" stroke="#171814"/>
+  <text x="817" y="142" class="label" fill="#fbf8ef">DIRECT</text>
+  <text x="817" y="166" class="body" font-size="17" fill="#fbf8ef">no source</text>
+  <rect x="1019" y="111" width="132" height="74" fill="#fbf8ef" stroke="#171814"/>
+  <text x="1042" y="142" class="label" fill="#171814">BUILD</text>
+  <text x="1042" y="166" class="body" font-size="17" fill="#4f524a">source on</text>
+  <path d="M827 221H1115" stroke="#171814" stroke-width="2"/>
+  <g class="packet">
+    <rect x="804" y="203" width="82" height="36" fill="#d0f05a" stroke="#171814"/>
+    <text x="817" y="226" class="label" fill="#171814">CONTRACT</text>
+  </g>
+  <circle class="pulse" cx="1151" cy="221" r="6" fill="#f04b23"/>
+</svg>
