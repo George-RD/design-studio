@@ -18,6 +18,7 @@ from typing import Any, Sequence
 
 
 SUITE_ROOT = Path("benchmarks") / "milestone-0"
+PROTOCOL_PATH = SUITE_ROOT / "RUN_PROTOCOL.md"
 DEFAULT_OUTPUT_ROOT = Path("harness-output") / "benchmarks" / "milestone-0"
 RUN_ID_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}")
 RUN_SCHEMA_VERSION = 1
@@ -203,6 +204,9 @@ def prepare_run(
         raise ContractError(f"fixture suite is invalid: {preview}{suffix}")
 
     suite_root = repo_root / SUITE_ROOT
+    protocol_path = repo_root / PROTOCOL_PATH
+    if not protocol_path.is_file():
+        raise ContractError(f"run protocol is missing: {protocol_path}")
     manifest = load_json(suite_root / "manifest.json", "suite manifest")
     fixture_entry = find_fixture(manifest, fixture_id)
     lane_entry = find_lane(manifest, lane_id)
@@ -267,6 +271,11 @@ def prepare_run(
                 "frozenAt": manifest.get("frozenAt"),
                 "lockAlgorithm": "sha256",
                 "lockDigest": sha256(suite_root / "fixture-lock.json"),
+                "protocolDigest": sha256(protocol_path),
+            },
+            "harness": {
+                "schemaVersion": RUN_SCHEMA_VERSION,
+                "scriptDigest": sha256(Path(__file__).resolve()),
             },
             "fixture": {
                 "id": fixture_id,
@@ -665,6 +674,7 @@ def complete_run(run_dir: Path, evidence_path: Path) -> Path:
         **evidence,
         "runId": run["runId"],
         "suite": run["suite"],
+        "harness": run["harness"],
         "fixture": run["fixture"],
         "lane": run["lane"],
         "tool": run["tool"],
@@ -737,6 +747,7 @@ def validate_run(run_dir: Path) -> None:
         expected_metadata = {
             "runId": run.get("runId"),
             "suite": run.get("suite"),
+            "harness": run.get("harness"),
             "fixture": run.get("fixture"),
             "lane": run.get("lane"),
             "tool": run.get("tool"),
