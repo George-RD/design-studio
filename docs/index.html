@@ -50,44 +50,38 @@
         </div>
       </div>
 
-      <div class="runboard" role="group" aria-label="Design Studio run board">
+      <div class="runboard" data-hero-run data-step="0" role="group" aria-label="Design Studio run board">
         <div class="runboard__top">
           <span>Run 014 / standard budget 4</span>
-          <span class="runboard__status"><span class="status-dot" aria-hidden="true"></span>Iteration 3 evaluated</span>
-        </div>
-
-        <div class="process-board">
-          <div class="stage-number" aria-hidden="true">01</div>
-          <div class="stage">
-            <div><h2>Frame</h2><span class="stage__tag">Rooted context</span></div>
-            <p>Product truth, app root, constraints and proof become a small testable brief.</p>
-          </div>
-
-          <div class="stage-number" aria-hidden="true">02</div>
-          <div class="stage stage--direction">
-            <div><h2>Direct</h2><span class="stage__tag">No source</span></div>
-            <p>The Visual Director creates the world without inheriting selectors, components or layout decisions.</p>
-          </div>
-
-          <div class="stage-number" aria-hidden="true">03</div>
-          <div class="stage stage--build">
-            <div><h2>Build</h2><span class="stage__tag">Source enabled</span></div>
-            <p>The Builder translates the contract into working code, states, responsive behaviour and an immutable iteration.</p>
-          </div>
-
-          <div class="stage-number" aria-hidden="true">04</div>
-          <div class="stage stage--evaluate">
-            <div><h2>Judge</h2><span class="stage__tag">Browser blind</span></div>
-            <p>A fresh Evaluator uses the live page, tests interactions and records what survived contact with the browser.</p>
+          <div class="runboard__controls">
+            <span class="runboard__status" data-hero-status><span class="status-dot" aria-hidden="true"></span>01 / Framing</span>
+            <button class="runboard__toggle" type="button" data-hero-toggle aria-label="Pause run board animation">Pause</button>
           </div>
         </div>
 
-        <div class="iteration-strip">
+        <div class="hero-run">
+          <div class="hero-run__rail" role="tablist" aria-label="Design Studio workflow stages">
+            <button class="hero-run__step" type="button" role="tab" data-hero-step="0" aria-selected="true" aria-controls="hero-run-panel"><span>01</span><span>Frame</span></button>
+            <button class="hero-run__step" type="button" role="tab" data-hero-step="1" aria-selected="false" aria-controls="hero-run-panel"><span>02</span><span>Direct</span></button>
+            <button class="hero-run__step" type="button" role="tab" data-hero-step="2" aria-selected="false" aria-controls="hero-run-panel"><span>03</span><span>Build</span></button>
+            <button class="hero-run__step" type="button" role="tab" data-hero-step="3" aria-selected="false" aria-controls="hero-run-panel"><span>04</span><span>Judge</span></button>
+            <button class="hero-run__step" type="button" role="tab" data-hero-step="4" aria-selected="false" aria-controls="hero-run-panel"><span>05</span><span>Select</span></button>
+          </div>
+
+          <div class="hero-run__panel" id="hero-run-panel" role="tabpanel">
+            <div class="hero-run__eyebrow"><span data-hero-tag>Rooted context</span><span data-hero-room>Source room</span></div>
+            <h2 data-hero-title>Frame</h2>
+            <p data-hero-copy>Product truth, app root, constraints and proof become a small testable brief.</p>
+            <div class="hero-run__handoff" aria-hidden="true"><span data-hero-from>Product truth</span><span class="hero-run__arrow">→</span><span data-hero-to>Surface brief</span></div>
+          </div>
+        </div>
+
+        <div class="hero-run__evidence">
           <span>Preserved builds</span>
           <div class="iterations" role="img" aria-label="Four preserved iterations, iteration three selected">
             <span class="iteration">01</span><span class="iteration">02</span><span class="iteration iteration--selected">03</span><span class="iteration">04</span>
           </div>
-          <span>03 → site + DNA + tokens</span>
+          <span data-hero-result>Brief ready</span>
         </div>
       </div>
     </section>
