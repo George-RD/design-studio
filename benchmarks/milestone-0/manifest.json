@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "suite": "design-studio-boundary-m0",
+  "version": 1,
+  "frozenAt": "2026-07-30",
+  "comparisonLanes": [
+    {
+      "id": "impeccable-alone",
+      "purpose": "Use the upstream specialist workflow without Design Studio orchestration."
+    },
+    {
+      "id": "design-studio-current",
+      "purpose": "Use the current Design Studio workflow with its detector fallback disabled from influencing the brief."
+    },
+    {
+      "id": "design-studio-impeccable",
+      "purpose": "Use the current Design Studio workflow with the pinned Impeccable detector available."
+    }
+  ],
+  "requiredMetrics": [
+    "outputPreference",
+    "taskClarity",
+    "originality",
+    "functionalDefects",
+    "elapsedSeconds",
+    "tokenCost",
+    "toolCost",
+    "failedSteps",
+    "recoveryEffort"
+  ],
+  "fixtures": [
+    {
+      "id": "marketing-surface",
+      "path": "fixtures/marketing-surface/fixture.json"
+    },
+    {
+      "id": "product-overhaul",
+      "path": "fixtures/product-overhaul/fixture.json"
+    },
+    {
+      "id": "review-polish",
+      "path": "fixtures/review-polish/fixture.json"
+    },
+    {
+      "id": "cinematic-experience",
+      "path": "fixtures/cinematic-experience/fixture.json"
+    }
+  ],
+  "changePolicy": {
+    "fixtureChangeRequiresVersionBump": true,
+    "allLanesMustRerun": true,
+    "lockAlgorithm": "sha256"
+  }
+}

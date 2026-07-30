@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "product-overhaul",
+  "version": 1,
+  "kind": "existing-product-overhaul",
+  "title": "HarborBoard delivery queue",
+  "brief": "brief.md",
+  "acceptance": "acceptance.json",
+  "baseline": [
+    "input/index.html",
+    "input/styles.css",
+    "input/app.js"
+  ],
+  "viewports": [
+    "1440x900",
+    "1150x900",
+    "390x844"
+  ],
+  "requiredCapabilities": [
+    "file-read",
+    "file-write",
+    "local-server",
+    "browser",
+    "interaction"
+  ],
+  "outputContract": {
+    "entrypoint": "index.html",
+    "mustPreserveElementIds": [
+      "search",
+      "status-filter",
+      "new-work",
+      "work-table",
+      "detail-drawer",
+      "drawer-close"
+    ],
+    "mustRunWithoutBuildStep": true,
+    "externalNetworkRequired": false
+  },
+  "knownBaselineObservations": [
+    "Information hierarchy is flat and most regions use the same card treatment.",
+    "The fixed-width table causes horizontal overflow on a narrow phone.",
+    "Status depends heavily on small coloured pills.",
+    "The detail drawer works but has weak focus treatment and visual grouping."
+  ]
+}

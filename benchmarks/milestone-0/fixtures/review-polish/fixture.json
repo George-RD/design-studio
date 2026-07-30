@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "id": "review-polish",
+  "version": 1,
+  "kind": "review-and-polish",
+  "title": "Northstar account security settings",
+  "brief": "brief.md",
+  "acceptance": "acceptance.json",
+  "baseline": [
+    "input/index.html",
+    "input/styles.css",
+    "input/app.js"
+  ],
+  "viewports": [
+    "1440x900",
+    "1150x900",
+    "390x844"
+  ],
+  "requiredCapabilities": [
+    "file-read",
+    "file-write",
+    "local-server",
+    "browser",
+    "interaction"
+  ],
+  "outputContract": {
+    "entrypoint": "index.html",
+    "mustPreserveElementIds": [
+      "two-factor",
+      "sessions",
+      "session-menu",
+      "recovery-email",
+      "save-email",
+      "toast"
+    ],
+    "mustRunWithoutBuildStep": true,
+    "externalNetworkRequired": false
+  },
+  "seededDefects": [
+    "The session overflow button has no accessible name.",
+    "The custom two-factor switch does not respond to keyboard activation.",
+    "The recovery email field has no programmatic label.",
+    "Placeholder links navigate to #.",
+    "Muted text has weak contrast.",
+    "The entering animation has no reduced-motion override.",
+    "The heading order skips from h1 to h3.",
+    "Focus indication is suppressed."
+  ]
+}

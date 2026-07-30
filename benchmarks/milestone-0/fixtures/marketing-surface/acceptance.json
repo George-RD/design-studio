@@ -1,0 +1,48 @@
+{
+  "mustDeliver": [
+    "A complete responsive marketing surface with the required sections.",
+    "A locally working request form and explicit success state.",
+    "A coverage-check route or control distinct from the primary request action.",
+    "Clear membership inclusions, exclusions and availability caveats."
+  ],
+  "mustNot": [
+    "Invent prices, response guarantees, reviews, customer counts or certifications.",
+    "Use fear-based emergency messaging.",
+    "Require network access or a build step.",
+    "Present the offer as a software product dashboard."
+  ],
+  "functionalChecks": [
+    {
+      "id": "request-form",
+      "action": "Complete and submit the request form.",
+      "expected": "A clear local success state appears and the page does not navigate away."
+    },
+    {
+      "id": "coverage-route",
+      "action": "Activate the coverage-check control.",
+      "expected": "Coverage information becomes reachable and understandable."
+    },
+    {
+      "id": "keyboard",
+      "action": "Traverse all controls with the keyboard.",
+      "expected": "Focus remains visible and follows a logical order."
+    },
+    {
+      "id": "mobile-overflow",
+      "action": "Render at 390x844.",
+      "expected": "No horizontal document overflow or clipped primary action."
+    },
+    {
+      "id": "reduced-motion",
+      "action": "Enable reduced motion.",
+      "expected": "Meaning remains complete without non-essential animation."
+    }
+  ],
+  "evaluationFocus": [
+    "offer clarity",
+    "trust without unsupported claims",
+    "mobile scanability",
+    "visual distinctiveness",
+    "form usability"
+  ]
+}

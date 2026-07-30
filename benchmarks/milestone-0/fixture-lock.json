@@ -1,0 +1,27 @@
+{
+  "algorithm": "sha256",
+  "files": {
+    "README.md": "aa2f2f81f2b9cffefe73d67e523f7cfbacbdf5f1dc9e43d46ee649d4fb2b265d",
+    "fixtures/cinematic-experience/acceptance.json": "8788ed9f64c88477cfb56f2a7e52b4dc1778937c49799d0af8d0c39a7bdda2a2",
+    "fixtures/cinematic-experience/brief.md": "f8846d34380298ebc4ec1f05c3eeec977dbe4e0dc70cf61187050eef32b58409",
+    "fixtures/cinematic-experience/fixture.json": "b5f9fd835d24bc3cc12fa8e0228071d91da9b8f3cf3b9704139aad343e3c949f",
+    "fixtures/marketing-surface/acceptance.json": "dc04bbfbee7a6a977193958da0ab9ea12488afb69ebbd3fedb2e9cff05df6f5d",
+    "fixtures/marketing-surface/brief.md": "943b0ad1ef2c125de2e72fe2ad033f4a55c2759837cf9c7a046fe595c94e061f",
+    "fixtures/marketing-surface/fixture.json": "5e1fa00c47a777c9bb75d0e5d0ac51d62cff435311af55d2043459a96ffbb37f",
+    "fixtures/product-overhaul/acceptance.json": "6b7b038a13d7f1b75ebf915509f8b157cc67e6837bba85d3b2dc9439d96d70c4",
+    "fixtures/product-overhaul/brief.md": "cd0042c1fae2b0f714ee5a5ad6ae191eae074bacc8cab7d72278eaf3cb7c46ab",
+    "fixtures/product-overhaul/fixture.json": "e46d7746111847f6f2dbb2654619676fca226837b00247f205889f094f364e44",
+    "fixtures/product-overhaul/input/app.js": "03d414e8059e4816efd83b2d06581699d4b45db9f9a5d6475e3a8f576579f331",
+    "fixtures/product-overhaul/input/index.html": "c5143746c4367972b2d872bb47485d7bcd31dae68620920621615fcd554e880a",
+    "fixtures/product-overhaul/input/styles.css": "d1ca7ce4e631708b77a84a71a477ccaed409c8a68424c6de503d22097e192e91",
+    "fixtures/review-polish/acceptance.json": "b1fbb8e11a416f5af655e08ba80dc2329833505b92bea49ae148d3f1af5cf826",
+    "fixtures/review-polish/brief.md": "8c27ad6ea14ad810a00af849bce92a0ca7f8481c66b827b58151a4ff433e0cba",
+    "fixtures/review-polish/fixture.json": "d999b4fea5f6ebf6f658e5a12c059f310183db829b13d3d6d03f891d9300bd36",
+    "fixtures/review-polish/input/app.js": "92d336de13e9a8bd2f2462e04c1ea0710e29677e79874a26a42433d918d9a64c",
+    "fixtures/review-polish/input/index.html": "b4bbd5a7aee9abbebbf23dad9d6f829c79cd5beed5233a4af189510199b0480d",
+    "fixtures/review-polish/input/styles.css": "82ed64b1e10b36599a0da77d0f187e1724f50787bff52077f73262acf51889fe",
+    "manifest.json": "16b21678a0606a1375b51eaafb7df8e08bb46a51e27167f6540a38b55ab39154"
+  },
+  "schemaVersion": 1,
+  "suiteVersion": 1
+}
