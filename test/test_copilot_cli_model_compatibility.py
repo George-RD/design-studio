@@ -46,6 +46,13 @@ class CopilotCliModelCompatibilityTests(unittest.TestCase):
         self.assertIn('COPILOT_MODEL: "gpt-5-mini"', workflow)
         self.assertNotIn('COPILOT_MODEL: "auto"', workflow)
 
+    def test_builder_prompt_preserves_form_and_exact_success_region(self):
+        prompt = self.module.core.builder_prompt()
+
+        self.assertIn("Keep the form, label, input and submit control visible", prompt)
+        self.assertIn("set its textContent to exactly Capability complete", prompt)
+        self.assertIn("no icon or additional text inside that region", prompt)
+
 
 if __name__ == "__main__":
     unittest.main()
