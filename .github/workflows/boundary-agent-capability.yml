@@ -7,6 +7,7 @@ on:
       - "scripts/run_copilot_cli_agent_capability.py"
       - "scripts/run_copilot_cli_agent_capability_gate.py"
       - "scripts/run_browser_capability.mjs"
+      - "scripts/run_browser_capability_completion.mjs"
       - "test/test_copilot_cli_agent_capability.py"
       - "test/test_copilot_cli_model_compatibility.py"
       - "test/test_copilot_cli_auto_model.py"
@@ -58,6 +59,7 @@ jobs:
             scripts/run_copilot_cli_agent_capability.py \
             scripts/run_copilot_cli_agent_capability_gate.py
           node --check scripts/run_browser_capability.mjs
+          node --check scripts/run_browser_capability_completion.mjs
 
       - name: Preserve browser security regressions
         run: |
