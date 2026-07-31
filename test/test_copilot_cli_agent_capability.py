@@ -14,7 +14,7 @@ MODULE_PATH = ROOT / "scripts" / "run_copilot_cli_agent_capability_gate.py"
 
 def load_module():
     spec = importlib.util.spec_from_file_location(
-        "run_copilot_cli_agent_capability", MODULE_PATH
+        "run_copilot_cli_agent_capability_gate_test", MODULE_PATH
     )
     if spec is None or spec.loader is None:
         raise RuntimeError(f"cannot load module from {MODULE_PATH}")
