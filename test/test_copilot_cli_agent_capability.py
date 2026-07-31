@@ -9,7 +9,7 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-MODULE_PATH = ROOT / "scripts" / "run_copilot_cli_agent_capability.py"
+MODULE_PATH = ROOT / "scripts" / "run_copilot_cli_agent_capability_gate.py"
 
 
 def load_module():
