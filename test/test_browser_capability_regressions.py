@@ -137,6 +137,60 @@ class BrowserCapabilityRegressionTests(unittest.TestCase):
             report["network"]["blockedRequests"],
         )
 
+    def test_normal_media_submission_request_is_observed_and_blocked(self):
+        html = VALID_HTML.replace(
+            "document.querySelector('#capability-success').hidden=false;",
+            "if(matchMedia('(prefers-reduced-motion: no-preference)').matches){new Image().src='https:'+'//example.invalid/normal-submit.png';}document.querySelector('#capability-success').hidden=false;",
+        )
+        temporary, completed, report = self.run_browser(html)
+        self.addCleanup(temporary.cleanup)
+
+        self.assertEqual(1, completed.returncode)
+        self.assertIn(
+            "https://example.invalid/normal-submit.png",
+            report["network"]["externalRequests"],
+        )
+        self.assertIn(
+            "https://example.invalid/normal-submit.png",
+            report["network"]["blockedRequests"],
+        )
+
+    def test_window_open_attempt_is_observed_and_blocked(self):
+        html = VALID_HTML.replace(
+            "document.querySelector('#capability-success').hidden=false;",
+            "window.open('https:'+'//example.invalid/popup');document.querySelector('#capability-success').hidden=false;",
+        )
+        temporary, completed, report = self.run_browser(html)
+        self.addCleanup(temporary.cleanup)
+
+        self.assertEqual(1, completed.returncode)
+        self.assertIn(
+            "https://example.invalid/popup",
+            report["network"]["externalRequests"],
+        )
+        self.assertIn(
+            "https://example.invalid/popup",
+            report["network"]["blockedRequests"],
+        )
+
+    def test_target_blank_navigation_is_observed_and_blocked(self):
+        html = VALID_HTML.replace(
+            "document.querySelector('#capability-success').hidden=false;",
+            "const link=document.createElement('a');link.href='https:'+'//example.invalid/target-blank';link.target='_blank';document.body.append(link);link.click();document.querySelector('#capability-success').hidden=false;",
+        )
+        temporary, completed, report = self.run_browser(html)
+        self.addCleanup(temporary.cleanup)
+
+        self.assertEqual(1, completed.returncode)
+        self.assertIn(
+            "https://example.invalid/target-blank",
+            report["network"]["externalRequests"],
+        )
+        self.assertIn(
+            "https://example.invalid/target-blank",
+            report["network"]["blockedRequests"],
+        )
+
     def test_missing_reduced_motion_behavior_fails(self):
         html = VALID_HTML.replace(
             "@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}",
@@ -171,6 +225,34 @@ class BrowserCapabilityRegressionTests(unittest.TestCase):
         )
         self.assertEqual(0, report["interaction"]["motion"]["normalMaxMs"])
         self.assertGreater(report["interaction"]["motion"]["reducedMaxMs"], 50)
+
+    def test_motion_introduced_after_submit_for_reduced_users_fails(self):
+        html = VALID_HTML.replace(
+            "button{transition:transform .2s}",
+            "button{transition:none}@keyframes postReduced{from{opacity:.9}to{opacity:1}}",
+        ).replace(
+            "@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}",
+            "@media(prefers-reduced-motion:reduce){body.post-motion{animation:postReduced 2s infinite}}",
+        ).replace(
+            "document.querySelector('#capability-success').hidden=false;",
+            "document.body.classList.add('post-motion');document.querySelector('#capability-success').hidden=false;",
+        )
+        temporary, completed, report = self.run_browser(html)
+        self.addCleanup(temporary.cleanup)
+
+        self.assertEqual(1, completed.returncode)
+        self.assertIn(
+            "reduced-motion path did not suppress active motion",
+            report["failures"],
+        )
+        self.assertEqual(
+            0,
+            report["interaction"]["motion"]["normalPostSubmitMaxMs"],
+        )
+        self.assertGreater(
+            report["interaction"]["motion"]["reducedPostSubmitMaxMs"],
+            50,
+        )
 
     def test_submission_url_change_fails(self):
         html = VALID_HTML.replace(
@@ -217,6 +299,21 @@ class BrowserCapabilityRegressionTests(unittest.TestCase):
         self.assertEqual(0, completed.returncode, completed.stderr + completed.stdout)
         self.assertFalse(report["interaction"]["successVisibleBefore"])
         self.assertTrue(report["interaction"]["successVisible"])
+
+    def test_offscreen_success_state_is_not_visible(self):
+        html = VALID_HTML.replace(
+            '<p id="capability-success" hidden>',
+            '<p id="capability-success" hidden style="position:fixed;top:120vh;width:10rem">',
+        )
+        temporary, completed, report = self.run_browser(html)
+        self.addCleanup(temporary.cleanup)
+
+        self.assertEqual(1, completed.returncode)
+        self.assertIn(
+            "success state did not become visible",
+            report["failures"],
+        )
+        self.assertFalse(report["interaction"]["successVisible"])
 
     def test_readonly_input_cannot_pass_real_keyboard_entry(self):
         html = VALID_HTML.replace(
