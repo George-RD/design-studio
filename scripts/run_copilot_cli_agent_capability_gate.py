@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import sys
+import tempfile
 from typing import Any, Sequence
 
 
@@ -39,6 +40,10 @@ def _remember_original(attribute: str, current: Any) -> Any:
     return getattr(core, marker)
 
 
+_BASE_WRITE_JSON = _remember_original(
+    "write_json",
+    core.write_json,
+)
 _BASE_CLASSIFIER = _remember_original(
     "classify_cli_failure",
     core.classify_cli_failure,
@@ -97,6 +102,39 @@ def classify_cli_failure(outcome: CommandOutcome) -> str:
     if any(marker in text for marker in model_blockers):
         return "blocked"
     return _BASE_CLASSIFIER(outcome)
+
+
+def write_json_no_follow(path: Path, value: Any) -> None:
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    parent = path.parent
+    if parent.is_symlink() or not parent.is_dir():
+        raise core.ContractError(f"JSON destination directory is unsafe: {parent}")
+    if path.is_symlink():
+        raise core.ContractError(f"JSON destination must not be a symlink: {path}")
+    if path.exists() and not path.is_file():
+        raise core.ContractError(f"JSON destination must be a regular file: {path}")
+
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{path.name}.",
+        suffix=".tmp",
+        dir=parent,
+        text=True,
+    )
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as handle:
+            json.dump(value, handle, indent=2, sort_keys=True)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        if path.is_symlink():
+            raise core.ContractError(
+                f"JSON destination became a symlink before replacement: {path}"
+            )
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def write_trusted_workspace_config(home: Path, workspace: Path) -> Path:
@@ -200,7 +238,7 @@ def successful_file_views(
     events: list[dict[str, Any]],
     workspace: Path,
 ) -> list[str]:
-    starts: dict[str, str] = {}
+    starts: dict[str, str | None] = {}
     successful: set[str] = set()
     for event in events:
         event_type = event.get("type")
@@ -215,20 +253,19 @@ def successful_file_views(
             if tool_name not in {"read", "view"}:
                 continue
             arguments = data.get("arguments")
-            if not isinstance(arguments, dict):
-                continue
-            relative = _workspace_relative_path(
-                workspace,
-                arguments.get("path"),
-            )
-            if relative is not None:
-                starts[call_id] = relative
+            path_value = arguments.get("path") if isinstance(arguments, dict) else None
+            starts[call_id] = _workspace_relative_path(workspace, path_value)
         elif (
             event_type == "tool.execution_complete"
             and data.get("success") is True
             and call_id in starts
         ):
-            successful.add(starts[call_id])
+            relative = starts[call_id]
+            if relative is None:
+                raise core.ContractError(
+                    "successful Copilot file view escaped the trusted role workspace"
+                )
+            successful.add(relative)
     return sorted(successful)
 
 
@@ -372,6 +409,65 @@ def _persist_model_failure(
     return report
 
 
+def classify_blocker_kind(step: Any, message: Any) -> str:
+    step_text = str(step or "").strip().lower()
+    text = str(message or "").strip().lower()
+    if step_text == "authentication" or any(
+        marker in text
+        for marker in (
+            "not authenticated",
+            "authentication",
+            "github_token",
+            "copilot requests permission",
+        )
+    ):
+        return "copilot-auth"
+    if "model" in text and any(
+        marker in text
+        for marker in (
+            "not available",
+            "unsupported",
+            "no models",
+            "cannot use",
+        )
+    ):
+        return "model-unavailable"
+    if "rate limit" in text:
+        return "rate-limit"
+    if any(marker in text for marker in ("ai credit", "credits exhausted", "quota")):
+        return "credit-exhausted"
+    if "browser" in step_text or any(
+        marker in text for marker in ("chrome", "chromium", "browser probe")
+    ):
+        return "browser-timeout" if "timed out" in text or "timeout" in text else "browser-unavailable"
+    if any(marker in text for marker in ("policy", "billing", "copilot access")):
+        return "copilot-policy"
+    if "timed out" in text or "timeout" in text:
+        return "copilot-timeout"
+    if any(
+        marker in text
+        for marker in (
+            "temporarily unavailable",
+            "service unavailable",
+        )
+    ):
+        return "service-unavailable"
+    return "capability-blocked"
+
+
+def normalize_blocked_report(report: dict[str, Any]) -> dict[str, Any]:
+    if report.get("status") != "blocked":
+        return report
+    error = report.get("error")
+    if not isinstance(error, dict):
+        return report
+    error["kind"] = classify_blocker_kind(
+        error.get("step"),
+        error.get("message"),
+    )
+    return report
+
+
 def _retryable_director_failure(report: dict[str, Any]) -> bool:
     if report.get("status") != "failed":
         return False
@@ -397,7 +493,7 @@ def _retryable_director_failure(report: dict[str, Any]) -> bool:
 
 
 def _capture_director_attempt(output_root: Path) -> dict[str, bytes]:
-    sources = {
+    required_sources = {
         "director.attempt-1.command.json": output_root
         / "evidence"
         / "director.command.json",
@@ -407,18 +503,26 @@ def _capture_director_attempt(output_root: Path) -> dict[str, bytes]:
         "director.attempt-1.stderr.log": output_root
         / "evidence"
         / "director.stderr.log",
-        "director.attempt-1.direction.json": output_root
-        / "workspaces"
-        / "director"
-        / "direction.json",
     }
     captured: dict[str, bytes] = {}
-    for destination_name, source in sources.items():
+    for destination_name, source in required_sources.items():
         if source.is_symlink() or not source.is_file():
             raise core.ContractError(
                 f"cannot preserve Director retry evidence: {source} is not a regular file"
             )
         captured[destination_name] = source.read_bytes()
+
+    direction = output_root / "workspaces" / "director" / "direction.json"
+    if direction.is_symlink():
+        raise core.ContractError(
+            f"cannot preserve Director retry evidence: {direction} is a symlink"
+        )
+    if direction.exists():
+        if not direction.is_file():
+            raise core.ContractError(
+                f"cannot preserve Director retry evidence: {direction} is not a regular file"
+            )
+        captured["director.attempt-1.direction.json"] = direction.read_bytes()
     return captured
 
 
@@ -496,6 +600,7 @@ def run_capability(*args: Any, **kwargs: Any) -> dict[str, Any]:
             output_root,
             scrubbed_files,
         )
+    report = normalize_blocked_report(report)
     if report.get("status") != "passed":
         core.write_json(output_root / "capability-report.json", report)
         return report
@@ -539,6 +644,7 @@ core.DEFAULT_MODEL = DEFAULT_MODEL
 core.BROWSER_SCRIPT = Path(__file__).resolve().with_name(
     "run_browser_capability_completion.mjs"
 )
+core.write_json = write_json_no_follow
 core.director_prompt = director_prompt
 core.builder_prompt = builder_prompt
 core.classify_cli_failure = classify_cli_failure
