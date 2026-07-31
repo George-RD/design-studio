@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "status": "passed",
+  "verifiedAt": "2026-07-31T09:43:39.663357Z",
+  "workflow": {
+    "runId": 30620834185,
+    "headSha": "e8149f131c433b8131bf556fd46d16d710473b92",
+    "artifactId": 8789344449,
+    "artifactName": "copilot-cli-agent-capability-30620834185",
+    "artifactDigest": "sha256:166c95d5531ab8148caeeb4781efd497c5041bdcbe2e54ecdbec68d069d19a32",
+    "retentionDays": 14
+  },
+  "executionSurface": {
+    "name": "github-copilot-cli",
+    "version": "1.0.74",
+    "authentication": "github-actions-token",
+    "permission": "copilot-requests: write",
+    "requestedModel": "auto",
+    "resolvedModel": "gpt-5-mini",
+    "maxAiCreditsPerRole": 30
+  },
+  "checks": {
+    "director": {
+      "status": "passed",
+      "availableTools": [
+        "create"
+      ],
+      "files": [
+        "direction.json"
+      ],
+      "resolvedModel": "gpt-5-mini"
+    },
+    "builder": {
+      "status": "passed",
+      "availableTools": [
+        "view",
+        "create",
+        "edit",
+        "apply_patch"
+      ],
+      "files": [
+        "baseline.css",
+        "brief.md",
+        "direction.json",
+        "index.html"
+      ],
+      "entrypoint": "index.html",
+      "outputBytes": 4723,
+      "singleFile": true,
+      "sourceCanaryAbsent": true,
+      "resolvedModel": "gpt-5-mini"
+    },
+    "browser": {
+      "status": "passed",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "submittedValue": "Ada",
+      "successVisibleBefore": false,
+      "successVisible": true,
+      "successText": "Capability complete",
+      "urlUnchanged": true,
+      "horizontalOverflow": false,
+      "normalMotionMaxMs": 220,
+      "reducedMotionMaxMs": 0,
+      "externalRequests": []
+    },
+    "sourceIsolation": {
+      "status": "passed",
+      "directorHasNoSource": true,
+      "builderReadCanarySource": true,
+      "outputCanaryAbsent": true,
+      "evaluatorHasNoSource": true,
+      "evaluatorRequestCanaryAbsent": true
+    },
+    "evaluator": {
+      "status": "passed",
+      "availableTools": [
+        "create"
+      ],
+      "files": [
+        "browser-after-submit.png",
+        "evaluation.json"
+      ],
+      "titleVisible": true,
+      "formVisible": true,
+      "successVisible": true,
+      "layoutUsable": true,
+      "sourceCanaryVisible": false,
+      "resolvedModel": "gpt-5-mini"
+    }
+  },
+  "scope": {
+    "proves": [
+      "a same-repository GitHub Actions job can run the pinned Copilot CLI with a job-scoped token",
+      "Director, Builder and Evaluator can run in separate trusted workspaces with explicit tool sets",
+      "the Builder can create a self-contained interface without leaking the source canary",
+      "Chromium can verify interaction, URL stability, network isolation, overflow and reduced-motion behavior and capture a screenshot",
+      "a source-blind Evaluator can inspect the screenshot and return a durable visual receipt",
+      "all three roles resolved to the same recorded model"
+    ],
+    "doesNotProve": [
+      "a complete Impeccable or Design Studio comparison lane",
+      "blind preference between competing lane outputs",
+      "the quality advantage of Design Studio over Impeccable alone",
+      "that model auto-selection will always resolve to gpt-5-mini"
+    ]
+  }
+}
