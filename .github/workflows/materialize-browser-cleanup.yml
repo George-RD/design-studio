@@ -1,0 +1,72 @@
+name: Materialize browser cleanup
+
+on:
+  push:
+    branches:
+      - agent/m0-agent-capability-hardening
+    paths:
+      - .github/workflows/materialize-browser-cleanup.yml
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+      - name: Integrate verified browser cleanup
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import hashlib
+          from pathlib import Path
+
+          path = Path("scripts/run_browser_capability.mjs")
+          source = path.read_text(encoding="utf-8")
+          source = source.replace(
+              "import { lstat, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';",
+              "import { lstat, mkdir, mkdtemp, readFile, realpath, writeFile } from 'node:fs/promises';",
+              1,
+          )
+          anchor = "import process from 'node:process';\n"
+          if anchor not in source:
+              raise SystemExit("browser process import anchor not found")
+          source = source.replace(
+              anchor,
+              anchor + "\nimport { removeBrowserProfile } from './browser_profile_cleanup.mjs';\n",
+              1,
+          )
+          cleanup = "    await rm(userDataDir, { recursive: true, force: true });"
+          if cleanup not in source:
+              raise SystemExit("browser cleanup anchor not found")
+          source = source.replace(
+              cleanup,
+              "    await removeBrowserProfile(userDataDir);",
+              1,
+          )
+          content = source.encode("utf-8")
+          digest = hashlib.sha256(content).hexdigest()
+          expected = "d6bdffc08d1f9f8ce2ab49f92a5a90445513a8fef4a6f7c4044ca816a24c223e"
+          if digest != expected:
+              raise SystemExit(f"unexpected browser probe digest: {digest}")
+          path.write_bytes(content)
+          PY
+          node --test test/test_browser_profile_cleanup.mjs
+          node --check scripts/browser_profile_cleanup.mjs
+          node --check scripts/run_browser_capability.mjs
+          test "$(sha256sum scripts/run_browser_capability.mjs | cut -d' ' -f1)" = "d6bdffc08d1f9f8ce2ab49f92a5a90445513a8fef4a6f7c4044ca816a24c223e"
+      - name: Commit verified browser cleanup
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/run_browser_capability.mjs
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "fix: use resilient Chromium profile cleanup"
+          git push origin HEAD:${GITHUB_REF_NAME}
