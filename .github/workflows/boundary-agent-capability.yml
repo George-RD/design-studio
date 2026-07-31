@@ -11,7 +11,7 @@ on:
       - "test/test_copilot_cli_model_compatibility.py"
       - "test/test_copilot_cli_auto_model.py"
       - "test/test_copilot_cli_trusted_workspace.py"
-      - "test/test_boundary_agent_regressions.py"
+      - "test/test_browser_capability_regressions.py"
       - "benchmarks/milestone-0/AGENT_HARNESS.md"
       - "benchmarks/milestone-0/MODEL_HARNESS.md"
       - "benchmarks/milestone-0/evidence/**"
@@ -56,7 +56,7 @@ jobs:
           node --check scripts/run_browser_capability.mjs
 
       - name: Preserve browser security regressions
-        run: python3 -m unittest discover -s test -p 'test_boundary_agent_regressions.py' -v
+        run: python3 -m unittest discover -s test -p 'test_browser_capability_regressions.py' -v
 
   live-agent-capability:
     needs: capability-contract
