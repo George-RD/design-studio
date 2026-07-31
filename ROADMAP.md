@@ -67,7 +67,8 @@ The architectural change is useful only when all of these are true:
   - [x] review and polish pass;
   - [x] visually ambitious experience suitable for a later Scroll World comparison.
 - [x] Define a reproducible, tamper-evident lane-run and evidence protocol. Evidence: [comparison run protocol](benchmarks/milestone-0/RUN_PROTOCOL.md), [run harness](scripts/run_boundary_benchmark.py) and [contract tests](test/test_boundary_benchmark_run.py).
-- [x] Verify a repository-scoped text-and-vision model execution surface for comparison agents. Evidence: [capability gate](benchmarks/milestone-0/MODEL_HARNESS.md), [sanitized receipt](benchmarks/milestone-0/evidence/github-models-capability.json) and [GitHub Actions run 30556498881](https://github.com/George-RD/design-studio/actions/runs/30556498881).
+- [x] Verify a repository-scoped text-and-vision model execution surface before its retirement. Evidence: [historical capability record](benchmarks/milestone-0/MODEL_HARNESS.md), [sanitized receipt](benchmarks/milestone-0/evidence/github-models-capability.json) and [GitHub Actions run 30556498881](https://github.com/George-RD/design-studio/actions/runs/30556498881).
+- [x] Verify a repository-scoped controlled agent execution surface with source-blind roles, bounded file tools, browser capture and durable evidence. Evidence: [Copilot CLI agent gate](benchmarks/milestone-0/AGENT_HARNESS.md), [sanitized receipt](benchmarks/milestone-0/evidence/copilot-cli-agent-capability.json) and [GitHub Actions run 30620834185](https://github.com/George-RD/design-studio/actions/runs/30620834185).
 - [ ] Run the same fixed briefs through:
   - [ ] Impeccable alone;
   - [ ] current Design Studio;
