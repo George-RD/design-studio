@@ -8,6 +8,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULE_PATH = ROOT / "scripts" / "run_copilot_cli_agent_capability_gate.py"
+WORKFLOW_PATH = ROOT / ".github" / "workflows" / "boundary-agent-capability.yml"
 
 
 def load_module():
@@ -38,6 +39,12 @@ class CopilotCliModelCompatibilityTests(unittest.TestCase):
 
     def test_default_requests_auto_selection_for_separate_model_receipting(self):
         self.assertEqual("auto", self.module.DEFAULT_MODEL)
+
+    def test_live_gate_pins_the_verified_concrete_model(self):
+        workflow = WORKFLOW_PATH.read_text(encoding="utf-8")
+
+        self.assertIn('COPILOT_MODEL: "gpt-5-mini"', workflow)
+        self.assertNotIn('COPILOT_MODEL: "auto"', workflow)
 
 
 if __name__ == "__main__":
