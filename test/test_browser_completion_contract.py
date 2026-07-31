@@ -31,6 +31,11 @@ FORM_HIDDEN_HTML = BASE_HTML.replace(
     "success.hidden=false;form.hidden=true;",
 )
 
+PERMANENT_SHADOW_NO_FOCUS_HTML = BASE_HTML.replace(
+    "button:focus-visible,input:focus-visible{outline:3px solid #176b5b}",
+    "input,button{box-shadow:0 0 0 2px #176b5b}*:focus{outline:none}",
+)
+
 
 class BrowserCompletionContractTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -107,6 +112,19 @@ class BrowserCompletionContractTests(unittest.TestCase):
             report["failures"],
         )
         self.assertFalse(report["interaction"]["formVisibleAfter"])
+
+    def test_permanent_shadow_is_not_a_keyboard_focus_indicator(self):
+        temporary, completed, report = self.run_browser(
+            PERMANENT_SHADOW_NO_FOCUS_HTML
+        )
+        self.addCleanup(temporary.cleanup)
+
+        self.assertEqual(1, completed.returncode)
+        self.assertIn(
+            "keyboard focus produced no visual style change",
+            report["failures"],
+        )
+        self.assertFalse(report["interaction"]["focusStyleChanged"])
 
 
 if __name__ == "__main__":
