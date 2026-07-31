@@ -1,13 +1,14 @@
 {
-  "schemaVersion": 1,
+  "receiptSchemaVersion": 1,
+  "capabilityReportSchemaVersion": 1,
   "status": "passed",
-  "verifiedAt": "2026-07-31T09:43:39.663357Z",
+  "verifiedAt": "2026-07-31T15:39:07.981568Z",
   "workflow": {
-    "runId": 30620834185,
-    "headSha": "e8149f131c433b8131bf556fd46d16d710473b92",
-    "artifactId": 8789344449,
-    "artifactName": "copilot-cli-agent-capability-30620834185",
-    "artifactDigest": "sha256:166c95d5531ab8148caeeb4781efd497c5041bdcbe2e54ecdbec68d069d19a32",
+    "runId": 30643540826,
+    "headSha": "6f21c4ec32ab34a2974db607a3197d5e586a86a7",
+    "artifactId": 8798533579,
+    "artifactName": "copilot-cli-agent-capability-30643540826",
+    "artifactDigest": "sha256:685e259ce6478dadd6078297a16ccace7379d4aa9d43167b169ad2be0003af04",
     "retentionDays": 14
   },
   "executionSurface": {
@@ -15,8 +16,14 @@
     "version": "1.0.74",
     "authentication": "github-actions-token",
     "permission": "copilot-requests: write",
+    "environmentPolicy": "explicit-allowlist",
     "requestedModel": "auto",
-    "resolvedModel": "gpt-5-mini",
+    "modelPolicy": "auto-per-role",
+    "resolvedModels": {
+      "director": "claude-haiku-4.5",
+      "builder": "gpt-5-mini",
+      "evaluator": "gpt-5-mini"
+    },
     "maxAiCreditsPerRole": 30
   },
   "checks": {
@@ -28,7 +35,8 @@
       "files": [
         "direction.json"
       ],
-      "resolvedModel": "gpt-5-mini"
+      "readFiles": [],
+      "resolvedModel": "claude-haiku-4.5"
     },
     "builder": {
       "status": "passed",
@@ -44,9 +52,16 @@
         "direction.json",
         "index.html"
       ],
+      "readFiles": [
+        "baseline.css",
+        "brief.md",
+        "direction.json"
+      ],
+      "readBaselineCss": true,
       "entrypoint": "index.html",
-      "outputBytes": 4723,
+      "outputBytes": 5880,
       "singleFile": true,
+      "resourceReferencesAbsent": true,
       "sourceCanaryAbsent": true,
       "resolvedModel": "gpt-5-mini"
     },
@@ -57,12 +72,16 @@
         "height": 844
       },
       "submittedValue": "Ada",
+      "successTextBefore": "",
       "successVisibleBefore": false,
       "successVisible": true,
       "successText": "Capability complete",
+      "formVisibleBefore": true,
+      "formVisibleAfter": true,
+      "focusStyleChanged": true,
       "urlUnchanged": true,
       "horizontalOverflow": false,
-      "normalMotionMaxMs": 220,
+      "normalMotionMaxMs": 1000,
       "reducedMotionMaxMs": 0,
       "externalRequests": []
     },
@@ -83,6 +102,7 @@
         "browser-after-submit.png",
         "evaluation.json"
       ],
+      "readFiles": [],
       "titleVisible": true,
       "formVisible": true,
       "successVisible": true,
@@ -95,16 +115,17 @@
     "proves": [
       "a same-repository GitHub Actions job can run the pinned Copilot CLI with a job-scoped token",
       "Director, Builder and Evaluator can run in separate trusted workspaces with explicit tool sets",
+      "auto model selection can resolve independently per role while preserving each concrete model in the receipt",
       "the Builder can create a self-contained interface without leaking the source canary",
       "Chromium can verify interaction, URL stability, network isolation, overflow and reduced-motion behavior and capture a screenshot",
-      "a source-blind Evaluator can inspect the screenshot and return a durable visual receipt",
-      "all three roles resolved to the same recorded model"
+      "a source-blind Evaluator can inspect the screenshot and return a durable visual receipt"
     ],
     "doesNotProve": [
       "a complete Impeccable or Design Studio comparison lane",
       "blind preference between competing lane outputs",
       "the quality advantage of Design Studio over Impeccable alone",
-      "that model auto-selection will always resolve to gpt-5-mini"
+      "that model auto-selection will always resolve to the same role-model mapping",
+      "that all roles use one shared model when auto selection is enabled"
     ]
   }
 }
