@@ -320,6 +320,9 @@ def run_capability(*args: Any, **kwargs: Any) -> dict[str, Any]:
 
 
 core.DEFAULT_MODEL = DEFAULT_MODEL
+core.BROWSER_SCRIPT = Path(__file__).resolve().with_name(
+    "run_browser_capability_completion.mjs"
+)
 core.builder_prompt = builder_prompt
 core.classify_cli_failure = classify_cli_failure
 core.invoke_role = invoke_role
