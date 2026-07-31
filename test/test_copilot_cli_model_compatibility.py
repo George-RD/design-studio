@@ -36,8 +36,8 @@ class CopilotCliModelCompatibilityTests(unittest.TestCase):
 
         self.assertEqual("blocked", self.module.classify_cli_failure(outcome))
 
-    def test_default_model_is_the_documented_general_purpose_model(self):
-        self.assertEqual("claude-sonnet-4.6", self.module.DEFAULT_MODEL)
+    def test_default_requests_auto_selection_for_separate_model_receipting(self):
+        self.assertEqual("auto", self.module.DEFAULT_MODEL)
 
 
 if __name__ == "__main__":
