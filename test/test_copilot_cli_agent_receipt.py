@@ -28,14 +28,14 @@ class CopilotCliAgentReceiptTests(unittest.TestCase):
         self.assertEqual(1, receipt["capabilityReportSchemaVersion"])
         self.assertEqual("passed", receipt["status"])
         workflow = receipt["workflow"]
-        self.assertEqual(30643540826, workflow["runId"])
+        self.assertEqual(30648083820, workflow["runId"])
         self.assertEqual(
-            "6f21c4ec32ab34a2974db607a3197d5e586a86a7",
+            "425a1abc668a8192518668bb575cfcca6f1f8fe5",
             workflow["headSha"],
         )
-        self.assertEqual(8798533579, workflow["artifactId"])
+        self.assertEqual(8800371523, workflow["artifactId"])
         self.assertEqual(
-            "sha256:685e259ce6478dadd6078297a16ccace7379d4aa9d43167b169ad2be0003af04",
+            "sha256:edb357cd4ba88af82c6d16e24176dfc61754fc7c90267641d426c6b65dbbf821",
             workflow["artifactDigest"],
         )
         execution_surface = receipt["executionSurface"]
@@ -51,7 +51,7 @@ class CopilotCliAgentReceiptTests(unittest.TestCase):
         receipt = self.receipt
         checks = receipt["checks"]
         expected_models = {
-            "director": "claude-haiku-4.5",
+            "director": "gpt-5-mini",
             "builder": "gpt-5-mini",
             "evaluator": "gpt-5-mini",
         }
@@ -62,20 +62,31 @@ class CopilotCliAgentReceiptTests(unittest.TestCase):
         for role, expected_model in expected_models.items():
             self.assertEqual("passed", checks[role]["status"])
             self.assertEqual(expected_model, checks[role]["resolvedModel"])
-        self.assertEqual("passed", checks["browser"]["status"])
+        browser = checks["browser"]
+        self.assertEqual("passed", browser["status"])
         self.assertEqual("passed", checks["sourceIsolation"]["status"])
-        self.assertEqual([], checks["browser"]["externalRequests"])
-        self.assertEqual(0, checks["browser"]["reducedMotionMaxMs"])
+        self.assertEqual([], browser["externalRequests"])
+        self.assertEqual([], browser["blockedRequests"])
+        self.assertEqual(0, browser["reducedMotionMaxMs"])
+        self.assertEqual(0, browser["reducedPostSubmitMotionMaxMs"])
+        self.assertGreater(browser["normalMotionMaxMs"], 0)
+        self.assertGreater(browser["normalPostSubmitMotionMaxMs"], 0)
+        self.assertTrue(browser["focusStyleChanged"])
+        self.assertTrue(browser["formVisibleBefore"])
+        self.assertTrue(browser["formVisibleAfter"])
 
     def test_documentation_and_roadmap_cite_the_receipt_without_completing_lanes(self):
         document = DOCUMENT.read_text(encoding="utf-8")
         roadmap = ROADMAP.read_text(encoding="utf-8")
         for marker in (
             "Status:** Verified",
-            "30643540826",
+            "30648083820",
+            "425a1abc668a8192518668bb575cfcca6f1f8fe5",
             "copilot-cli-agent-capability.json",
-            "claude-haiku-4.5",
-            "gpt-5-mini",
+            "Director resolved model: `gpt-5-mini`",
+            "Builder resolved model: `gpt-5-mini`",
+            "Evaluator resolved model: `gpt-5-mini`",
+            "browser_profile_cleanup.mjs",
         ):
             self.assertIn(marker, document)
         self.assertIn(
@@ -86,7 +97,7 @@ class CopilotCliAgentReceiptTests(unittest.TestCase):
             "[sanitized receipt](benchmarks/milestone-0/evidence/copilot-cli-agent-capability.json)",
             roadmap,
         )
-        self.assertIn("30643540826", roadmap)
+        self.assertIn("30648083820", roadmap)
         self.assertIn("[ ] Impeccable alone", roadmap)
         self.assertIn("[ ] current Design Studio", roadmap)
         self.assertIn("[ ] current Design Studio with Impeccable enabled", roadmap)
