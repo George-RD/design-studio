@@ -13,6 +13,7 @@ on:
       - "test/test_copilot_cli_trusted_workspace.py"
       - "test/test_copilot_cli_agent_receipt.py"
       - "test/test_browser_capability_regressions.py"
+      - "test/test_browser_completion_contract.py"
       - "benchmarks/milestone-0/AGENT_HARNESS.md"
       - "benchmarks/milestone-0/MODEL_HARNESS.md"
       - "benchmarks/milestone-0/evidence/**"
@@ -59,7 +60,10 @@ jobs:
           node --check scripts/run_browser_capability.mjs
 
       - name: Preserve browser security regressions
-        run: python3 -m unittest discover -s test -p 'test_browser_capability_regressions.py' -v
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s test -p 'test_browser_capability_regressions.py' -v
+          python3 -m unittest discover -s test -p 'test_browser_completion_contract.py' -v
 
   live-agent-capability:
     needs: capability-contract
