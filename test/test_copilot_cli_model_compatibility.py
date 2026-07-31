@@ -7,7 +7,7 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-MODULE_PATH = ROOT / "scripts" / "run_copilot_cli_agent_capability.py"
+MODULE_PATH = ROOT / "scripts" / "run_copilot_cli_agent_capability_gate.py"
 
 
 def load_module():
@@ -35,6 +35,9 @@ class CopilotCliModelCompatibilityTests(unittest.TestCase):
         )
 
         self.assertEqual("blocked", self.module.classify_cli_failure(outcome))
+
+    def test_default_model_is_the_documented_general_purpose_model(self):
+        self.assertEqual("claude-sonnet-4.6", self.module.DEFAULT_MODEL)
 
 
 if __name__ == "__main__":
