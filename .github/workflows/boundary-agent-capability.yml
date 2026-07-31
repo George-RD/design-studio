@@ -5,11 +5,14 @@ on:
     branches: [main]
     paths:
       - "scripts/run_boundary_agent_capability.py"
+      - "scripts/run_boundary_agent_capability_gate.py"
+      - "scripts/boundary_agent_evaluator_contract.py"
       - "scripts/boundary_agent_tools.py"
       - "scripts/boundary_agent_builder.py"
       - "scripts/run_browser_capability.mjs"
       - "scripts/probe_github_models.py"
       - "test/test_boundary_agent_capability.py"
+      - "test/test_boundary_agent_evaluator_prompt.py"
       - "test/test_boundary_agent_regressions.py"
       - "test/test_github_models_capability.py"
       - "benchmarks/milestone-0/AGENT_HARNESS.md"
@@ -67,7 +70,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: >-
-          python3 scripts/run_boundary_agent_capability.py
+          python3 scripts/run_boundary_agent_capability_gate.py
           --output-dir harness-output/benchmarks/milestone-0/agent-capability
 
       - name: Print sanitized capability report
