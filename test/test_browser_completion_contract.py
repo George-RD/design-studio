@@ -9,7 +9,7 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-BROWSER_PATH = ROOT / "scripts" / "run_browser_capability.mjs"
+BROWSER_PATH = ROOT / "scripts" / "run_browser_capability_completion.mjs"
 
 
 BASE_HTML = """<!doctype html>
