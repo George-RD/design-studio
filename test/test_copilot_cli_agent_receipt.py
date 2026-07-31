@@ -37,6 +37,12 @@ class CopilotCliAgentReceiptTests(unittest.TestCase):
             "sha256:166c95d5531ab8148caeeb4781efd497c5041bdcbe2e54ecdbec68d069d19a32",
             workflow["artifactDigest"],
         )
+        execution_surface = receipt["executionSurface"]
+        self.assertEqual(
+            "copilot-requests: write",
+            execution_surface["permission"],
+        )
+        self.assertEqual("auto", execution_surface["requestedModel"])
 
     def test_all_roles_pass_and_resolve_to_one_model(self):
         checks = self.receipt["checks"]
@@ -66,6 +72,11 @@ class CopilotCliAgentReceiptTests(unittest.TestCase):
             "[x] Verify a repository-scoped controlled agent execution surface",
             roadmap,
         )
+        self.assertIn(
+            "[sanitized receipt](benchmarks/milestone-0/evidence/copilot-cli-agent-capability.json)",
+            roadmap,
+        )
+        self.assertIn("30620834185", roadmap)
         self.assertIn("[ ] Impeccable alone", roadmap)
         self.assertIn("[ ] current Design Studio", roadmap)
         self.assertIn("[ ] current Design Studio with Impeccable enabled", roadmap)
