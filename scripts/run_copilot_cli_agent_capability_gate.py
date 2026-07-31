@@ -13,8 +13,10 @@ if str(SCRIPT_DIR) not in sys.path:
 import run_copilot_cli_agent_capability as core
 
 
-DEFAULT_MODEL = "claude-sonnet-4.6"
+DEFAULT_MODEL = "auto"
 _BASE_CLASSIFIER = core.classify_cli_failure
+_BASE_INVOKE_ROLE = core.invoke_role
+_BASE_RUN_CAPABILITY = core.run_capability
 core.DEFAULT_MODEL = DEFAULT_MODEL
 
 
@@ -25,14 +27,102 @@ def classify_cli_failure(outcome: core.CommandOutcome) -> str:
     return _BASE_CLASSIFIER(outcome)
 
 
-core.classify_cli_failure = classify_cli_failure
-CommandOutcome = core.CommandOutcome
-SOURCE_CANARY = core.SOURCE_CANARY
+def _model_value(value: Any) -> str | None:
+    if isinstance(value, dict):
+        for key in ("model", "modelId", "model_id", "selectedModel"):
+            candidate = value.get(key)
+            if isinstance(candidate, str) and candidate.strip() and candidate.strip().lower() != "auto":
+                return candidate.strip()
+        for key in ("data", "session", "metadata", "usage"):
+            if key in value:
+                candidate = _model_value(value[key])
+                if candidate:
+                    return candidate
+    elif isinstance(value, list):
+        for item in value:
+            candidate = _model_value(item)
+            if candidate:
+                return candidate
+    return None
+
+
+def resolved_model_from_events(events: list[dict[str, Any]], role: str) -> str:
+    for event in reversed(events):
+        event_type = str(event.get("type", "")).lower()
+        if "session" in event_type or "idle" in event_type:
+            candidate = _model_value(event)
+            if candidate:
+                return candidate
+    for event in reversed(events):
+        candidate = _model_value(event)
+        if candidate:
+            return candidate
+    raise core.ContractError(f"{role} JSONL contains no resolved model receipt")
+
+
+def validate_resolved_models(role_models: dict[str, str]) -> str:
+    required = {"director", "builder", "evaluator"}
+    if set(role_models) != required:
+        raise core.ContractError(
+            f"resolved model receipt must cover exactly {sorted(required)}"
+        )
+    unique = set(role_models.values())
+    if len(unique) != 1:
+        raise core.ContractError(
+            f"Copilot auto selection resolved different models by role: {role_models}"
+        )
+    return next(iter(unique))
+
+
+def invoke_role(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    result = _BASE_INVOKE_ROLE(*args, **kwargs)
+    role = kwargs.get("role")
+    evidence_dir = kwargs.get("evidence_dir")
+    if not isinstance(role, str) or not isinstance(evidence_dir, Path):
+        raise core.ContractError("role invocation lacks evidence context")
+    stdout_path = evidence_dir / f"{role}.stdout.jsonl"
+    events = core.parse_jsonl(
+        stdout_path.read_text(encoding="utf-8"),
+        f"{role} Copilot JSONL",
+    )
+    result["resolvedModel"] = resolved_model_from_events(events, role)
+    return result
 
 
 def run_capability(*args: Any, **kwargs: Any) -> dict[str, Any]:
     kwargs.setdefault("model", DEFAULT_MODEL)
-    return core.run_capability(*args, **kwargs)
+    report = _BASE_RUN_CAPABILITY(*args, **kwargs)
+    if report.get("status") == "passed":
+        checks = report.get("checks")
+        if not isinstance(checks, dict):
+            raise core.ContractError("capability report has no checks object")
+        role_models = {
+            role: checks.get(role, {}).get("resolvedModel")
+            for role in ("director", "builder", "evaluator")
+        }
+        if any(not isinstance(value, str) or not value for value in role_models.values()):
+            raise core.ContractError(
+                f"capability report lacks resolved model evidence: {role_models}"
+            )
+        resolved = validate_resolved_models(role_models)
+        surface = report.get("executionSurface")
+        if not isinstance(surface, dict):
+            raise core.ContractError("capability report has no execution surface")
+        surface["requestedModel"] = kwargs["model"]
+        surface["resolvedModel"] = resolved
+        surface["model"] = resolved
+        output_root = kwargs.get("output_root")
+        if not isinstance(output_root, Path):
+            raise core.ContractError("capability run lacks an output root")
+        core.write_json(output_root.resolve() / "capability-report.json", report)
+    return report
+
+
+core.classify_cli_failure = classify_cli_failure
+core.invoke_role = invoke_role
+core.run_capability = run_capability
+CommandOutcome = core.CommandOutcome
+SOURCE_CANARY = core.SOURCE_CANARY
 
 
 def main(argv: Sequence[str] | None = None) -> int:
