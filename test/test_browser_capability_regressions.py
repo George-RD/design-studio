@@ -20,7 +20,7 @@ VALID_HTML = """<!doctype html>
 
 EMPTY_SUCCESS_HTML = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Capability check</title>
-<style>*{box-sizing:border-box}body{margin:0;padding:2rem;font-family:system-ui;max-width:42rem}input,button{font:inherit;padding:.75rem}button{transition:transform .2s}#capability-success{min-height:1.5em;display:flex;align-items:center}@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}</style></head>
+<style>*{box-sizing:border-box}body{margin:0;padding:2rem;font-family:system-ui;max-width:42rem}input,button{font:inherit;padding:.75rem}button{transition:transform .2s}button:focus-visible,input:focus-visible{outline:3px solid #176b5b}#capability-success{min-height:1.5em;display:flex;align-items:center}@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}</style></head>
 <body><main><h1>Capability check</h1><form id="capability-form"><label for="capability-name">Name</label><input id="capability-name" name="name"><button type="submit">Complete</button></form><p id="capability-success" aria-live="polite"></p></main>
 <script>const success=document.querySelector('#capability-success');document.querySelector('#capability-form').addEventListener('submit',event=>{event.preventDefault();success.textContent='Capability complete';});</script></body></html>"""
 
@@ -71,14 +71,18 @@ class BrowserCapabilityRegressionTests(unittest.TestCase):
             capture_output=True,
             text=True,
             check=False,
-            timeout=30,
+            timeout=35,
+        )
+        self.assertTrue(
+            (evidence / "browser-report.json").is_file(),
+            completed.stderr + completed.stdout,
         )
         report = json.loads(
             (evidence / "browser-report.json").read_text(encoding="utf-8")
         )
         return temporary, completed, report
 
-    def test_dynamic_external_request_fails(self):
+    def test_dynamic_external_request_is_blocked_and_fails(self):
         html = VALID_HTML.replace(
             "</script>",
             "new Image().src='https:'+'//example.invalid/pixel.png';</script>",
@@ -87,10 +91,50 @@ class BrowserCapabilityRegressionTests(unittest.TestCase):
         self.addCleanup(temporary.cleanup)
 
         self.assertEqual(1, completed.returncode)
-        self.assertIn("external network request observed", report["failures"])
+        self.assertIn("external network request attempted", report["failures"])
         self.assertIn(
             "https://example.invalid/pixel.png",
             report["network"]["externalRequests"],
+        )
+        self.assertIn(
+            "https://example.invalid/pixel.png",
+            report["network"]["blockedRequests"],
+        )
+
+    def test_delayed_external_request_is_observed_and_blocked(self):
+        html = VALID_HTML.replace(
+            "</script>",
+            "setTimeout(()=>{new Image().src='https:'+'//example.invalid/delayed.png';},900);</script>",
+        )
+        temporary, completed, report = self.run_browser(html)
+        self.addCleanup(temporary.cleanup)
+
+        self.assertEqual(1, completed.returncode)
+        self.assertIn(
+            "https://example.invalid/delayed.png",
+            report["network"]["externalRequests"],
+        )
+        self.assertIn(
+            "https://example.invalid/delayed.png",
+            report["network"]["blockedRequests"],
+        )
+
+    def test_websocket_attempt_is_observed_and_blocked(self):
+        html = VALID_HTML.replace(
+            "</script>",
+            "try{new WebSocket('wss:'+'//example.invalid/socket');}catch{}</script>",
+        )
+        temporary, completed, report = self.run_browser(html)
+        self.addCleanup(temporary.cleanup)
+
+        self.assertEqual(1, completed.returncode)
+        self.assertIn(
+            "wss://example.invalid/socket",
+            report["network"]["externalRequests"],
+        )
+        self.assertIn(
+            "wss://example.invalid/socket",
+            report["network"]["blockedRequests"],
         )
 
     def test_missing_reduced_motion_behavior_fails(self):
@@ -107,6 +151,25 @@ class BrowserCapabilityRegressionTests(unittest.TestCase):
             report["failures"],
         )
         self.assertGreater(report["interaction"]["motion"]["normalMaxMs"], 50)
+        self.assertGreater(report["interaction"]["motion"]["reducedMaxMs"], 50)
+
+    def test_motion_introduced_only_for_reduced_users_fails(self):
+        html = VALID_HTML.replace(
+            "button{transition:transform .2s}",
+            "button{transition:none}@keyframes reducedOnly{from{opacity:.9}to{opacity:1}}",
+        ).replace(
+            "@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}",
+            "@media(prefers-reduced-motion:reduce){button{animation:reducedOnly 2s infinite}}",
+        )
+        temporary, completed, report = self.run_browser(html)
+        self.addCleanup(temporary.cleanup)
+
+        self.assertEqual(1, completed.returncode)
+        self.assertIn(
+            "reduced-motion path did not suppress active motion",
+            report["failures"],
+        )
+        self.assertEqual(0, report["interaction"]["motion"]["normalMaxMs"])
         self.assertGreater(report["interaction"]["motion"]["reducedMaxMs"], 50)
 
     def test_submission_url_change_fails(self):
@@ -154,6 +217,61 @@ class BrowserCapabilityRegressionTests(unittest.TestCase):
         self.assertEqual(0, completed.returncode, completed.stderr + completed.stdout)
         self.assertFalse(report["interaction"]["successVisibleBefore"])
         self.assertTrue(report["interaction"]["successVisible"])
+
+    def test_readonly_input_cannot_pass_real_keyboard_entry(self):
+        html = VALID_HTML.replace(
+            '<input id="capability-name" name="name">',
+            '<input id="capability-name" name="name" readonly>',
+        )
+        temporary, completed, report = self.run_browser(html)
+        self.addCleanup(temporary.cleanup)
+
+        self.assertEqual(1, completed.returncode)
+        self.assertIn(
+            "text input did not accept real keyboard input",
+            report["failures"],
+        )
+        self.assertNotEqual("Ada", report["interaction"]["submittedValue"])
+
+    def test_missing_visible_focus_indicator_fails(self):
+        html = VALID_HTML.replace(
+            "button:focus-visible,input:focus-visible{outline:3px solid var(--accent)}",
+            "*:focus{outline:none;box-shadow:none}",
+        )
+        temporary, completed, report = self.run_browser(html)
+        self.addCleanup(temporary.cleanup)
+
+        self.assertEqual(1, completed.returncode)
+        self.assertIn(
+            "keyboard focus is not visibly indicated",
+            report["failures"],
+        )
+        self.assertFalse(report["interaction"]["focus"]["visible"])
+
+    def test_horizontal_overflow_before_submission_fails_even_if_handler_hides_it(self):
+        html = VALID_HTML.replace(
+            "<main>",
+            '<main><div id="overflow" style="width:800px;height:1px"></div>',
+        ).replace(
+            "document.querySelector('#capability-success').hidden=false;",
+            "document.querySelector('#overflow').hidden=true;document.querySelector('#capability-success').hidden=false;",
+        )
+        temporary, completed, report = self.run_browser(html)
+        self.addCleanup(temporary.cleanup)
+
+        self.assertEqual(1, completed.returncode)
+        self.assertIn(
+            "document has horizontal overflow before submission",
+            report["failures"],
+        )
+        self.assertGreater(
+            report["interaction"]["beforeSubmission"]["scrollWidth"],
+            report["interaction"]["beforeSubmission"]["clientWidth"],
+        )
+        self.assertLessEqual(
+            report["interaction"]["afterSubmission"]["scrollWidth"],
+            report["interaction"]["afterSubmission"]["clientWidth"],
+        )
 
 
 if __name__ == "__main__":
