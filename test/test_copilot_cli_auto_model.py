@@ -77,6 +77,51 @@ class CopilotCliAutoModelTests(unittest.TestCase):
         self.assertIsNot(second._BASE_INVOKE_ROLE, first.invoke_role)
         self.assertIsNot(second._BASE_RUN_CAPABILITY, first.run_capability)
 
+    def test_pinned_model_mismatch_downgrades_persisted_report(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output_root = Path(temporary)
+
+            def fake_base_run(*args, **kwargs):
+                report = {
+                    "schemaVersion": 1,
+                    "status": "passed",
+                    "executionSurface": {
+                        "name": "github-copilot-cli",
+                        "version": "1.0.74",
+                        "model": "gpt-5-mini",
+                    },
+                    "checks": {
+                        role: {"resolvedModel": "claude-haiku-4.5"}
+                        for role in ("director", "builder", "evaluator")
+                    },
+                    "error": None,
+                }
+                self.module.core.write_json(
+                    output_root / "capability-report.json",
+                    report,
+                )
+                return report
+
+            with mock.patch.object(
+                self.module,
+                "_BASE_RUN_CAPABILITY",
+                fake_base_run,
+            ):
+                report = self.module.run_capability(
+                    output_root=output_root,
+                    model="gpt-5-mini",
+                )
+
+            persisted = json.loads(
+                (output_root / "capability-report.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+
+        self.assertEqual("failed", report["status"])
+        self.assertIn("requested model", report["error"]["message"])
+        self.assertEqual("failed", persisted["status"])
+
     def test_inconsistent_resolved_models_downgrade_persisted_report(self):
         with tempfile.TemporaryDirectory() as temporary:
             output_root = Path(temporary)
