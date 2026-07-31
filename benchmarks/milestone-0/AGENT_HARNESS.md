@@ -1,63 +1,84 @@
 # Comparison agent capability gate
 
-- **Status:** Candidate; the exact pull-request head must pass the live workflow before this gate is accepted.
-- **Scope:** Controlled file tools, browser interaction, screenshot capture and source-blind role isolation.
+- **Status:** Verified
+- **Verified:** 2026-07-31
+- **Execution surface:** GitHub Copilot CLI in GitHub Actions
+- **Scope:** Controlled file tools, browser interaction, screenshot capture and source-blind role isolation
 - **Decision boundary:** This gate makes the twelve Milestone 0 comparison runs executable. It does not count as a benchmark lane or comparative result.
 
 ## Why this gate exists
 
-The model capability probe proves strict structured text and image understanding, but it deliberately does not prove the parts that can invalidate a design comparison: constrained file editing, live interaction, source isolation or durable execution evidence.
+A fair Design Studio comparison needs more than model access. The execution surface must preserve source isolation, constrain file mutation, exercise the rendered page, retain failures and provide evidence that can be validated after the run.
 
-The comparison runner therefore needs one additional capability gate before any lane can be counted. The gate uses the same repository-scoped GitHub Models inference surface, but runs three separate roles around an isolated workspace:
+GitHub Models was the original candidate, but GitHub [fully retired the service on July 30, 2026](https://github.blog/changelog/2026-07-01-github-models-is-being-fully-retired-on-july-30-2026/). The accepted gate therefore uses a pinned GitHub Copilot CLI instead.
 
-1. a source-blind Visual Director receives only a public brief and returns a strict design contract;
-2. a Builder receives the brief, direction and constrained file tools, reads a source canary and writes only to an output root;
-3. Chromium submits the generated form at `390x844`, verifies the success transition, URL stability, network isolation, overflow and measured reduced-motion behavior, then captures a screenshot;
-4. a fresh source-blind Evaluator receives only the public brief and screenshot and returns a strict visual receipt.
+The workflow runs three separate Copilot sessions around one isolated browser handoff:
 
-Model selection is pinned to the passed [`github-models-capability.json`](evidence/github-models-capability.json) receipt. That receipt preserves the exact catalog model and prior structured-text and vision evidence. Live tool calls in this gate still have to prove the advertised `tool-calling` capability. The catalog remains available as an explicit `--live-catalog` diagnostic, but it is not repeated during every capability run: exact-head runs `30576372542` and `30576715922` both returned a repository-scoped catalog `404` despite a job token with `models: read`, while the earlier permanent capability receipt remains valid evidence.
-
-The live inference calls follow GitHub's documented [models inference](https://docs.github.com/en/rest/models/inference) interface rather than an undocumented compatibility endpoint.
+1. a source-blind Visual Director receives only the public brief and creates `direction.json`;
+2. a Builder receives the brief, direction and a canary-bearing baseline, then creates one self-contained `index.html`;
+3. Chromium submits the generated form at `390x844`, verifies behavior and captures a screenshot;
+4. a fresh source-blind Evaluator receives only the public brief and screenshot and creates `evaluation.json`.
 
 ## Acceptance contract
 
-The gate is accepted only when one exact pull-request head proves all of the following:
+One exact workflow run must prove all of the following:
 
-1. The committed passed receipt identifies a model with text and image input, text output and `tool-calling`; the live Builder then actually emits valid tool calls.
-2. The Director request contains no source canary and returns the exact structured direction schema.
-3. Builder tools can list and read only UTF-8 files under the work root and write only approved text files under the output root.
-4. Absolute paths, traversal, backslashes, unsupported types, symlinks, excessive file sizes, excessive file counts and excessive total output are rejected before mutation.
-5. The Builder reads `baseline.css`, writes a self-contained `index.html`, does not copy the source canary into the output and causes no external browser request, including dynamically constructed URLs.
-6. Tool calls and matching tool responses follow the chat-completions continuation protocol, with every request, response and tool result preserved incrementally as evidence even when the turn limit is reached.
-7. A dependency-free Chromium probe runs the output at `390x844`, confirms the success state starts hidden and becomes visible after submission, preserves the entered value, leaves the document URL unchanged, detects horizontal overflow, compares computed motion under `no-preference` and `reduce`, and captures a PNG.
-8. The Evaluator request contains no source canary or source code, includes the captured PNG and returns the exact structured visual schema.
-9. The report distinguishes `blocked` infrastructure from `failed` contract behavior, preserves partial evidence and never writes the token or authorization header.
-10. Unit tests cover receipt validation, workspace boundaries, path and symlink attacks, required tool use, missing writes, output leakage, source isolation, incremental evidence, token redaction, dynamic network requests, initial success visibility, URL mutation, reduced-motion behavior and passing and failing browser interaction.
+1. The pinned Copilot CLI installs and authenticates with a job-scoped token carrying `copilot-requests: write`.
+2. Director, Builder and Evaluator use fresh `COPILOT_HOME` directories that trust only their own role workspace.
+3. Director and Evaluator expose only the `create` tool. Builder exposes `view`, `create`, `edit` and `apply_patch`. Shell, URL, memory, custom instructions, built-in MCPs, remote execution and user questions remain disabled.
+4. Director and Evaluator never receive the source canary or source files. Builder must read the canary-bearing baseline, but the accepted output must not contain the canary.
+5. Every role preserves its exact command, JSONL output, stderr, resolved model and produced files.
+6. All three roles must resolve to the same concrete model when `--model=auto` is used. A missing or inconsistent model receipt fails closed.
+7. The Builder produces exactly one runnable HTML entrypoint with the required form, input and success-state IDs.
+8. Chromium confirms that the success state starts hidden and becomes visible after submission, the entered value survives, the document URL does not change, there is no horizontal overflow, reduced motion suppresses active motion and no external request occurs.
+9. The Evaluator confirms that the title, form, success state and usable mobile layout are visible and that the source canary is absent.
+10. Authentication, policy, unavailable-model, rate-limit and missing-browser conditions are distinguished from reachable-but-invalid contract failures. Both preserve partial evidence and fail CI.
 
-A model call, tool write or screenshot by itself does not satisfy the gate. Every check must pass in one run.
+A model response, file write or screenshot alone does not satisfy the gate. Every check must pass in one run.
 
-## Failure semantics
+## Verified result
 
-- **blocked:** authentication, Models access, rate limiting, request timeout or missing Chromium prevents a valid test;
-- **failed:** the execution surface is reachable but a response, tool action, output, browser interaction or isolation receipt violates the contract.
+GitHub Actions run [`30620834185`](https://github.com/George-RD/design-studio/actions/runs/30620834185) passed on head `e8149f131c433b8131bf556fd46d16d710473b92`.
 
-Both states fail CI and upload the partial evidence tree. Neither state permits a comparison-lane checkbox to be completed.
+- Copilot CLI version: `1.0.74`
+- Requested model: `auto`
+- Resolved model for all three roles: `gpt-5-mini`
+- Director tools: `create`
+- Builder tools: `view`, `create`, `edit`, `apply_patch`
+- Evaluator tools: `create`
+- Verified viewport: `390x844`
+- Submitted value: `Ada`
+- Success transition: hidden before submission, visible afterward with exact text `Capability complete`
+- URL: unchanged at `about:blank`
+- Width: `390` CSS pixels for the viewport, document and client
+- Motion: `220 ms` maximum normally and `0 ms` with reduced motion
+- External requests: none
+- Source-isolation checks: all passed
+- Artifact: `copilot-cli-agent-capability-30620834185`
+- Artifact digest: `sha256:166c95d5531ab8148caeeb4781efd497c5041bdcbe2e54ecdbec68d069d19a32`
 
-## Cost and security boundary
+The permanent sanitized receipt is [`evidence/copilot-cli-agent-capability.json`](evidence/copilot-cli-agent-capability.json). It preserves the exact run, head, artifact digest, execution surface and normalized checks after the raw artifact expires.
 
-The live run validates the frozen model receipt, makes one Director inference, runs a bounded Builder loop of at most six turns and makes one Evaluator inference. The workflow grants only `contents: read` and `models: read`. File tools expose no shell command, network request or repository write permission.
+## Failure and cost boundary
 
-The browser loads the generated self-contained HTML directly into an isolated headless document. This avoids depending on a package install or a network-accessible server while still exercising real DOM behavior, observing CDP network events and capturing the rendered result.
+Each role has a maximum of 30 AI credits. The workflow grants repository content read access and Copilot request access only; it has no repository write permission. The browser loads the self-contained output directly and observes Chrome DevTools Protocol network events rather than trusting a source scan.
+
+- **blocked:** authentication, account policy, unavailable model, service availability, rate limit, credit exhaustion or missing Chromium prevents a valid test;
+- **failed:** the CLI or browser is reachable, but output, tool use, isolation, interaction or evidence violates the contract.
+
+Neither state permits a comparison-lane checkbox to be completed.
 
 ## Evidence location
 
-- Contract tests: [`test/test_boundary_agent_capability.py`](../../test/test_boundary_agent_capability.py)
-- Review and blocker regressions: [`test/test_boundary_agent_regressions.py`](../../test/test_boundary_agent_regressions.py)
-- Controlled agent runner: [`scripts/run_boundary_agent_capability.py`](../../scripts/run_boundary_agent_capability.py)
-- Constrained file tools: [`scripts/boundary_agent_tools.py`](../../scripts/boundary_agent_tools.py)
-- Builder and output contracts: [`scripts/boundary_agent_builder.py`](../../scripts/boundary_agent_builder.py)
+- Copilot runner: [`scripts/run_copilot_cli_agent_capability.py`](../../scripts/run_copilot_cli_agent_capability.py)
+- CLI compatibility and receipt adapter: [`scripts/run_copilot_cli_agent_capability_gate.py`](../../scripts/run_copilot_cli_agent_capability_gate.py)
 - Chromium probe: [`scripts/run_browser_capability.mjs`](../../scripts/run_browser_capability.mjs)
+- Role and permission contracts: [`test/test_copilot_cli_agent_capability.py`](../../test/test_copilot_cli_agent_capability.py)
+- Auto-model receipt contract: [`test/test_copilot_cli_auto_model.py`](../../test/test_copilot_cli_auto_model.py)
+- Model-policy contract: [`test/test_copilot_cli_model_compatibility.py`](../../test/test_copilot_cli_model_compatibility.py)
+- Trusted-workspace contract: [`test/test_copilot_cli_trusted_workspace.py`](../../test/test_copilot_cli_trusted_workspace.py)
+- Browser regressions: [`test/test_browser_capability_regressions.py`](../../test/test_browser_capability_regressions.py)
 - CI: [`.github/workflows/boundary-agent-capability.yml`](../../.github/workflows/boundary-agent-capability.yml)
-- Raw result: `boundary-agent-capability-<run-id>` workflow artifact
+- Permanent receipt: [`evidence/copilot-cli-agent-capability.json`](evidence/copilot-cli-agent-capability.json)
 
-After the live gate passes, preserve a sanitized receipt under `evidence/`, update this status with the exact head, run and artifact digest, and then use the runner to execute the fixed comparison lanes. The twelve lanes remain unfinished until their existing run-harness receipts validate.
+The next roadmap work is to execute the same four frozen fixtures through all three lanes and complete the existing run-harness evidence. The twelve comparison runs remain unfinished.
