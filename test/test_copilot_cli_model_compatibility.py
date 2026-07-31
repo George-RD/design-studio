@@ -40,12 +40,12 @@ class CopilotCliModelCompatibilityTests(unittest.TestCase):
     def test_default_requests_auto_selection_for_separate_model_receipting(self):
         self.assertEqual("auto", self.module.DEFAULT_MODEL)
 
-    def test_live_gate_pins_a_public_cli_model_used_by_this_account(self):
+    def test_live_gate_uses_auto_and_receipts_each_role_model(self):
         workflow = WORKFLOW_PATH.read_text(encoding="utf-8")
 
-        self.assertIn('COPILOT_MODEL: "claude-haiku-4.5"', workflow)
+        self.assertIn('COPILOT_MODEL: "auto"', workflow)
         self.assertNotIn('COPILOT_MODEL: "gpt-5-mini"', workflow)
-        self.assertNotIn('COPILOT_MODEL: "auto"', workflow)
+        self.assertNotIn('COPILOT_MODEL: "claude-haiku-4.5"', workflow)
 
     def test_builder_prompt_preserves_form_and_exact_success_region(self):
         prompt = self.module.core.builder_prompt()
