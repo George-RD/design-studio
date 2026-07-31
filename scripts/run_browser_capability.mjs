@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 import { spawn, spawnSync } from 'node:child_process';
-import { lstat, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
+import { lstat, mkdir, mkdtemp, readFile, realpath, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 import process from 'node:process';
+
+import { removeBrowserProfile } from './browser_profile_cleanup.mjs';
 
 class BrowserContractError extends Error {}
 class BrowserBlockedError extends Error {}
@@ -703,7 +705,7 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
   } finally {
     client?.close();
     await stopChrome(chrome);
-    await rm(userDataDir, { recursive: true, force: true });
+    await removeBrowserProfile(userDataDir);
     if (stderr && process.env.DEBUG_BROWSER_PROBE) process.stderr.write(stderr);
   }
 }
