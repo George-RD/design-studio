@@ -10,6 +10,7 @@ on:
       - "test/test_copilot_cli_agent_capability.py"
       - "test/test_copilot_cli_model_compatibility.py"
       - "test/test_copilot_cli_auto_model.py"
+      - "test/test_copilot_cli_trusted_workspace.py"
       - "test/test_boundary_agent_regressions.py"
       - "benchmarks/milestone-0/AGENT_HARNESS.md"
       - "benchmarks/milestone-0/MODEL_HARNESS.md"
@@ -48,6 +49,7 @@ jobs:
           python3 -m unittest discover -s test -p 'test_copilot_cli_agent_capability.py' -v
           python3 -m unittest discover -s test -p 'test_copilot_cli_model_compatibility.py' -v
           python3 -m unittest discover -s test -p 'test_copilot_cli_auto_model.py' -v
+          python3 -m unittest discover -s test -p 'test_copilot_cli_trusted_workspace.py' -v
           python3 -m py_compile \
             scripts/run_copilot_cli_agent_capability.py \
             scripts/run_copilot_cli_agent_capability_gate.py
