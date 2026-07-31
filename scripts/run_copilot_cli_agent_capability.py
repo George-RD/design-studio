@@ -8,9 +8,11 @@ from html.parser import HTMLParser
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
+import tempfile
 from typing import Any, Callable, Sequence
 
 
@@ -21,6 +23,58 @@ SOURCE_CANARY = "DESIGN_STUDIO_PRIVATE_SOURCE_CANARY_6f3b9d2a"
 DEFAULT_COPILOT_VERSION = "1.0.74"
 DEFAULT_MODEL = "gpt-5.4"
 MAX_AI_CREDITS = 30
+COMMAND_TIMEOUT_SECONDS = 360
+BROWSER_TIMEOUT_SECONDS = 90
+
+COPILOT_ENV_ALLOWLIST = frozenset(
+    {
+        "ALL_PROXY",
+        "CI",
+        "GITHUB_ACTION",
+        "GITHUB_ACTIONS",
+        "GITHUB_ACTOR",
+        "GITHUB_API_URL",
+        "GITHUB_EVENT_NAME",
+        "GITHUB_GRAPHQL_URL",
+        "GITHUB_JOB",
+        "GITHUB_REF",
+        "GITHUB_REF_NAME",
+        "GITHUB_REPOSITORY",
+        "GITHUB_RUN_ATTEMPT",
+        "GITHUB_RUN_ID",
+        "GITHUB_RUN_NUMBER",
+        "GITHUB_SERVER_URL",
+        "GITHUB_SHA",
+        "GITHUB_WORKFLOW",
+        "GITHUB_WORKSPACE",
+        "HOME",
+        "HOSTNAME",
+        "HTTPS_PROXY",
+        "HTTP_PROXY",
+        "LANG",
+        "LC_ALL",
+        "LOGNAME",
+        "NODE_EXTRA_CA_CERTS",
+        "NO_COLOR",
+        "NO_PROXY",
+        "PATH",
+        "RUNNER_ARCH",
+        "RUNNER_ENVIRONMENT",
+        "RUNNER_NAME",
+        "RUNNER_OS",
+        "RUNNER_TEMP",
+        "RUNNER_TOOL_CACHE",
+        "SSL_CERT_DIR",
+        "SSL_CERT_FILE",
+        "TEMP",
+        "TERM",
+        "TMP",
+        "TMPDIR",
+        "USER",
+        "XDG_CACHE_HOME",
+        "XDG_CONFIG_HOME",
+    }
+)
 
 
 class ContractError(RuntimeError):
@@ -49,7 +103,10 @@ def utc_now() -> str:
 
 def write_json(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    path.write_text(
+        json.dumps(value, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
 
 
 def load_json_object(path: Path, label: str) -> dict[str, Any]:
@@ -70,16 +127,40 @@ def require_text(value: Any, label: str) -> str:
     return value.strip()
 
 
-def default_command_runner(argv: Sequence[str], *, cwd: Path, env: dict[str, str]) -> CommandOutcome:
-    completed = subprocess.run(
-        [str(part) for part in argv],
-        cwd=cwd,
-        env=env,
-        capture_output=True,
-        text=True,
-        check=False,
-        timeout=360,
-    )
+def _coerce_subprocess_text(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace")
+    return str(value)
+
+
+def default_command_runner(
+    argv: Sequence[str],
+    *,
+    cwd: Path,
+    env: dict[str, str],
+) -> CommandOutcome:
+    try:
+        completed = subprocess.run(
+            [str(part) for part in argv],
+            cwd=cwd,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=COMMAND_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired as error:
+        stdout = _coerce_subprocess_text(
+            getattr(error, "stdout", None) or getattr(error, "output", None)
+        )
+        stderr = _coerce_subprocess_text(getattr(error, "stderr", None))
+        timeout_message = (
+            f"Copilot CLI timed out after {COMMAND_TIMEOUT_SECONDS} seconds"
+        )
+        stderr = f"{stderr.rstrip()}\n{timeout_message}\n" if stderr else timeout_message
+        return CommandOutcome(exit_code=124, stdout=stdout, stderr=stderr)
     return CommandOutcome(
         exit_code=completed.returncode,
         stdout=completed.stdout,
@@ -90,35 +171,58 @@ def default_command_runner(argv: Sequence[str], *, cwd: Path, env: dict[str, str
 def default_browser_runner(site_dir: Path, evidence_dir: Path) -> dict[str, Any]:
     browser_dir = evidence_dir / "browser"
     browser_dir.mkdir(parents=True, exist_ok=True)
-    completed = subprocess.run(
-        [
-            "node",
-            str(BROWSER_SCRIPT),
-            "--root",
-            str(site_dir),
-            "--output-dir",
-            str(browser_dir),
-            "--entrypoint",
-            "index.html",
-            "--width",
-            "390",
-            "--height",
-            "844",
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-        timeout=90,
+    try:
+        completed = subprocess.run(
+            [
+                "node",
+                str(BROWSER_SCRIPT),
+                "--root",
+                str(site_dir),
+                "--output-dir",
+                str(browser_dir),
+                "--entrypoint",
+                "index.html",
+                "--width",
+                "390",
+                "--height",
+                "844",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=BROWSER_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired as error:
+        stdout = _coerce_subprocess_text(
+            getattr(error, "stdout", None) or getattr(error, "output", None)
+        )
+        stderr = _coerce_subprocess_text(getattr(error, "stderr", None))
+        (browser_dir / "stdout.log").write_text(stdout, encoding="utf-8")
+        (browser_dir / "stderr.log").write_text(stderr, encoding="utf-8")
+        raise CapabilityBlocked(
+            f"browser probe timed out after {BROWSER_TIMEOUT_SECONDS} seconds"
+        ) from error
+
+    (browser_dir / "stdout.log").write_text(
+        completed.stdout,
+        encoding="utf-8",
     )
-    (browser_dir / "stdout.log").write_text(completed.stdout, encoding="utf-8")
-    (browser_dir / "stderr.log").write_text(completed.stderr, encoding="utf-8")
-    report = load_json_object(browser_dir / "browser-report.json", "browser report")
+    (browser_dir / "stderr.log").write_text(
+        completed.stderr,
+        encoding="utf-8",
+    )
+    report = load_json_object(
+        browser_dir / "browser-report.json",
+        "browser report",
+    )
     status = report.get("status")
     if status == "blocked":
         raise CapabilityBlocked(require_text(report.get("error"), "browser error"))
     if completed.returncode != 0 or status != "passed":
         failures = report.get("failures")
-        raise ContractError(f"browser capability failed: {failures or report.get('error')}")
+        raise ContractError(
+            f"browser capability failed: {failures or report.get('error')}"
+        )
     return report
 
 
@@ -130,9 +234,13 @@ def parse_jsonl(text: str, label: str) -> list[dict[str, Any]]:
         try:
             value = json.loads(raw_line)
         except json.JSONDecodeError as exc:
-            raise ContractError(f"{label} line {line_number} is not JSON: {exc}") from exc
+            raise ContractError(
+                f"{label} line {line_number} is not JSON: {exc}"
+            ) from exc
         if not isinstance(value, dict):
-            raise ContractError(f"{label} line {line_number} must be a JSON object")
+            raise ContractError(
+                f"{label} line {line_number} must be a JSON object"
+            )
         events.append(value)
     if not events:
         raise ContractError(f"{label} contains no JSON events")
@@ -154,29 +262,112 @@ def classify_cli_failure(outcome: CommandOutcome) -> str:
         "quota",
         "ai credit",
         "credits exhausted",
+        "timed out",
+        "timeout",
     )
     return "blocked" if any(marker in text for marker in blocked_markers) else "failed"
 
 
 def safe_persist_output(path: Path, text: str, token: str) -> None:
     if token and token in text:
-        path.write_text(text.replace(token, "<redacted-token>"), encoding="utf-8")
-        raise ContractError(f"{path.name} attempted to persist the authentication token")
+        path.write_text(
+            text.replace(token, "<redacted-token>"),
+            encoding="utf-8",
+        )
+        raise ContractError(
+            f"{path.name} attempted to persist the authentication token"
+        )
     path.write_text(text, encoding="utf-8")
 
 
-def ensure_exact_workspace_files(root: Path, expected: set[str], label: str) -> list[str]:
+def reset_directory(path: Path, label: str) -> None:
+    if path.is_symlink():
+        raise ContractError(f"{label} must not be a symlink: {path}")
+    if path.exists():
+        if not path.is_dir():
+            raise ContractError(f"{label} must be a directory: {path}")
+        shutil.rmtree(path)
+    path.mkdir(parents=True, exist_ok=False)
+
+
+def prepare_output_directories(
+    output_root: Path,
+) -> tuple[Path, Path, Path]:
+    if output_root.is_symlink():
+        raise ContractError("capability output root must not be a symlink")
+    output_root.mkdir(parents=True, exist_ok=True)
+    output_root = output_root.resolve()
+    workspaces = output_root / "workspaces"
+    evidence_dir = output_root / "evidence"
+    site_dir = output_root / "site"
+
+    version_bytes: bytes | None = None
+    version_path = evidence_dir / "copilot-version.txt"
+    if version_path.is_symlink():
+        raise ContractError("copilot version evidence must not be a symlink")
+    if version_path.is_file():
+        version_bytes = version_path.read_bytes()
+
+    reset_directory(workspaces, "workspace root")
+    reset_directory(evidence_dir, "evidence root")
+    reset_directory(site_dir, "published site root")
+    if version_bytes is not None:
+        (evidence_dir / "copilot-version.txt").write_bytes(version_bytes)
+    return workspaces, evidence_dir, site_dir
+
+
+def publish_file_no_follow(source: Path, destination: Path, label: str) -> None:
+    if source.is_symlink() or not source.is_file():
+        raise ContractError(f"{label} source must be a regular file: {source}")
+    parent = destination.parent
+    if parent.is_symlink() or not parent.is_dir():
+        raise ContractError(f"{label} destination directory is unsafe: {parent}")
+    if destination.is_symlink():
+        raise ContractError(f"{label} destination is a symlink: {destination}")
+    if destination.exists() and not destination.is_file():
+        raise ContractError(
+            f"{label} destination must be a regular file: {destination}"
+        )
+
+    fd, temporary_name = tempfile.mkstemp(
+        prefix=f".{destination.name}.",
+        suffix=".tmp",
+        dir=parent,
+    )
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(fd, "wb") as handle:
+            handle.write(source.read_bytes())
+            handle.flush()
+            os.fsync(handle.fileno())
+        if destination.is_symlink():
+            raise ContractError(
+                f"{label} destination became a symlink: {destination}"
+            )
+        os.replace(temporary, destination)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def ensure_exact_workspace_files(
+    root: Path,
+    expected: set[str],
+    label: str,
+) -> list[str]:
     actual: set[str] = set()
     for path in root.rglob("*"):
         if path.is_symlink():
-            raise ContractError(f"{label} contains a symlink: {path.relative_to(root)}")
+            raise ContractError(
+                f"{label} contains a symlink: {path.relative_to(root)}"
+            )
         if path.is_file():
             actual.add(path.relative_to(root).as_posix())
     if actual != expected:
         missing = sorted(expected - actual)
         unexpected = sorted(actual - expected)
         raise ContractError(
-            f"{label} file boundary changed: missing={missing}, unexpected={unexpected}"
+            f"{label} file boundary changed: "
+            f"missing={missing}, unexpected={unexpected}"
         )
     return sorted(actual)
 
@@ -185,8 +376,41 @@ def validate_direction(path: Path) -> dict[str, str]:
     value = load_json_object(path, "director direction")
     expected = {"concept", "palette", "layout", "interaction"}
     if set(value) != expected:
-        raise ContractError(f"direction keys must be exactly {sorted(expected)}")
-    return {key: require_text(value.get(key), f"direction.{key}") for key in sorted(expected)}
+        raise ContractError(
+            f"direction keys must be exactly {sorted(expected)}"
+        )
+    return {
+        key: require_text(value.get(key), f"direction.{key}")
+        for key in sorted(expected)
+    }
+
+
+_CSS_URL = re.compile(
+    r"url\(\s*(?P<quote>['\"]?)(?P<value>.*?)(?P=quote)\s*\)",
+    re.IGNORECASE | re.DOTALL,
+)
+_CSS_IMPORT = re.compile(
+    r"@import\s+(?:url\(\s*)?(?P<quote>['\"]?)(?P<value>[^'\"\s;)]+)(?P=quote)",
+    re.IGNORECASE,
+)
+
+
+def _inline_reference(value: str) -> bool:
+    normalized = value.strip().lower()
+    return (
+        not normalized
+        or normalized.startswith("#")
+        or normalized.startswith("data:")
+        or normalized == "about:blank"
+    )
+
+
+def _css_references(text: str) -> list[str]:
+    values = [match.group("value").strip() for match in _CSS_URL.finditer(text)]
+    values.extend(
+        match.group("value").strip() for match in _CSS_IMPORT.finditer(text)
+    )
+    return values
 
 
 class CapabilityHtmlParser(HTMLParser):
@@ -195,18 +419,92 @@ class CapabilityHtmlParser(HTMLParser):
         self.ids: set[str] = set()
         self.has_submit = False
         self.has_viewport = False
+        self.resource_references: list[tuple[str, str]] = []
+        self._style_depth = 0
+        self._style_chunks: list[str] = []
 
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        values = dict(attrs)
+    def _record_reference(self, context: str, value: str | None) -> None:
+        if value is None:
+            return
+        candidate = value.strip()
+        if candidate and not _inline_reference(candidate):
+            self.resource_references.append((context, candidate))
+
+    def handle_starttag(
+        self,
+        tag: str,
+        attrs: list[tuple[str, str | None]],
+    ) -> None:
+        tag = tag.lower()
+        values = {name.lower(): value for name, value in attrs}
         element_id = values.get("id")
         if element_id:
             self.ids.add(element_id)
-        if tag == "button" and values.get("type", "submit").lower() == "submit":
+        if (
+            tag == "button"
+            and values.get("type", "submit").lower() == "submit"
+        ):
             self.has_submit = True
-        if tag == "input" and values.get("type", "text").lower() == "submit":
+        if (
+            tag == "input"
+            and values.get("type", "text").lower() == "submit"
+        ):
             self.has_submit = True
         if tag == "meta" and values.get("name", "").lower() == "viewport":
             self.has_viewport = True
+
+        for attribute in (
+            "action",
+            "background",
+            "data",
+            "formaction",
+            "manifest",
+            "poster",
+            "src",
+        ):
+            self._record_reference(
+                f"{tag}[{attribute}]",
+                values.get(attribute),
+            )
+        if "href" in values:
+            self._record_reference(f"{tag}[href]", values.get("href"))
+        if "srcset" in values and values["srcset"]:
+            srcset = values["srcset"].strip()
+            candidates = (
+                [srcset]
+                if srcset.lower().startswith("data:")
+                else [part.strip().split()[0] for part in srcset.split(",")]
+            )
+            for candidate in candidates:
+                self._record_reference(f"{tag}[srcset]", candidate)
+        if "style" in values and values["style"]:
+            for reference in _css_references(values["style"]):
+                self._record_reference(f"{tag}[style]", reference)
+        if tag == "style":
+            self._style_depth += 1
+
+    def handle_startendtag(
+        self,
+        tag: str,
+        attrs: list[tuple[str, str | None]],
+    ) -> None:
+        self.handle_starttag(tag, attrs)
+        if tag.lower() == "style":
+            self.handle_endtag(tag)
+
+    def handle_data(self, data: str) -> None:
+        if self._style_depth:
+            self._style_chunks.append(data)
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag.lower() != "style" or not self._style_depth:
+            return
+        self._style_depth -= 1
+        if self._style_depth == 0:
+            style = "".join(self._style_chunks)
+            self._style_chunks.clear()
+            for reference in _css_references(style):
+                self._record_reference("style[url]", reference)
 
 
 def validate_site(path: Path) -> dict[str, Any]:
@@ -220,18 +518,34 @@ def validate_site(path: Path) -> dict[str, Any]:
         raise ContractError("index.html leaked the private source canary")
     parser = CapabilityHtmlParser()
     parser.feed(text)
-    required_ids = {"capability-form", "capability-name", "capability-success"}
+    required_ids = {
+        "capability-form",
+        "capability-name",
+        "capability-success",
+    }
     missing_ids = sorted(required_ids - parser.ids)
     if missing_ids:
-        raise ContractError(f"index.html is missing required IDs: {missing_ids}")
+        raise ContractError(
+            f"index.html is missing required IDs: {missing_ids}"
+        )
     if not parser.has_submit:
         raise ContractError("index.html has no submit control")
     if not parser.has_viewport:
         raise ContractError("index.html has no viewport declaration")
+    if parser.resource_references:
+        formatted = [
+            f"{context}={value!r}"
+            for context, value in parser.resource_references[:8]
+        ]
+        raise ContractError(
+            "index.html is not self-contained; resource references: "
+            + ", ".join(formatted)
+        )
     return {
         "entrypoint": "index.html",
         "bytes": len(text.encode("utf-8")),
         "requiredIds": sorted(required_ids),
+        "resourceReferencesAbsent": True,
         "sourceCanaryAbsent": True,
         "singleFile": True,
     }
@@ -248,7 +562,9 @@ def validate_evaluation(path: Path) -> dict[str, Any]:
         "summary",
     }
     if set(value) != expected:
-        raise ContractError(f"evaluation keys must be exactly {sorted(expected)}")
+        raise ContractError(
+            f"evaluation keys must be exactly {sorted(expected)}"
+        )
     for key in (
         "titleVisible",
         "formVisible",
@@ -261,13 +577,20 @@ def validate_evaluation(path: Path) -> dict[str, Any]:
     require_text(value.get("summary"), "evaluation.summary")
     failures = [
         key
-        for key in ("titleVisible", "formVisible", "successVisible", "layoutUsable")
+        for key in (
+            "titleVisible",
+            "formVisible",
+            "successVisible",
+            "layoutUsable",
+        )
         if not value[key]
     ]
     if value["sourceCanaryVisible"]:
         failures.append("sourceCanaryVisible")
     if failures:
-        raise ContractError(f"source-blind evaluator rejected visible contract: {failures}")
+        raise ContractError(
+            f"source-blind evaluator rejected visible contract: {failures}"
+        )
     return value
 
 
@@ -354,6 +677,22 @@ def build_role_command(
     return command
 
 
+def build_role_environment(token: str, copilot_home: Path) -> dict[str, str]:
+    environment = {
+        key: value
+        for key in sorted(COPILOT_ENV_ALLOWLIST)
+        if isinstance((value := os.environ.get(key)), str)
+    }
+    environment.update(
+        {
+            "GITHUB_TOKEN": token,
+            "COPILOT_HOME": str(copilot_home),
+            "COPILOT_AUTO_UPDATE": "false",
+        }
+    )
+    return environment
+
+
 def invoke_role(
     *,
     role: str,
@@ -381,21 +720,14 @@ def invoke_role(
         deny_tools=deny_tools,
         attachment=attachment,
     )
+    environment = build_role_environment(token, copilot_home)
     write_json(
         evidence_dir / f"{role}.command.json",
         {
             "argv": command,
             "workingDirectory": f"workspaces/{role}",
-            "environmentContract": ["GITHUB_TOKEN", "COPILOT_HOME"],
+            "environmentContract": sorted(environment),
         },
-    )
-    environment = os.environ.copy()
-    environment.update(
-        {
-            "GITHUB_TOKEN": token,
-            "COPILOT_HOME": str(copilot_home),
-            "COPILOT_AUTO_UPDATE": "false",
-        }
     )
     outcome = command_runner(command, cwd=workspace, env=environment)
     stdout_path = evidence_dir / f"{role}.stdout.jsonl"
@@ -404,10 +736,18 @@ def invoke_role(
     safe_persist_output(stderr_path, outcome.stderr, token)
     if outcome.exit_code != 0:
         status = classify_cli_failure(outcome)
-        message = outcome.stderr.strip() or outcome.stdout.strip() or f"exit {outcome.exit_code}"
+        message = (
+            outcome.stderr.strip()
+            or outcome.stdout.strip()
+            or f"exit {outcome.exit_code}"
+        )
         if status == "blocked":
-            raise CapabilityBlocked(f"{role} Copilot CLI was blocked: {message[:1000]}")
-        raise ContractError(f"{role} Copilot CLI failed: {message[:1000]}")
+            raise CapabilityBlocked(
+                f"{role} Copilot CLI was blocked: {message[:1000]}"
+            )
+        raise ContractError(
+            f"{role} Copilot CLI failed: {message[:1000]}"
+        )
     events = parse_jsonl(outcome.stdout, f"{role} Copilot JSONL")
     return {
         "status": "passed",
@@ -418,13 +758,35 @@ def invoke_role(
     }
 
 
+def _contains_text_bytes(path: Path, text: str) -> bool:
+    return text.encode("utf-8") in path.read_bytes()
+
+
 def scan_for_token(root: Path, token: str) -> None:
     if not token:
         return
+    encoded = token.encode("utf-8")
     for path in root.rglob("*"):
-        if path.is_file() and path.suffix.lower() not in {".png", ".jpg", ".jpeg", ".gif", ".webp"}:
-            if token in path.read_text(encoding="utf-8", errors="ignore"):
-                raise ContractError(f"authentication token persisted in {path.relative_to(root)}")
+        if path.is_symlink():
+            raise ContractError(
+                f"capability output contains a symlink: {path.relative_to(root)}"
+            )
+        if path.is_file() and encoded in path.read_bytes():
+            raise ContractError(
+                f"authentication token persisted in {path.relative_to(root)}"
+            )
+
+
+def _merge_failed_check(
+    report: dict[str, Any],
+    step: str,
+    message: str,
+    status: str,
+) -> None:
+    existing = report.get("checks", {}).get(step)
+    details = dict(existing) if isinstance(existing, dict) else {}
+    details.update({"status": status, "message": message})
+    report["checks"][step] = details
 
 
 def run_capability(
@@ -438,12 +800,11 @@ def run_capability(
     browser_runner: BrowserRunner = default_browser_runner,
     now: Clock = utc_now,
 ) -> dict[str, Any]:
+    output_root = output_root.expanduser()
+    workspaces, evidence_dir, site_dir = prepare_output_directories(
+        output_root
+    )
     output_root = output_root.resolve()
-    workspaces = output_root / "workspaces"
-    evidence_dir = output_root / "evidence"
-    site_dir = output_root / "site"
-    for directory in (workspaces, evidence_dir, site_dir):
-        directory.mkdir(parents=True, exist_ok=True)
 
     report: dict[str, Any] = {
         "schemaVersion": REPORT_SCHEMA_VERSION,
@@ -456,6 +817,8 @@ def run_capability(
             "model": model,
             "maxAiCreditsPerRole": MAX_AI_CREDITS,
             "authentication": "github-actions-token",
+            "permission": "copilot-requests: write",
+            "environmentPolicy": "explicit-allowlist",
         },
         "checks": {
             "director": {"status": "pending"},
@@ -471,21 +834,24 @@ def run_capability(
         report["error"] = {
             "step": "authentication",
             "kind": "copilot-auth",
-            "message": "GITHUB_TOKEN is required for the Copilot CLI capability gate",
+            "message": (
+                "GITHUB_TOKEN is required for the Copilot CLI capability gate"
+            ),
         }
         report["finishedAt"] = now()
         write_json(output_root / "capability-report.json", report)
         return report
 
     brief = (
-        "Create a calm, compact capability-check page with a clear title, a one-field form, "
-        "a local success state, visible focus, reduced-motion support, and a mobile layout "
-        "that does not overflow. Use no external assets or network calls."
+        "Create a calm, compact capability-check page with a clear title, "
+        "a one-field form, a local success state, visible focus, "
+        "reduced-motion support, and a mobile layout that does not overflow. "
+        "Use no external assets or network calls."
     )
     current_step = "director"
     try:
         director_dir = workspaces / "director"
-        director_dir.mkdir()
+        director_dir.mkdir(parents=True, exist_ok=True)
         director_result = invoke_role(
             role="director",
             workspace=director_dir,
@@ -501,7 +867,9 @@ def run_capability(
         )
         direction = validate_direction(director_dir / "direction.json")
         director_files = ensure_exact_workspace_files(
-            director_dir, {"direction.json"}, "director workspace"
+            director_dir,
+            {"direction.json"},
+            "director workspace",
         )
         report["checks"]["director"] = {
             **director_result,
@@ -511,11 +879,15 @@ def run_capability(
 
         current_step = "builder"
         builder_dir = workspaces / "builder"
-        builder_dir.mkdir()
-        (builder_dir / "brief.md").write_text(brief + "\n", encoding="utf-8")
+        builder_dir.mkdir(parents=True, exist_ok=True)
+        (builder_dir / "brief.md").write_text(
+            brief + "\n",
+            encoding="utf-8",
+        )
         write_json(builder_dir / "direction.json", direction)
         (builder_dir / "baseline.css").write_text(
-            ":root { --capability-accent: #176b5b; --capability-surface: #f4f1e8; }\n"
+            ":root { --capability-accent: #176b5b; "
+            "--capability-surface: #f4f1e8; }\n"
             f"/* {SOURCE_CANARY} */\n",
             encoding="utf-8",
         )
@@ -538,7 +910,11 @@ def run_capability(
             {"brief.md", "direction.json", "baseline.css", "index.html"},
             "builder workspace",
         )
-        shutil.copy2(builder_dir / "index.html", site_dir / "index.html")
+        publish_file_no_follow(
+            builder_dir / "index.html",
+            site_dir / "index.html",
+            "published site",
+        )
         report["checks"]["builder"] = {
             **builder_result,
             "files": builder_files,
@@ -548,8 +924,10 @@ def run_capability(
         current_step = "browser"
         browser = browser_runner(site_dir, evidence_dir)
         screenshot_path = evidence_dir / "browser" / "browser-after-submit.png"
-        if not screenshot_path.is_file():
-            raise ContractError("browser evidence is missing browser-after-submit.png")
+        if screenshot_path.is_symlink() or not screenshot_path.is_file():
+            raise ContractError(
+                "browser evidence is missing a regular browser-after-submit.png"
+            )
         report["checks"]["browser"] = {
             "status": "passed",
             "viewport": browser.get("viewport"),
@@ -560,19 +938,54 @@ def run_capability(
 
         current_step = "sourceIsolation"
         isolation = {
-            "directorHasNoSource": not (director_dir / "baseline.css").exists(),
-            "builderReadCanarySource": SOURCE_CANARY in (builder_dir / "baseline.css").read_text(encoding="utf-8"),
-            "outputCanaryAbsent": SOURCE_CANARY not in (site_dir / "index.html").read_text(encoding="utf-8"),
+            "directorHasNoSource": not (
+                director_dir / "baseline.css"
+            ).exists(),
+            "builderReadCanarySource": (
+                builder_result.get("readBaselineCss") is True
+            ),
+            "outputCanaryAbsent": not _contains_text_bytes(
+                site_dir / "index.html",
+                SOURCE_CANARY,
+            ),
         }
-        if not all(isolation.values()):
-            raise ContractError(f"source isolation proof failed: {isolation}")
-        report["checks"]["sourceIsolation"] = {"status": "passed", **isolation}
+        isolation_passed = all(isolation.values())
+        report["checks"]["sourceIsolation"] = {
+            "status": "passed" if isolation_passed else "failed",
+            **isolation,
+        }
+        if not isolation_passed:
+            raise ContractError(
+                f"source isolation proof failed: {isolation}"
+            )
 
         current_step = "evaluator"
         evaluator_dir = workspaces / "evaluator"
-        evaluator_dir.mkdir()
+        evaluator_dir.mkdir(parents=True, exist_ok=True)
         evaluator_screenshot = evaluator_dir / "browser-after-submit.png"
-        shutil.copy2(screenshot_path, evaluator_screenshot)
+        publish_file_no_follow(
+            screenshot_path,
+            evaluator_screenshot,
+            "evaluator screenshot",
+        )
+        attachment_canary_absent = not _contains_text_bytes(
+            evaluator_screenshot,
+            SOURCE_CANARY,
+        )
+        report["checks"]["sourceIsolation"].update(
+            {
+                "evaluatorHasNoSource": not (
+                    evaluator_dir / "baseline.css"
+                ).exists(),
+                "evaluatorRequestCanaryAbsent": attachment_canary_absent,
+            }
+        )
+        if not attachment_canary_absent:
+            report["checks"]["sourceIsolation"]["status"] = "failed"
+            raise ContractError(
+                "evaluator attachment contains the private source canary"
+            )
+
         evaluator_result = invoke_role(
             role="evaluator",
             workspace=evaluator_dir,
@@ -587,34 +1000,53 @@ def run_capability(
             command_runner=command_runner,
             attachment=evaluator_screenshot,
         )
-        evaluation = validate_evaluation(evaluator_dir / "evaluation.json")
+        evaluation = validate_evaluation(
+            evaluator_dir / "evaluation.json"
+        )
         evaluator_files = ensure_exact_workspace_files(
             evaluator_dir,
             {"browser-after-submit.png", "evaluation.json"},
             "evaluator workspace",
         )
-        evaluator_request = json.loads(
-            (evidence_dir / "evaluator.command.json").read_text(encoding="utf-8")
+        evaluator_command = evidence_dir / "evaluator.command.json"
+        evaluator_request_canary_absent = not _contains_text_bytes(
+            evaluator_command,
+            SOURCE_CANARY,
+        ) and all(
+            not _contains_text_bytes(path, SOURCE_CANARY)
+            for path in evaluator_dir.rglob("*")
+            if path.is_file()
         )
-        serialized_request = json.dumps(evaluator_request)
-        if SOURCE_CANARY in serialized_request:
-            raise ContractError("evaluator command leaked the private source canary")
+        report["checks"]["sourceIsolation"].update(
+            {
+                "evaluatorHasNoSource": not (
+                    evaluator_dir / "baseline.css"
+                ).exists(),
+                "evaluatorRequestCanaryAbsent": (
+                    evaluator_request_canary_absent
+                ),
+            }
+        )
+        if not evaluator_request_canary_absent:
+            report["checks"]["sourceIsolation"]["status"] = "failed"
+            raise ContractError(
+                "evaluator request or workspace contains the private source canary"
+            )
         report["checks"]["evaluator"] = {
             **evaluator_result,
             "files": evaluator_files,
             "evaluation": evaluation,
         }
-        report["checks"]["sourceIsolation"].update(
-            {
-                "evaluatorHasNoSource": not (evaluator_dir / "baseline.css").exists(),
-                "evaluatorRequestCanaryAbsent": True,
-            }
-        )
         scan_for_token(output_root, token)
         report["status"] = "passed"
     except CapabilityBlocked as error:
         report["status"] = "blocked"
-        report["checks"][current_step] = {"status": "blocked", "message": str(error)}
+        _merge_failed_check(
+            report,
+            current_step,
+            str(error),
+            "blocked",
+        )
         report["error"] = {
             "step": current_step,
             "kind": "copilot-auth",
@@ -622,7 +1054,12 @@ def run_capability(
         }
     except ContractError as error:
         report["status"] = "failed"
-        report["checks"][current_step] = {"status": "failed", "message": str(error)}
+        _merge_failed_check(
+            report,
+            current_step,
+            str(error),
+            "failed",
+        )
         report["error"] = {
             "step": current_step,
             "kind": "contract",
@@ -630,14 +1067,17 @@ def run_capability(
         }
     except Exception as error:
         report["status"] = "failed"
-        report["checks"][current_step] = {
-            "status": "failed",
-            "message": f"{type(error).__name__}: {error}",
-        }
+        message = f"{type(error).__name__}: {error}"
+        _merge_failed_check(
+            report,
+            current_step,
+            message,
+            "failed",
+        )
         report["error"] = {
             "step": current_step,
             "kind": "unexpected",
-            "message": f"{type(error).__name__}: {error}",
+            "message": message,
         }
 
     report["finishedAt"] = now()
@@ -648,17 +1088,25 @@ def run_capability(
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
-            "Prove a constrained Copilot CLI execution surface for the Design Studio "
-            "Milestone 0 comparison runner."
+            "Prove a constrained Copilot CLI execution surface for the "
+            "Design Studio Milestone 0 comparison runner."
         )
     )
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=Path("harness-output") / "benchmarks" / "milestone-0" / "agent-capability",
+        default=(
+            Path("harness-output")
+            / "benchmarks"
+            / "milestone-0"
+            / "agent-capability"
+        ),
     )
     parser.add_argument("--copilot-bin", default="copilot")
-    parser.add_argument("--copilot-version", default=DEFAULT_COPILOT_VERSION)
+    parser.add_argument(
+        "--copilot-version",
+        default=DEFAULT_COPILOT_VERSION,
+    )
     parser.add_argument("--model", default=DEFAULT_MODEL)
     return parser
 
@@ -679,7 +1127,9 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "surface": report["executionSurface"]["name"],
                 "version": report["executionSurface"]["version"],
                 "model": report["executionSurface"]["model"],
-                "report": str((args.output_dir / "capability-report.json").resolve()),
+                "report": str(
+                    (args.output_dir / "capability-report.json").resolve()
+                ),
             },
             sort_keys=True,
         )
