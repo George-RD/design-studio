@@ -39,25 +39,45 @@ class CopilotCliAutoModelTests(unittest.TestCase):
             self.module.resolved_model_from_events(events, "director"),
         )
 
-    def test_all_roles_must_resolve_to_one_model(self):
+    def test_auto_preserves_role_specific_concrete_models(self):
+        models = {
+            "director": "gpt-5-mini",
+            "builder": "claude-haiku-4.5",
+            "evaluator": "gpt-5-mini",
+        }
+
         self.assertEqual(
-            "gpt-5.3-codex",
+            models,
             self.module.validate_resolved_models(
-                {
-                    "director": "gpt-5.3-codex",
-                    "builder": "gpt-5.3-codex",
-                    "evaluator": "gpt-5.3-codex",
-                }
+                models,
+                requested_model="auto",
             ),
         )
 
-        with self.assertRaisesRegex(self.module.core.ContractError, "different models"):
+    def test_explicit_model_requires_every_role_to_match(self):
+        models = {
+            role: "gpt-5.3-codex"
+            for role in ("director", "builder", "evaluator")
+        }
+        self.assertEqual(
+            models,
+            self.module.validate_resolved_models(
+                models,
+                requested_model="gpt-5.3-codex",
+            ),
+        )
+
+        with self.assertRaisesRegex(
+            self.module.core.ContractError,
+            "requested model",
+        ):
             self.module.validate_resolved_models(
                 {
                     "director": "gpt-5.3-codex",
                     "builder": "claude-haiku-4.5",
                     "evaluator": "gpt-5.3-codex",
-                }
+                },
+                requested_model="gpt-5.3-codex",
             )
 
     def test_missing_model_receipt_fails_closed(self):
@@ -184,9 +204,14 @@ class CopilotCliAutoModelTests(unittest.TestCase):
         self.assertIn("requested model", report["error"]["message"])
         self.assertEqual("failed", persisted["status"])
 
-    def test_inconsistent_resolved_models_downgrade_persisted_report(self):
+    def test_auto_model_profile_is_persisted_without_forcing_one_model(self):
         with tempfile.TemporaryDirectory() as temporary:
             output_root = Path(temporary)
+            models = {
+                "director": "gpt-5-mini",
+                "builder": "claude-haiku-4.5",
+                "evaluator": "gpt-5-mini",
+            }
 
             def fake_base_run(*args, **kwargs):
                 report = {
@@ -198,9 +223,8 @@ class CopilotCliAutoModelTests(unittest.TestCase):
                         "model": "auto",
                     },
                     "checks": {
-                        "director": {"resolvedModel": "gpt-5-mini"},
-                        "builder": {"resolvedModel": "claude-haiku-4.5"},
-                        "evaluator": {"resolvedModel": "gpt-5-mini"},
+                        role: {"resolvedModel": model}
+                        for role, model in models.items()
                     },
                     "error": None,
                 }
@@ -226,11 +250,21 @@ class CopilotCliAutoModelTests(unittest.TestCase):
                 )
             )
 
-        self.assertEqual("failed", report["status"])
-        self.assertEqual("resolvedModel", report["error"]["step"])
-        self.assertEqual("contract", report["error"]["kind"])
-        self.assertEqual("failed", persisted["status"])
-        self.assertEqual("resolvedModel", persisted["error"]["step"])
+        self.assertEqual("passed", report["status"])
+        self.assertIsNone(report["error"])
+        self.assertEqual("auto", report["executionSurface"]["requestedModel"])
+        self.assertEqual(
+            "auto-per-role",
+            report["executionSurface"]["modelPolicy"],
+        )
+        self.assertEqual(
+            models,
+            report["executionSurface"]["resolvedModels"],
+        )
+        self.assertEqual(
+            report["executionSurface"],
+            persisted["executionSurface"],
+        )
 
 
 if __name__ == "__main__":
