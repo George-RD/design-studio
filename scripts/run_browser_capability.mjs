@@ -9,6 +9,7 @@ class BrowserContractError extends Error {}
 class BrowserBlockedError extends Error {}
 
 const NETWORK_OBSERVATION_MS = 1300;
+const MOTION_LIMIT_MS = 50;
 
 function parseArgs(argv) {
   const args = { root: null, outputDir: null, entrypoint: 'index.html', width: 390, height: 844 };
@@ -116,7 +117,7 @@ class CdpClient {
       const message = JSON.parse(String(event.data));
       if (message.method) {
         for (const listener of this.listeners.get(message.method) || []) {
-          listener(message.params || {});
+          listener(message.params || {}, message.sessionId || null);
         }
       }
       if (!message.id) return;
@@ -138,7 +139,7 @@ class CdpClient {
     this.listeners.set(method, listeners);
   }
 
-  send(method, params = {}) {
+  send(method, params = {}, sessionId = null) {
     if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
       return Promise.reject(new BrowserBlockedError('DevTools websocket is not open'));
     }
@@ -146,7 +147,9 @@ class CdpClient {
     this.nextId += 1;
     return new Promise((resolvePromise, reject) => {
       this.pending.set(id, { method, resolve: resolvePromise, reject });
-      this.socket.send(JSON.stringify({ id, method, params }));
+      const message = { id, method, params };
+      if (sessionId) message.sessionId = sessionId;
+      this.socket.send(JSON.stringify(message));
     });
   }
 
@@ -219,6 +222,15 @@ async function measureMotion(client) {
   })()`);
 }
 
+function motionPairSupported(normal, reduced) {
+  return Boolean(
+    reduced?.prefersReducedMotion
+    && reduced.maxMs <= MOTION_LIMIT_MS
+    && reduced.maxMs <= normal.maxMs + 1
+    && reduced.activeElementCount <= normal.activeElementCount
+  );
+}
+
 function isExternalNetworkUrl(value) {
   try {
     return ['http:', 'https:', 'ws:', 'wss:', 'ftp:'].includes(new URL(value).protocol);
@@ -231,6 +243,75 @@ function trackPromise(set, promise) {
   set.add(promise);
   promise.finally(() => set.delete(promise));
 }
+
+async function stopChrome(chrome) {
+  if (chrome.exitCode !== null) return;
+  const exited = new Promise((resolvePromise) => chrome.once('exit', resolvePromise));
+  chrome.kill('SIGTERM');
+  await Promise.race([
+    exited,
+    new Promise((resolvePromise) => setTimeout(resolvePromise, 500)),
+  ]);
+  if (chrome.exitCode === null) chrome.kill('SIGKILL');
+  await Promise.race([
+    exited,
+    new Promise((resolvePromise) => setTimeout(resolvePromise, 1000)),
+  ]);
+}
+
+const POPUP_GUARD_SOURCE = `(() => {
+  if (window.__designStudioPopupGuardInstalled) return true;
+  const attempts = [];
+  const record = (value) => attempts.push(String(value ?? 'about:blank'));
+  Object.defineProperty(window, '__designStudioPopupAttempts', {
+    configurable: false,
+    enumerable: false,
+    get: () => attempts.slice(),
+  });
+  Object.defineProperty(window, '__designStudioPopupGuardInstalled', {
+    configurable: false,
+    enumerable: false,
+    value: true,
+  });
+  window.open = (url) => {
+    record(url);
+    return null;
+  };
+  const anchorClick = HTMLAnchorElement.prototype.click;
+  HTMLAnchorElement.prototype.click = function (...args) {
+    if (String(this.target || '').toLowerCase() === '_blank') {
+      record(this.href || this.getAttribute('href'));
+      return undefined;
+    }
+    return anchorClick.apply(this, args);
+  };
+  const formSubmit = HTMLFormElement.prototype.submit;
+  HTMLFormElement.prototype.submit = function (...args) {
+    if (String(this.target || '').toLowerCase() === '_blank') {
+      record(this.action || this.getAttribute('action'));
+      return undefined;
+    }
+    return formSubmit.apply(this, args);
+  };
+  document.addEventListener('click', (event) => {
+    const anchor = event.target instanceof Element
+      ? event.target.closest('a[target="_blank"], a[target="_BLANK"]')
+      : null;
+    if (!anchor) return;
+    record(anchor.href || anchor.getAttribute('href'));
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }, true);
+  document.addEventListener('submit', (event) => {
+    const form = event.target;
+    if (!(form instanceof HTMLFormElement)) return;
+    if (String(form.target || '').toLowerCase() !== '_blank') return;
+    record(form.action || form.getAttribute('action'));
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }, true);
+  return true;
+})()`;
 
 async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
   const resolvedRoot = resolve(root);
@@ -249,6 +330,7 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
     '--disable-gpu',
     '--disable-background-networking',
     '--disable-component-update',
+    '--proxy-server=http://127.0.0.1:9',
     '--hide-scrollbars',
     '--remote-debugging-port=0',
     `--user-data-dir=${userDataDir}`,
@@ -269,82 +351,127 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
     const requestUrls = new Set();
     const externalRequestUrls = new Set();
     const blockedRequestUrls = new Set();
+    const blockedPopupTargets = new Set();
     const requestById = new Map();
     const interceptionPromises = new Set();
 
-    client.on('Network.requestWillBeSent', (params) => {
+    const recordExternal = (url, blocked = false) => {
+      if (typeof url !== 'string' || !url || !isExternalNetworkUrl(url)) return;
+      requestUrls.add(url);
+      externalRequestUrls.add(url);
+      if (blocked) blockedRequestUrls.add(url);
+    };
+
+    client.on('Network.requestWillBeSent', (params, sessionId) => {
       const url = params?.request?.url;
       if (typeof url !== 'string' || !url) return;
       requestUrls.add(url);
-      if (params.requestId) requestById.set(params.requestId, url);
+      if (params.requestId) requestById.set(`${sessionId || 'main'}:${params.requestId}`, url);
       if (isExternalNetworkUrl(url)) externalRequestUrls.add(url);
     });
-    client.on('Network.loadingFailed', (params) => {
-      const url = requestById.get(params.requestId);
+    client.on('Network.loadingFailed', (params, sessionId) => {
+      const url = requestById.get(`${sessionId || 'main'}:${params.requestId}`);
       if (url && isExternalNetworkUrl(url) && (params.blockedReason || params.errorText === 'net::ERR_BLOCKED_BY_CLIENT')) {
         blockedRequestUrls.add(url);
       }
     });
     client.on('Network.webSocketCreated', (params) => {
       const url = params?.url;
-      if (typeof url === 'string' && isExternalNetworkUrl(url)) {
-        requestUrls.add(url);
-        externalRequestUrls.add(url);
-        blockedRequestUrls.add(url);
-      }
+      if (typeof url === 'string' && isExternalNetworkUrl(url)) recordExternal(url, true);
     });
-    client.on('Fetch.requestPaused', (params) => {
+    client.on('Fetch.requestPaused', (params, sessionId) => {
       const url = params?.request?.url;
       if (typeof url === 'string' && isExternalNetworkUrl(url)) {
-        requestUrls.add(url);
-        externalRequestUrls.add(url);
-        blockedRequestUrls.add(url);
+        recordExternal(url, true);
         trackPromise(
           interceptionPromises,
-          client.send('Fetch.failRequest', { requestId: params.requestId, errorReason: 'BlockedByClient' }).catch(() => {}),
+          client.send('Fetch.failRequest', { requestId: params.requestId, errorReason: 'BlockedByClient' }, sessionId).catch(() => {}),
         );
       } else {
         trackPromise(
           interceptionPromises,
-          client.send('Fetch.continueRequest', { requestId: params.requestId }).catch(() => {}),
+          client.send('Fetch.continueRequest', { requestId: params.requestId }, sessionId).catch(() => {}),
         );
       }
     });
+    const containPopupTarget = (info) => {
+      if (!info || info.type !== 'page' || !info.targetId || info.targetId === target.id) return;
+      if (typeof info.url === 'string' && info.url) recordExternal(info.url, true);
+      blockedPopupTargets.add(info.targetId);
+      const close = Promise.race([
+        client.send('Target.closeTarget', { targetId: info.targetId }).catch(() => {}),
+        new Promise((resolvePromise) => setTimeout(resolvePromise, 500)),
+      ]);
+      trackPromise(interceptionPromises, close);
+    };
+    client.on('Target.targetCreated', (params) => containPopupTarget(params?.targetInfo));
+    client.on('Target.targetInfoChanged', (params) => containPopupTarget(params?.targetInfo));
+
 
     await client.send('Page.enable');
     await client.send('Runtime.enable');
     await client.send('Network.enable');
     await client.send('Fetch.enable', { patterns: [{ urlPattern: '*', requestStage: 'Request' }] });
     await client.send('Network.setBlockedURLs', { urls: ['ws://*', 'wss://*', 'ftp://*'] });
+    await client.send('Target.setDiscoverTargets', { discover: true });
+    await client.send('Page.addScriptToEvaluateOnNewDocument', { source: POPUP_GUARD_SOURCE });
+    await evaluate(client, POPUP_GUARD_SOURCE);
     await client.send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false });
     await client.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'no-preference' }] });
     const frameTree = await client.send('Page.getFrameTree');
     const frameId = frameTree.frameTree?.frame?.id;
     if (!frameId) throw new BrowserBlockedError('Chrome exposed no main frame');
     await client.send('Page.setDocumentContent', { frameId, html });
+    await evaluate(client, POPUP_GUARD_SOURCE);
 
     const normalMotion = await measureMotion(client);
     await client.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
     const reducedMotion = await measureMotion(client);
-    const motionSupported = (
-      reducedMotion.maxMs <= 50
-      && reducedMotion.maxMs <= normalMotion.maxMs + 1
-      && reducedMotion.activeElementCount <= normalMotion.activeElementCount
-    );
+    await client.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'no-preference' }] });
 
     const initial = await evaluate(client, `(() => {
       const form = document.querySelector('#capability-form');
       const input = document.querySelector('#capability-name');
       const success = document.querySelector('#capability-success');
       const submit = form?.querySelector('button[type="submit"], input[type="submit"]');
-      const visible = (element) => {
+      const label = document.querySelector('label[for="capability-name"]');
+      const rendered = (element) => {
         if (!element) return false;
         const style = getComputedStyle(element);
-        return element.textContent.trim().length > 0 && !element.hidden && style.display !== 'none' && style.visibility !== 'hidden' && Number.parseFloat(style.opacity || '1') > 0.01 && element.getBoundingClientRect().height > 0;
+        const rect = element.getBoundingClientRect();
+        return !element.hidden
+          && style.display !== 'none'
+          && style.visibility !== 'hidden'
+          && Number.parseFloat(style.opacity || '1') > 0.01
+          && rect.width > 0
+          && rect.height > 0
+          && rect.bottom > 0
+          && rect.right > 0
+          && rect.top < window.innerHeight
+          && rect.left < window.innerWidth;
       };
+      const styleSignature = (element) => {
+        if (!element) return null;
+        const style = getComputedStyle(element);
+        return {
+          outlineStyle: style.outlineStyle,
+          outlineWidth: style.outlineWidth,
+          outlineColor: style.outlineColor,
+          outlineOffset: style.outlineOffset,
+          boxShadow: style.boxShadow,
+          borderColor: style.borderColor,
+          borderWidth: style.borderWidth,
+          backgroundColor: style.backgroundColor,
+          color: style.color,
+          filter: style.filter,
+        };
+      };
+      if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
       return {
-        missing: ['form', 'input', 'success', 'submit'].filter((key) => ({form, input, success, submit})[key] == null),
-        successVisibleBefore: visible(success),
+        missing: ['form', 'input', 'success', 'submit', 'label'].filter((key) => ({form, input, success, submit, label})[key] == null),
+        successVisibleBefore: rendered(success) && success.textContent.trim().length > 0,
+        successTextBefore: success?.textContent?.trim() || '',
+        formVisibleBefore: [form, label, input, submit].every(rendered),
         urlBefore: location.href,
         beforeSubmission: {
           innerWidth: window.innerWidth,
@@ -353,27 +480,42 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
         },
         inputDisabled: Boolean(input?.disabled),
         inputReadOnly: Boolean(input?.readOnly),
+        unfocusedStyles: {
+          input: styleSignature(input),
+          submit: styleSignature(submit),
+        },
       };
     })()`);
 
-    await evaluate(client, `(() => {
-      const active = document.activeElement;
-      if (active instanceof HTMLElement) active.blur();
-      return true;
-    })()`);
     const inputKeyboardReachable = await tabUntil(
       client,
       `document.activeElement === document.querySelector('#capability-name')`,
     );
     const inputFocus = await evaluate(client, `(() => {
       const element = document.querySelector('#capability-name');
-      const style = element ? getComputedStyle(element) : null;
-      if (!element || !style || document.activeElement !== element) return { reachable: false, visible: false };
-      const outlineWidth = Number.parseFloat(style.outlineWidth || '0') || 0;
-      const outlineVisible = outlineWidth >= 1 && style.outlineStyle !== 'none' && style.outlineColor !== 'transparent' && style.outlineColor !== 'rgba(0, 0, 0, 0)';
-      const shadowVisible = style.boxShadow && style.boxShadow !== 'none' && !style.boxShadow.includes('rgba(0, 0, 0, 0)');
-      return { reachable: true, visible: Boolean(outlineVisible || shadowVisible), outlineWidth, outlineStyle: style.outlineStyle, outlineColor: style.outlineColor, boxShadow: style.boxShadow };
+      if (!element || document.activeElement !== element) return { reachable: false, changed: false };
+      const style = getComputedStyle(element);
+      const focused = {
+        outlineStyle: style.outlineStyle,
+        outlineWidth: style.outlineWidth,
+        outlineColor: style.outlineColor,
+        outlineOffset: style.outlineOffset,
+        boxShadow: style.boxShadow,
+        borderColor: style.borderColor,
+        borderWidth: style.borderWidth,
+        backgroundColor: style.backgroundColor,
+        color: style.color,
+        filter: style.filter,
+      };
+      const unfocused = ${JSON.stringify(null)};
+      return { reachable: true, focused };
     })()`);
+    inputFocus.unfocused = initial.unfocusedStyles?.input || null;
+    inputFocus.changed = Boolean(
+      inputFocus.reachable
+      && JSON.stringify(inputFocus.unfocused) !== JSON.stringify(inputFocus.focused || null)
+    );
+
     const submitKeyboardReachable = await tabUntil(
       client,
       `(() => { const form = document.querySelector('#capability-form'); const submit = form?.querySelector('button[type="submit"], input[type="submit"]'); return document.activeElement === submit; })()`,
@@ -381,13 +523,30 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
     const submitFocus = await evaluate(client, `(() => {
       const form = document.querySelector('#capability-form');
       const element = form?.querySelector('button[type="submit"], input[type="submit"]');
-      const style = element ? getComputedStyle(element) : null;
-      if (!element || !style || document.activeElement !== element) return { reachable: false, visible: false };
-      const outlineWidth = Number.parseFloat(style.outlineWidth || '0') || 0;
-      const outlineVisible = outlineWidth >= 1 && style.outlineStyle !== 'none' && style.outlineColor !== 'transparent' && style.outlineColor !== 'rgba(0, 0, 0, 0)';
-      const shadowVisible = style.boxShadow && style.boxShadow !== 'none' && !style.boxShadow.includes('rgba(0, 0, 0, 0)');
-      return { reachable: true, visible: Boolean(outlineVisible || shadowVisible), outlineWidth, outlineStyle: style.outlineStyle, outlineColor: style.outlineColor, boxShadow: style.boxShadow };
+      if (!element || document.activeElement !== element) return { reachable: false, changed: false };
+      const style = getComputedStyle(element);
+      return {
+        reachable: true,
+        focused: {
+          outlineStyle: style.outlineStyle,
+          outlineWidth: style.outlineWidth,
+          outlineColor: style.outlineColor,
+          outlineOffset: style.outlineOffset,
+          boxShadow: style.boxShadow,
+          borderColor: style.borderColor,
+          borderWidth: style.borderWidth,
+          backgroundColor: style.backgroundColor,
+          color: style.color,
+          filter: style.filter,
+        },
+      };
     })()`);
+    submitFocus.unfocused = initial.unfocusedStyles?.submit || null;
+    submitFocus.changed = Boolean(
+      submitFocus.reachable
+      && JSON.stringify(submitFocus.unfocused) !== JSON.stringify(submitFocus.focused || null)
+    );
+
     const returnedToInput = await tabUntil(
       client,
       `document.activeElement === document.querySelector('#capability-name')`,
@@ -411,45 +570,87 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
       const form = document.querySelector('#capability-form');
       const input = document.querySelector('#capability-name');
       const success = document.querySelector('#capability-success');
-      const visible = (element) => {
+      const submit = form?.querySelector('button[type="submit"], input[type="submit"]');
+      const label = document.querySelector('label[for="capability-name"]');
+      const rendered = (element) => {
         if (!element) return false;
         const style = getComputedStyle(element);
-        return element.textContent.trim().length > 0 && !element.hidden && style.display !== 'none' && style.visibility !== 'hidden' && Number.parseFloat(style.opacity || '1') > 0.01 && element.getBoundingClientRect().height > 0;
+        const rect = element.getBoundingClientRect();
+        return !element.hidden
+          && style.display !== 'none'
+          && style.visibility !== 'hidden'
+          && Number.parseFloat(style.opacity || '1') > 0.01
+          && rect.width > 0
+          && rect.height > 0
+          && rect.bottom > 0
+          && rect.right > 0
+          && rect.top < window.innerHeight
+          && rect.left < window.innerWidth;
       };
       return {
-        successVisible: visible(success),
+        successVisible: rendered(success) && success.textContent.trim().length > 0,
         successText: success?.textContent?.trim() || null,
         submittedValue: input?.value || null,
+        formVisibleAfter: [form, label, input, submit].every(rendered),
         urlAfter: location.href,
         afterSubmission: {
           innerWidth: window.innerWidth,
           scrollWidth: document.documentElement.scrollWidth,
           clientWidth: document.documentElement.clientWidth,
         },
-        reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
         activeElementId: document.activeElement?.id || null,
         title: document.title,
       };
     })()`);
 
+    const normalPostSubmitMotion = await measureMotion(client);
+    await client.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
+    const reducedPostSubmitMotion = await measureMotion(client);
+    await new Promise((resolvePromise) => setTimeout(resolvePromise, NETWORK_OBSERVATION_MS));
+    await client.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'no-preference' }] });
+    await new Promise((resolvePromise) => setTimeout(resolvePromise, NETWORK_OBSERVATION_MS));
+    if (interceptionPromises.size) await Promise.allSettled([...interceptionPromises]);
+
+    const popupAttempts = await evaluate(
+      client,
+      `Array.isArray(window.__designStudioPopupAttempts) ? window.__designStudioPopupAttempts.slice() : []`,
+    );
+    for (const url of popupAttempts || []) recordExternal(url, true);
+
+    const focusStyleChanged = Boolean(inputFocus.changed && submitFocus.changed);
+    const motionSupported = Boolean(
+      motionPairSupported(normalMotion, reducedMotion)
+      && motionPairSupported(normalPostSubmitMotion, reducedPostSubmitMotion)
+    );
     const interaction = {
       ...initial,
       ...after,
       focus: {
-        visible: Boolean(inputFocus.visible && submitFocus.visible),
+        visible: focusStyleChanged,
         input: inputFocus,
         submit: submitFocus,
         inputKeyboardReachable,
         submitKeyboardReachable,
       },
+      focusStyleChanged,
+      reducedMotion: Boolean(
+        reducedMotion.prefersReducedMotion
+        && reducedPostSubmitMotion.prefersReducedMotion
+      ),
       motion: {
         supported: motionSupported,
         normalMaxMs: normalMotion.maxMs,
         reducedMaxMs: reducedMotion.maxMs,
+        normalPostSubmitMaxMs: normalPostSubmitMotion.maxMs,
+        reducedPostSubmitMaxMs: reducedPostSubmitMotion.maxMs,
         normalActiveElementCount: normalMotion.activeElementCount,
         reducedActiveElementCount: reducedMotion.activeElementCount,
+        normalPostSubmitActiveElementCount: normalPostSubmitMotion.activeElementCount,
+        reducedPostSubmitActiveElementCount: reducedPostSubmitMotion.activeElementCount,
         normalSamples: normalMotion.samples,
         reducedSamples: reducedMotion.samples,
+        normalPostSubmitSamples: normalPostSubmitMotion.samples,
+        reducedPostSubmitSamples: reducedPostSubmitMotion.samples,
       },
     };
 
@@ -461,15 +662,21 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
 
     const failures = [];
     if (interaction.missing?.length) failures.push(`missing required elements: ${interaction.missing.join(', ')}`);
+    if (!interaction.formVisibleBefore) failures.push('form controls were not visible before submission');
     if (interaction.successVisibleBefore) failures.push('success state was visible before submission');
+    if (interaction.successTextBefore) failures.push('success state contained content before submission');
     if (!interaction.successVisible) failures.push('success state did not become visible');
     if (interaction.successText !== 'Capability complete') failures.push('success state text is not exact');
+    if (!interaction.formVisibleAfter) failures.push('form controls did not remain visible after submission');
     if (interaction.submittedValue !== 'Ada') failures.push('text input did not accept real keyboard input');
     if (interaction.urlAfter !== interaction.urlBefore) failures.push('submission changed the document URL');
     if (interaction.beforeSubmission?.innerWidth !== width || interaction.afterSubmission?.innerWidth !== width) failures.push(`viewport width did not remain ${width}`);
     if (interaction.beforeSubmission?.scrollWidth > interaction.beforeSubmission?.clientWidth) failures.push('document has horizontal overflow before submission');
     if (interaction.afterSubmission?.scrollWidth > interaction.afterSubmission?.clientWidth) failures.push('document has horizontal overflow after submission');
-    if (!interaction.focus.visible) failures.push('keyboard focus is not visibly indicated');
+    if (!interaction.focus.visible) {
+      failures.push('keyboard focus is not visibly indicated');
+      failures.push('keyboard focus produced no visual style change');
+    }
     if (!interaction.reducedMotion) failures.push('reduced-motion emulation was not visible to the page');
     if (!motionSupported) failures.push('reduced-motion path did not suppress active motion');
     if (externalRequests.length) failures.push('external network request attempted');
@@ -482,15 +689,20 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
       url: interaction.urlAfter || null,
       viewport: { width, height },
       interaction,
-      network: { requests, externalRequests, blockedRequests, observationMs: NETWORK_OBSERVATION_MS },
+      network: {
+        requests,
+        externalRequests,
+        blockedRequests,
+        blockedPopupTargets: [...blockedPopupTargets].sort(),
+        popupAttempts: [...(popupAttempts || [])],
+        observationMs: NETWORK_OBSERVATION_MS,
+      },
       screenshot: 'browser-after-submit.png',
       failures,
     };
   } finally {
     client?.close();
-    if (chrome.exitCode === null) chrome.kill('SIGTERM');
-    await new Promise((resolvePromise) => setTimeout(resolvePromise, 100));
-    if (chrome.exitCode === null) chrome.kill('SIGKILL');
+    await stopChrome(chrome);
     await rm(userDataDir, { recursive: true, force: true });
     if (stderr && process.env.DEBUG_BROWSER_PROBE) process.stderr.write(stderr);
   }
