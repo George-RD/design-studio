@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import json
 from pathlib import Path
 import sys
 from typing import Any, Sequence
@@ -25,6 +26,21 @@ def classify_cli_failure(outcome: core.CommandOutcome) -> str:
     if "model" in text and "not available" in text:
         return "blocked"
     return _BASE_CLASSIFIER(outcome)
+
+
+def write_trusted_workspace_config(copilot_home: Path, workspace: Path) -> Path:
+    config_path = copilot_home.resolve() / "config.json"
+    if config_path.exists():
+        raise core.ContractError(
+            f"Copilot role config already exists: {config_path}"
+        )
+    copilot_home.mkdir(parents=True, exist_ok=True)
+    payload = {"trustedFolders": [str(workspace.resolve())]}
+    config_path.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return config_path
 
 
 def _model_value(value: Any) -> str | None:
@@ -75,17 +91,26 @@ def validate_resolved_models(role_models: dict[str, str]) -> str:
 
 
 def invoke_role(*args: Any, **kwargs: Any) -> dict[str, Any]:
-    result = _BASE_INVOKE_ROLE(*args, **kwargs)
     role = kwargs.get("role")
     evidence_dir = kwargs.get("evidence_dir")
-    if not isinstance(role, str) or not isinstance(evidence_dir, Path):
-        raise core.ContractError("role invocation lacks evidence context")
+    workspace = kwargs.get("workspace")
+    if (
+        not isinstance(role, str)
+        or not isinstance(evidence_dir, Path)
+        or not isinstance(workspace, Path)
+    ):
+        raise core.ContractError("role invocation lacks workspace evidence context")
+    copilot_home = evidence_dir / "copilot-home" / role
+    write_trusted_workspace_config(copilot_home, workspace)
+
+    result = _BASE_INVOKE_ROLE(*args, **kwargs)
     stdout_path = evidence_dir / f"{role}.stdout.jsonl"
     events = core.parse_jsonl(
         stdout_path.read_text(encoding="utf-8"),
         f"{role} Copilot JSONL",
     )
     result["resolvedModel"] = resolved_model_from_events(events, role)
+    result["trustedWorkspace"] = str(workspace.resolve())
     return result
 
 
