@@ -77,6 +77,68 @@ class CopilotCliAutoModelTests(unittest.TestCase):
         self.assertIsNot(second._BASE_INVOKE_ROLE, first.invoke_role)
         self.assertIsNot(second._BASE_RUN_CAPABILITY, first.run_capability)
 
+    def test_token_leak_is_scrubbed_before_failed_evidence_returns(self):
+        token = "secret-token"
+        with tempfile.TemporaryDirectory() as temporary:
+            output_root = Path(temporary)
+
+            def fake_base_run(*args, **kwargs):
+                leak = output_root / "workspaces" / "builder" / "leak.bin"
+                leak.parent.mkdir(parents=True)
+                leak.write_bytes(b"prefix\x00" + token.encode("utf-8") + b"\xffsuffix")
+                report = {
+                    "schemaVersion": 1,
+                    "status": "failed",
+                    "executionSurface": {
+                        "name": "github-copilot-cli",
+                        "version": "1.0.74",
+                        "model": "gpt-5-mini",
+                    },
+                    "checks": {"builder": {"status": "failed"}},
+                    "error": {
+                        "step": "builder",
+                        "kind": "contract",
+                        "message": "builder leaked a credential",
+                    },
+                }
+                self.module.core.write_json(
+                    output_root / "capability-report.json",
+                    report,
+                )
+                return report
+
+            with mock.patch.object(
+                self.module,
+                "_BASE_RUN_CAPABILITY",
+                fake_base_run,
+            ):
+                report = self.module.run_capability(
+                    token=token,
+                    output_root=output_root,
+                    model="gpt-5-mini",
+                )
+
+            persisted = json.loads(
+                (output_root / "capability-report.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            leaked_paths = [
+                path.relative_to(output_root).as_posix()
+                for path in output_root.rglob("*")
+                if path.is_file() and token.encode("utf-8") in path.read_bytes()
+            ]
+
+        self.assertEqual([], leaked_paths)
+        self.assertEqual("failed", report["status"])
+        self.assertEqual("credentialIsolation", report["error"]["step"])
+        self.assertEqual("credential-leak", report["error"]["kind"])
+        self.assertEqual("failed", persisted["status"])
+        self.assertIn(
+            "workspaces/builder/leak.bin",
+            persisted["checks"]["credentialIsolation"]["scrubbedFiles"],
+        )
+
     def test_pinned_model_mismatch_downgrades_persisted_report(self):
         with tempfile.TemporaryDirectory() as temporary:
             output_root = Path(temporary)
