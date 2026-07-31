@@ -51,10 +51,27 @@ _BASE_RUN_CAPABILITY = _remember_original(
     "run_capability",
     core.run_capability,
 )
+_BASE_DIRECTOR_PROMPT = _remember_original(
+    "director_prompt",
+    core.director_prompt,
+)
 _BASE_BUILDER_PROMPT = _remember_original(
     "builder_prompt",
     core.builder_prompt,
 )
+_DIRECTOR_RETRY_ACTIVE = False
+
+
+def director_prompt(brief: str) -> str:
+    prompt = _BASE_DIRECTOR_PROMPT(brief)
+    if not _DIRECTOR_RETRY_ACTIVE:
+        return prompt
+    return (
+        f"{prompt}\n\n"
+        "Retry after invalid structured output: write direction.json as strict JSON "
+        "only, with exactly the concept, palette, layout and interaction keys. "
+        "Every value must be a non-empty string. Do not add Markdown or prose."
+    )
 
 
 def builder_prompt() -> str:
@@ -355,8 +372,108 @@ def _persist_model_failure(
     return report
 
 
+def _retryable_director_failure(report: dict[str, Any]) -> bool:
+    if report.get("status") != "failed":
+        return False
+    error = report.get("error")
+    if not isinstance(error, dict):
+        return False
+    if error.get("step") != "director" or error.get("kind") != "contract":
+        return False
+    message = str(error.get("message", "")).lower()
+    return any(
+        marker in message
+        for marker in (
+            "director direction is missing",
+            "director direction is invalid json",
+            "director direction must contain a json object",
+            "direction keys must be exactly",
+            "direction.concept must be a non-empty string",
+            "direction.palette must be a non-empty string",
+            "direction.layout must be a non-empty string",
+            "direction.interaction must be a non-empty string",
+        )
+    )
+
+
+def _capture_director_attempt(output_root: Path) -> dict[str, bytes]:
+    sources = {
+        "director.attempt-1.command.json": output_root
+        / "evidence"
+        / "director.command.json",
+        "director.attempt-1.stdout.jsonl": output_root
+        / "evidence"
+        / "director.stdout.jsonl",
+        "director.attempt-1.stderr.log": output_root
+        / "evidence"
+        / "director.stderr.log",
+        "director.attempt-1.direction.json": output_root
+        / "workspaces"
+        / "director"
+        / "direction.json",
+    }
+    captured: dict[str, bytes] = {}
+    for destination_name, source in sources.items():
+        if source.is_symlink() or not source.is_file():
+            raise core.ContractError(
+                f"cannot preserve Director retry evidence: {source} is not a regular file"
+            )
+        captured[destination_name] = source.read_bytes()
+    return captured
+
+
+def _restore_director_attempt(
+    output_root: Path,
+    captured: dict[str, bytes],
+) -> None:
+    evidence_dir = output_root / "evidence"
+    if evidence_dir.is_symlink() or not evidence_dir.is_dir():
+        raise core.ContractError(
+            "cannot restore Director retry evidence into an unsafe evidence root"
+        )
+    for name, content in captured.items():
+        destination = evidence_dir / name
+        if destination.exists() or destination.is_symlink():
+            raise core.ContractError(
+                f"Director retry evidence destination already exists: {destination}"
+            )
+        destination.write_bytes(content)
+
+
+def _run_core_with_director_retry(
+    *args: Any,
+    **kwargs: Any,
+) -> dict[str, Any]:
+    first_report = _BASE_RUN_CAPABILITY(*args, **kwargs)
+    if not _retryable_director_failure(first_report):
+        return first_report
+
+    output_root_value = kwargs.get("output_root")
+    if not isinstance(output_root_value, Path):
+        raise core.ContractError(
+            "output_root is required to preserve Director retry evidence"
+        )
+    output_root = output_root_value.expanduser().resolve()
+    captured = _capture_director_attempt(output_root)
+
+    global _DIRECTOR_RETRY_ACTIVE
+    _DIRECTOR_RETRY_ACTIVE = True
+    try:
+        report = _BASE_RUN_CAPABILITY(*args, **kwargs)
+    finally:
+        _DIRECTOR_RETRY_ACTIVE = False
+
+    _restore_director_attempt(output_root, captured)
+    director_check = report.setdefault("checks", {}).setdefault("director", {})
+    if not isinstance(director_check, dict):
+        raise core.ContractError("Director check must be an object")
+    director_check["attemptCount"] = 2
+    core.write_json(output_root / "capability-report.json", report)
+    return report
+
+
 def run_capability(*args: Any, **kwargs: Any) -> dict[str, Any]:
-    report = _BASE_RUN_CAPABILITY(*args, **kwargs)
+    report = _run_core_with_director_retry(*args, **kwargs)
     output_root_value = kwargs.get("output_root")
     if not isinstance(output_root_value, Path):
         raise core.ContractError(
@@ -422,6 +539,7 @@ core.DEFAULT_MODEL = DEFAULT_MODEL
 core.BROWSER_SCRIPT = Path(__file__).resolve().with_name(
     "run_browser_capability_completion.mjs"
 )
+core.director_prompt = director_prompt
 core.builder_prompt = builder_prompt
 core.classify_cli_failure = classify_cli_failure
 core.invoke_role = invoke_role
