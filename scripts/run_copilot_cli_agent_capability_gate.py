@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 from pathlib import Path
 import sys
 from typing import Any, Sequence
@@ -263,6 +264,72 @@ def invoke_role(*args: Any, **kwargs: Any) -> dict[str, Any]:
     return result
 
 
+def _redact_token(value: Any, token: str) -> Any:
+    if not token:
+        return value
+    if isinstance(value, str):
+        return value.replace(token, "<redacted-token>")
+    if isinstance(value, list):
+        return [_redact_token(item, token) for item in value]
+    if isinstance(value, dict):
+        return {
+            key: _redact_token(item, token)
+            for key, item in value.items()
+        }
+    return value
+
+
+def scrub_token_files(output_root: Path, token: str) -> list[str]:
+    if not token or not output_root.exists():
+        return []
+    encoded = token.encode("utf-8")
+    replacement = b"<redacted-token>"
+    scrubbed: list[str] = []
+    for path in sorted(output_root.rglob("*")):
+        if path.is_symlink() or not path.is_file():
+            continue
+        data = path.read_bytes()
+        if encoded not in data:
+            continue
+        sanitized = data.replace(encoded, replacement)
+        flags = os.O_WRONLY | os.O_TRUNC
+        if hasattr(os, "O_NOFOLLOW"):
+            flags |= os.O_NOFOLLOW
+        descriptor = os.open(path, flags)
+        try:
+            with os.fdopen(descriptor, "wb", closefd=True) as handle:
+                handle.write(sanitized)
+                handle.flush()
+                os.fsync(handle.fileno())
+        except Exception:
+            try:
+                os.close(descriptor)
+            except OSError:
+                pass
+            raise
+        scrubbed.append(path.relative_to(output_root).as_posix())
+    return scrubbed
+
+
+def _persist_credential_failure(
+    report: dict[str, Any],
+    output_root: Path,
+    scrubbed_files: list[str],
+) -> dict[str, Any]:
+    report["status"] = "failed"
+    report.setdefault("checks", {})["credentialIsolation"] = {
+        "status": "failed",
+        "scrubbedFiles": scrubbed_files,
+    }
+    report["error"] = {
+        "step": "credentialIsolation",
+        "kind": "credential-leak",
+        "message": "credential material was scrubbed from capability evidence",
+    }
+    core.write_json(output_root / "capability-report.json", report)
+    return report
+
+
 def _persist_model_failure(
     report: dict[str, Any],
     output_root: Path,
@@ -285,15 +352,32 @@ def _persist_model_failure(
 
 def run_capability(*args: Any, **kwargs: Any) -> dict[str, Any]:
     report = _BASE_RUN_CAPABILITY(*args, **kwargs)
-    if report.get("status") != "passed":
-        return report
-
     output_root_value = kwargs.get("output_root")
     if not isinstance(output_root_value, Path):
         raise core.ContractError(
             "output_root is required to persist model evidence"
         )
     output_root = output_root_value.expanduser().resolve()
+    token = kwargs.get("token", "")
+    if not isinstance(token, str):
+        token = ""
+    report_had_token = bool(
+        token and token in json.dumps(report, sort_keys=True, default=str)
+    )
+    report = _redact_token(report, token)
+    scrubbed_files = scrub_token_files(output_root, token)
+    if report_had_token and "capability-report.json" not in scrubbed_files:
+        scrubbed_files.append("capability-report.json")
+    if scrubbed_files:
+        return _persist_credential_failure(
+            report,
+            output_root,
+            scrubbed_files,
+        )
+    if report.get("status") != "passed":
+        core.write_json(output_root / "capability-report.json", report)
+        return report
+
     try:
         models = {
             role: core.require_text(
