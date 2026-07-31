@@ -133,28 +133,33 @@ def resolved_model_from_events(
     return unique[0]
 
 
-def validate_resolved_models(models: dict[str, str]) -> str:
+def validate_resolved_models(
+    models: dict[str, str],
+    *,
+    requested_model: str,
+) -> dict[str, str]:
     expected_roles = {"director", "builder", "evaluator"}
     if set(models) != expected_roles:
         raise core.ContractError(
             "resolved-model evidence must cover director, builder and evaluator"
         )
-    unique = set(models.values())
-    if len(unique) != 1:
-        raise core.ContractError(
-            f"agent roles resolved to different models: {models}"
-        )
-    return next(iter(unique))
-
-
-def validate_requested_model(requested: str, resolved: str) -> None:
-    requested = core.require_text(requested, "requested model")
-    if requested.lower() == "auto":
-        return
-    if resolved != requested:
-        raise core.ContractError(
-            f"requested model {requested!r} resolved as {resolved!r}"
-        )
+    normalized = {
+        role: core.require_text(model, f"resolved model for {role}")
+        for role, model in models.items()
+    }
+    requested = core.require_text(requested_model, "requested model")
+    if requested.lower() != "auto":
+        mismatched = {
+            role: model
+            for role, model in normalized.items()
+            if model != requested
+        }
+        if mismatched:
+            raise core.ContractError(
+                f"requested model {requested!r} was not honored by every role: "
+                f"{mismatched}"
+            )
+    return normalized
 
 
 def _workspace_relative_path(
@@ -388,17 +393,27 @@ def run_capability(*args: Any, **kwargs: Any) -> dict[str, Any]:
             )
             for role in ("director", "builder", "evaluator")
         }
-        resolved_model = validate_resolved_models(models)
         requested_model = kwargs.get("model", DEFAULT_MODEL)
-        validate_requested_model(requested_model, resolved_model)
+        resolved_models = validate_resolved_models(
+            models,
+            requested_model=requested_model,
+        )
     except core.ContractError as error:
         return _persist_model_failure(report, output_root, error)
 
-    requested_model = kwargs.get("model", DEFAULT_MODEL)
     surface = report.setdefault("executionSurface", {})
     surface["requestedModel"] = requested_model
-    surface["resolvedModel"] = resolved_model
-    surface["model"] = resolved_model
+    surface["model"] = requested_model
+    surface["modelPolicy"] = (
+        "auto-per-role"
+        if requested_model.lower() == "auto"
+        else "explicit"
+    )
+    surface["resolvedModels"] = resolved_models
+    if requested_model.lower() == "auto":
+        surface.pop("resolvedModel", None)
+    else:
+        surface["resolvedModel"] = requested_model
     core.write_json(output_root / "capability-report.json", report)
     return report
 
