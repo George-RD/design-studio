@@ -56,6 +56,74 @@ class CopilotCliTrustedWorkspaceTests(unittest.TestCase):
             with self.assertRaisesRegex(self.module.core.ContractError, "already exists"):
                 self.module.write_trusted_workspace_config(home, workspace)
 
+    def test_successful_file_view_must_remain_inside_workspace(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            workspace = root / "workspace"
+            workspace.mkdir()
+            outside = root / "outside.txt"
+            outside.write_text("private\n", encoding="utf-8")
+            events = [
+                {
+                    "type": "tool.execution_start",
+                    "data": {
+                        "toolCallId": "outside-view",
+                        "toolName": "view",
+                        "arguments": {"path": str(outside)},
+                    },
+                },
+                {
+                    "type": "tool.execution_complete",
+                    "data": {
+                        "toolCallId": "outside-view",
+                        "toolName": "view",
+                        "success": True,
+                    },
+                },
+            ]
+
+            with self.assertRaisesRegex(
+                self.module.core.ContractError,
+                "escaped the trusted role workspace",
+            ):
+                self.module.successful_file_views(events, workspace)
+
+    def test_json_writer_rejects_symlink_destination_without_mutating_target(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            outside = root / "outside.json"
+            outside.write_text("keep\n", encoding="utf-8")
+            destination = root / "capability-report.json"
+            destination.symlink_to(outside)
+
+            with self.assertRaisesRegex(
+                self.module.core.ContractError,
+                "must not be a symlink",
+            ):
+                self.module.write_json_no_follow(
+                    destination,
+                    {"status": "failed"},
+                )
+
+            self.assertEqual("keep\n", outside.read_text(encoding="utf-8"))
+
+    def test_blocked_receipt_preserves_actual_cause(self):
+        cases = {
+            ("authentication", "GITHUB_TOKEN is required"): "copilot-auth",
+            ("director", "model is not available"): "model-unavailable",
+            ("builder", "rate limit exceeded"): "rate-limit",
+            ("evaluator", "AI credits exhausted"): "credit-exhausted",
+            ("browser", "Chrome is not installed"): "browser-unavailable",
+            ("browser", "browser probe timed out"): "browser-timeout",
+            ("director", "service unavailable"): "service-unavailable",
+        }
+        for (step, message), expected in cases.items():
+            with self.subTest(step=step, message=message):
+                self.assertEqual(
+                    expected,
+                    self.module.classify_blocker_kind(step, message),
+                )
+
 
 if __name__ == "__main__":
     unittest.main()
