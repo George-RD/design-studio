@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+from pathlib import Path
 import sys
 from typing import Any, Sequence
+
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
 
 import run_copilot_cli_agent_capability as core
 
