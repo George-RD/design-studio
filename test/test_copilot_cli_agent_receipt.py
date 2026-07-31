@@ -24,17 +24,18 @@ class CopilotCliAgentReceiptTests(unittest.TestCase):
 
     def test_receipt_preserves_exact_passing_workflow(self):
         receipt = self.receipt
-        self.assertEqual(1, receipt["schemaVersion"])
+        self.assertEqual(1, receipt["receiptSchemaVersion"])
+        self.assertEqual(1, receipt["capabilityReportSchemaVersion"])
         self.assertEqual("passed", receipt["status"])
         workflow = receipt["workflow"]
-        self.assertEqual(30620834185, workflow["runId"])
+        self.assertEqual(30643540826, workflow["runId"])
         self.assertEqual(
-            "e8149f131c433b8131bf556fd46d16d710473b92",
+            "6f21c4ec32ab34a2974db607a3197d5e586a86a7",
             workflow["headSha"],
         )
-        self.assertEqual(8789344449, workflow["artifactId"])
+        self.assertEqual(8798533579, workflow["artifactId"])
         self.assertEqual(
-            "sha256:166c95d5531ab8148caeeb4781efd497c5041bdcbe2e54ecdbec68d069d19a32",
+            "sha256:685e259ce6478dadd6078297a16ccace7379d4aa9d43167b169ad2be0003af04",
             workflow["artifactDigest"],
         )
         execution_surface = receipt["executionSurface"]
@@ -42,17 +43,25 @@ class CopilotCliAgentReceiptTests(unittest.TestCase):
             "copilot-requests: write",
             execution_surface["permission"],
         )
+        self.assertEqual("explicit-allowlist", execution_surface["environmentPolicy"])
         self.assertEqual("auto", execution_surface["requestedModel"])
+        self.assertEqual("auto-per-role", execution_surface["modelPolicy"])
 
-    def test_all_roles_pass_and_resolve_to_one_model(self):
-        checks = self.receipt["checks"]
-        for role in ("director", "builder", "evaluator"):
-            self.assertEqual("passed", checks[role]["status"])
-        models = {
-            checks[role]["resolvedModel"]
-            for role in ("director", "builder", "evaluator")
+    def test_all_roles_pass_with_exact_per_role_model_receipts(self):
+        receipt = self.receipt
+        checks = receipt["checks"]
+        expected_models = {
+            "director": "claude-haiku-4.5",
+            "builder": "gpt-5-mini",
+            "evaluator": "gpt-5-mini",
         }
-        self.assertEqual({"gpt-5-mini"}, models)
+        self.assertEqual(
+            expected_models,
+            receipt["executionSurface"]["resolvedModels"],
+        )
+        for role, expected_model in expected_models.items():
+            self.assertEqual("passed", checks[role]["status"])
+            self.assertEqual(expected_model, checks[role]["resolvedModel"])
         self.assertEqual("passed", checks["browser"]["status"])
         self.assertEqual("passed", checks["sourceIsolation"]["status"])
         self.assertEqual([], checks["browser"]["externalRequests"])
@@ -63,8 +72,9 @@ class CopilotCliAgentReceiptTests(unittest.TestCase):
         roadmap = ROADMAP.read_text(encoding="utf-8")
         for marker in (
             "Status:** Verified",
-            "30620834185",
+            "30643540826",
             "copilot-cli-agent-capability.json",
+            "claude-haiku-4.5",
             "gpt-5-mini",
         ):
             self.assertIn(marker, document)
@@ -76,7 +86,7 @@ class CopilotCliAgentReceiptTests(unittest.TestCase):
             "[sanitized receipt](benchmarks/milestone-0/evidence/copilot-cli-agent-capability.json)",
             roadmap,
         )
-        self.assertIn("30620834185", roadmap)
+        self.assertIn("30643540826", roadmap)
         self.assertIn("[ ] Impeccable alone", roadmap)
         self.assertIn("[ ] current Design Studio", roadmap)
         self.assertIn("[ ] current Design Studio with Impeccable enabled", roadmap)
