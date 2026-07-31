@@ -158,14 +158,17 @@ class CopilotCliAgentCapabilityTests(unittest.TestCase):
             director = runner.calls[0]
             builder = runner.calls[1]
             evaluator = runner.calls[2]
-            self.assertIn("--available-tools=edit", director["argv"])
+            self.assertIn("--available-tools=create", director["argv"])
             self.assertIn("--allow-tool=write", director["argv"])
             self.assertIn("--deny-tool=read,shell,url,memory", director["argv"])
-            self.assertIn("--available-tools=view,edit", builder["argv"])
+            self.assertIn(
+                "--available-tools=view,create,edit,apply_patch",
+                builder["argv"],
+            )
             self.assertIn("--allow-tool=read,write", builder["argv"])
             self.assertIn("--deny-tool=shell,url,memory", builder["argv"])
             self.assertIn("--attachment", evaluator["argv"])
-            self.assertIn("--available-tools=edit", evaluator["argv"])
+            self.assertIn("--available-tools=create", evaluator["argv"])
             for call in runner.calls:
                 argv = call["argv"]
                 self.assertIn("--no-custom-instructions", argv)
