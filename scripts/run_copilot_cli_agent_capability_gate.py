@@ -50,6 +50,21 @@ _BASE_RUN_CAPABILITY = _remember_original(
     "run_capability",
     core.run_capability,
 )
+_BASE_BUILDER_PROMPT = _remember_original(
+    "builder_prompt",
+    core.builder_prompt,
+)
+
+
+def builder_prompt() -> str:
+    prompt = _BASE_BUILDER_PROMPT()
+    prompt = prompt.replace(
+        "- local submission prevents navigation, preserves the entered value, and reveals exact text: Capability complete",
+        "- local submission prevents navigation and preserves the entered value\n"
+        "- Keep the form, label, input and submit control visible after submission\n"
+        "- on submit, set its textContent to exactly Capability complete, with no icon or additional text inside that region",
+    )
+    return prompt
 
 
 def classify_cli_failure(outcome: CommandOutcome) -> str:
@@ -305,6 +320,7 @@ def run_capability(*args: Any, **kwargs: Any) -> dict[str, Any]:
 
 
 core.DEFAULT_MODEL = DEFAULT_MODEL
+core.builder_prompt = builder_prompt
 core.classify_cli_failure = classify_cli_failure
 core.invoke_role = invoke_role
 core.run_capability = run_capability
