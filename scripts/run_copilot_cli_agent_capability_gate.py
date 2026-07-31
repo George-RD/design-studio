@@ -131,6 +131,16 @@ def validate_resolved_models(models: dict[str, str]) -> str:
     return next(iter(unique))
 
 
+def validate_requested_model(requested: str, resolved: str) -> None:
+    requested = core.require_text(requested, "requested model")
+    if requested.lower() == "auto":
+        return
+    if resolved != requested:
+        raise core.ContractError(
+            f"requested model {requested!r} resolved as {resolved!r}"
+        )
+
+
 def _workspace_relative_path(
     workspace: Path,
     value: Any,
@@ -280,6 +290,8 @@ def run_capability(*args: Any, **kwargs: Any) -> dict[str, Any]:
             for role in ("director", "builder", "evaluator")
         }
         resolved_model = validate_resolved_models(models)
+        requested_model = kwargs.get("model", DEFAULT_MODEL)
+        validate_requested_model(requested_model, resolved_model)
     except core.ContractError as error:
         return _persist_model_failure(report, output_root, error)
 
