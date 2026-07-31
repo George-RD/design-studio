@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { lstat, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 import process from 'node:process';
 
 class BrowserContractError extends Error {}
 class BrowserBlockedError extends Error {}
+
+const NETWORK_OBSERVATION_MS = 1300;
 
 function parseArgs(argv) {
   const args = { root: null, outputDir: null, entrypoint: 'index.html', width: 390, height: 844 };
@@ -38,6 +40,17 @@ function safePath(root, value) {
     throw new BrowserContractError('entrypoint escapes the served root');
   }
   return candidate;
+}
+
+async function requireRegularFileInsideRoot(root, candidate) {
+  const info = await lstat(candidate);
+  if (info.isSymbolicLink()) throw new BrowserContractError('entrypoint must not be a symlink');
+  if (!info.isFile()) throw new BrowserContractError('entrypoint is not a file');
+  const [realRoot, realCandidate] = await Promise.all([realpath(root), realpath(candidate)]);
+  const rel = relative(realRoot, realCandidate);
+  if (rel === '..' || rel.startsWith(`..${sep}`) || isAbsolute(rel)) {
+    throw new BrowserContractError('entrypoint resolves outside the served root');
+  }
 }
 
 function findChrome() {
@@ -153,6 +166,26 @@ async function evaluate(client, expression) {
   return result.result?.value;
 }
 
+async function dispatchKey(client, key, code, virtualKeyCode, modifiers = 0) {
+  const params = {
+    key,
+    code,
+    windowsVirtualKeyCode: virtualKeyCode,
+    nativeVirtualKeyCode: virtualKeyCode,
+    modifiers,
+  };
+  await client.send('Input.dispatchKeyEvent', { type: 'keyDown', ...params });
+  await client.send('Input.dispatchKeyEvent', { type: 'keyUp', ...params });
+}
+
+async function tabUntil(client, expression, { reverse = false, attempts = 20 } = {}) {
+  for (let index = 0; index <= attempts; index += 1) {
+    if (await evaluate(client, expression)) return true;
+    await dispatchKey(client, 'Tab', 'Tab', 9, reverse ? 8 : 0);
+  }
+  return false;
+}
+
 async function measureMotion(client) {
   return evaluate(client, `(async () => {
     await new Promise((resolvePromise) => requestAnimationFrame(() => requestAnimationFrame(resolvePromise)));
@@ -194,12 +227,16 @@ function isExternalNetworkUrl(value) {
   }
 }
 
+function trackPromise(set, promise) {
+  set.add(promise);
+  promise.finally(() => set.delete(promise));
+}
+
 async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
   const resolvedRoot = resolve(root);
   const resolvedOutput = resolve(outputDir);
   const entryPath = safePath(resolvedRoot, entrypoint);
-  const entryInfo = await stat(entryPath);
-  if (!entryInfo.isFile()) throw new BrowserContractError('entrypoint is not a file');
+  await requireRegularFileInsideRoot(resolvedRoot, entryPath);
   const html = await readFile(entryPath, 'utf8');
   await mkdir(resolvedOutput, { recursive: true });
 
@@ -210,6 +247,8 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
     '--no-sandbox',
     '--disable-dev-shm-usage',
     '--disable-gpu',
+    '--disable-background-networking',
+    '--disable-component-update',
     '--hide-scrollbars',
     '--remote-debugging-port=0',
     `--user-data-dir=${userDataDir}`,
@@ -228,14 +267,55 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
     await client.connect();
 
     const requestUrls = new Set();
+    const externalRequestUrls = new Set();
+    const blockedRequestUrls = new Set();
+    const requestById = new Map();
+    const interceptionPromises = new Set();
+
     client.on('Network.requestWillBeSent', (params) => {
       const url = params?.request?.url;
-      if (typeof url === 'string' && url) requestUrls.add(url);
+      if (typeof url !== 'string' || !url) return;
+      requestUrls.add(url);
+      if (params.requestId) requestById.set(params.requestId, url);
+      if (isExternalNetworkUrl(url)) externalRequestUrls.add(url);
+    });
+    client.on('Network.loadingFailed', (params) => {
+      const url = requestById.get(params.requestId);
+      if (url && isExternalNetworkUrl(url) && (params.blockedReason || params.errorText === 'net::ERR_BLOCKED_BY_CLIENT')) {
+        blockedRequestUrls.add(url);
+      }
+    });
+    client.on('Network.webSocketCreated', (params) => {
+      const url = params?.url;
+      if (typeof url === 'string' && isExternalNetworkUrl(url)) {
+        requestUrls.add(url);
+        externalRequestUrls.add(url);
+        blockedRequestUrls.add(url);
+      }
+    });
+    client.on('Fetch.requestPaused', (params) => {
+      const url = params?.request?.url;
+      if (typeof url === 'string' && isExternalNetworkUrl(url)) {
+        requestUrls.add(url);
+        externalRequestUrls.add(url);
+        blockedRequestUrls.add(url);
+        trackPromise(
+          interceptionPromises,
+          client.send('Fetch.failRequest', { requestId: params.requestId, errorReason: 'BlockedByClient' }).catch(() => {}),
+        );
+      } else {
+        trackPromise(
+          interceptionPromises,
+          client.send('Fetch.continueRequest', { requestId: params.requestId }).catch(() => {}),
+        );
+      }
     });
 
     await client.send('Page.enable');
     await client.send('Runtime.enable');
     await client.send('Network.enable');
+    await client.send('Fetch.enable', { patterns: [{ urlPattern: '*', requestStage: 'Request' }] });
+    await client.send('Network.setBlockedURLs', { urls: ['ws://*', 'wss://*', 'ftp://*'] });
     await client.send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false });
     await client.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'no-preference' }] });
     const frameTree = await client.send('Page.getFrameTree');
@@ -246,9 +326,13 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
     const normalMotion = await measureMotion(client);
     await client.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
     const reducedMotion = await measureMotion(client);
-    const motionSupported = normalMotion.maxMs <= 50 || reducedMotion.maxMs <= 50;
+    const motionSupported = (
+      reducedMotion.maxMs <= 50
+      && reducedMotion.maxMs <= normalMotion.maxMs + 1
+      && reducedMotion.activeElementCount <= normalMotion.activeElementCount
+    );
 
-    const interaction = await evaluate(client, `(async () => {
+    const initial = await evaluate(client, `(() => {
       const form = document.querySelector('#capability-form');
       const input = document.querySelector('#capability-name');
       const success = document.querySelector('#capability-success');
@@ -258,83 +342,147 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
         const style = getComputedStyle(element);
         return element.textContent.trim().length > 0 && !element.hidden && style.display !== 'none' && style.visibility !== 'hidden' && Number.parseFloat(style.opacity || '1') > 0.01 && element.getBoundingClientRect().height > 0;
       };
-      const urlBefore = location.href;
-      const successVisibleBefore = visible(success);
-      if (!form || !input || !success || !submit) {
-        return {
-          missing: ['form', 'input', 'success', 'submit'].filter((key) => ({form, input, success, submit})[key] == null),
-          successVisibleBefore,
-          successVisible: visible(success),
-          successText: success?.textContent?.trim() || null,
-          submittedValue: input?.value || null,
-          urlBefore,
-          urlAfter: location.href,
+      return {
+        missing: ['form', 'input', 'success', 'submit'].filter((key) => ({form, input, success, submit})[key] == null),
+        successVisibleBefore: visible(success),
+        urlBefore: location.href,
+        beforeSubmission: {
           innerWidth: window.innerWidth,
           scrollWidth: document.documentElement.scrollWidth,
           clientWidth: document.documentElement.clientWidth,
-          reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
-        };
-      }
-      input.focus();
-      input.value = 'Ada';
-      input.dispatchEvent(new Event('input', { bubbles: true }));
-      input.dispatchEvent(new Event('change', { bubbles: true }));
-      if (typeof form.requestSubmit === 'function') form.requestSubmit(submit);
-      else submit.click();
-      await new Promise((resolvePromise) => setTimeout(resolvePromise, 250));
+        },
+        inputDisabled: Boolean(input?.disabled),
+        inputReadOnly: Boolean(input?.readOnly),
+      };
+    })()`);
+
+    await evaluate(client, `(() => {
+      const active = document.activeElement;
+      if (active instanceof HTMLElement) active.blur();
+      return true;
+    })()`);
+    const inputKeyboardReachable = await tabUntil(
+      client,
+      `document.activeElement === document.querySelector('#capability-name')`,
+    );
+    const inputFocus = await evaluate(client, `(() => {
+      const element = document.querySelector('#capability-name');
+      const style = element ? getComputedStyle(element) : null;
+      if (!element || !style || document.activeElement !== element) return { reachable: false, visible: false };
+      const outlineWidth = Number.parseFloat(style.outlineWidth || '0') || 0;
+      const outlineVisible = outlineWidth >= 1 && style.outlineStyle !== 'none' && style.outlineColor !== 'transparent' && style.outlineColor !== 'rgba(0, 0, 0, 0)';
+      const shadowVisible = style.boxShadow && style.boxShadow !== 'none' && !style.boxShadow.includes('rgba(0, 0, 0, 0)');
+      return { reachable: true, visible: Boolean(outlineVisible || shadowVisible), outlineWidth, outlineStyle: style.outlineStyle, outlineColor: style.outlineColor, boxShadow: style.boxShadow };
+    })()`);
+    const submitKeyboardReachable = await tabUntil(
+      client,
+      `(() => { const form = document.querySelector('#capability-form'); const submit = form?.querySelector('button[type="submit"], input[type="submit"]'); return document.activeElement === submit; })()`,
+    );
+    const submitFocus = await evaluate(client, `(() => {
+      const form = document.querySelector('#capability-form');
+      const element = form?.querySelector('button[type="submit"], input[type="submit"]');
+      const style = element ? getComputedStyle(element) : null;
+      if (!element || !style || document.activeElement !== element) return { reachable: false, visible: false };
+      const outlineWidth = Number.parseFloat(style.outlineWidth || '0') || 0;
+      const outlineVisible = outlineWidth >= 1 && style.outlineStyle !== 'none' && style.outlineColor !== 'transparent' && style.outlineColor !== 'rgba(0, 0, 0, 0)';
+      const shadowVisible = style.boxShadow && style.boxShadow !== 'none' && !style.boxShadow.includes('rgba(0, 0, 0, 0)');
+      return { reachable: true, visible: Boolean(outlineVisible || shadowVisible), outlineWidth, outlineStyle: style.outlineStyle, outlineColor: style.outlineColor, boxShadow: style.boxShadow };
+    })()`);
+    const returnedToInput = await tabUntil(
+      client,
+      `document.activeElement === document.querySelector('#capability-name')`,
+      { reverse: true },
+    );
+    if (inputKeyboardReachable && returnedToInput) {
+      await client.send('Input.insertText', { text: 'Ada' });
+      await evaluate(client, `(() => {
+        const form = document.querySelector('#capability-form');
+        const submit = form?.querySelector('button[type="submit"], input[type="submit"]');
+        if (form && submit && typeof form.requestSubmit === 'function') form.requestSubmit(submit);
+        else if (submit instanceof HTMLElement) submit.click();
+        return true;
+      })()`);
+    }
+
+    await new Promise((resolvePromise) => setTimeout(resolvePromise, NETWORK_OBSERVATION_MS));
+    if (interceptionPromises.size) await Promise.allSettled([...interceptionPromises]);
+
+    const after = await evaluate(client, `(() => {
+      const form = document.querySelector('#capability-form');
+      const input = document.querySelector('#capability-name');
+      const success = document.querySelector('#capability-success');
+      const visible = (element) => {
+        if (!element) return false;
+        const style = getComputedStyle(element);
+        return element.textContent.trim().length > 0 && !element.hidden && style.display !== 'none' && style.visibility !== 'hidden' && Number.parseFloat(style.opacity || '1') > 0.01 && element.getBoundingClientRect().height > 0;
+      };
       return {
-        missing: [],
-        successVisibleBefore,
         successVisible: visible(success),
-        successText: success.textContent.trim(),
-        submittedValue: input.value,
-        urlBefore,
+        successText: success?.textContent?.trim() || null,
+        submittedValue: input?.value || null,
         urlAfter: location.href,
-        innerWidth: window.innerWidth,
-        scrollWidth: document.documentElement.scrollWidth,
-        clientWidth: document.documentElement.clientWidth,
+        afterSubmission: {
+          innerWidth: window.innerWidth,
+          scrollWidth: document.documentElement.scrollWidth,
+          clientWidth: document.documentElement.clientWidth,
+        },
         reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
         activeElementId: document.activeElement?.id || null,
         title: document.title,
       };
     })()`);
-    interaction.motion = {
-      supported: motionSupported,
-      normalMaxMs: normalMotion.maxMs,
-      reducedMaxMs: reducedMotion.maxMs,
-      normalActiveElementCount: normalMotion.activeElementCount,
-      reducedActiveElementCount: reducedMotion.activeElementCount,
-      normalSamples: normalMotion.samples,
-      reducedSamples: reducedMotion.samples,
+
+    const interaction = {
+      ...initial,
+      ...after,
+      focus: {
+        visible: Boolean(inputFocus.visible && submitFocus.visible),
+        input: inputFocus,
+        submit: submitFocus,
+        inputKeyboardReachable,
+        submitKeyboardReachable,
+      },
+      motion: {
+        supported: motionSupported,
+        normalMaxMs: normalMotion.maxMs,
+        reducedMaxMs: reducedMotion.maxMs,
+        normalActiveElementCount: normalMotion.activeElementCount,
+        reducedActiveElementCount: reducedMotion.activeElementCount,
+        normalSamples: normalMotion.samples,
+        reducedSamples: reducedMotion.samples,
+      },
     };
 
-    await new Promise((resolvePromise) => setTimeout(resolvePromise, 100));
     const requests = [...requestUrls].sort();
-    const externalRequests = requests.filter(isExternalNetworkUrl);
+    const externalRequests = [...externalRequestUrls].sort();
+    const blockedRequests = [...blockedRequestUrls].sort();
     const screenshot = await client.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false, fromSurface: true });
     await writeFile(join(resolvedOutput, 'browser-after-submit.png'), Buffer.from(screenshot.data, 'base64'));
 
     const failures = [];
-    if (interaction?.missing?.length) failures.push(`missing required elements: ${interaction.missing.join(', ')}`);
-    if (interaction?.successVisibleBefore) failures.push('success state was visible before submission');
-    if (!interaction?.successVisible) failures.push('success state did not become visible');
-    if (interaction?.successText !== 'Capability complete') failures.push('success state text is not exact');
-    if (interaction?.submittedValue !== 'Ada') failures.push('form value was not preserved through local submission');
-    if (interaction?.urlAfter !== interaction?.urlBefore) failures.push('submission changed the document URL');
-    if (interaction?.innerWidth !== width) failures.push(`viewport width was ${interaction?.innerWidth}, expected ${width}`);
-    if (interaction?.scrollWidth > interaction?.clientWidth) failures.push('document has horizontal overflow');
-    if (!interaction?.reducedMotion) failures.push('reduced-motion emulation was not visible to the page');
+    if (interaction.missing?.length) failures.push(`missing required elements: ${interaction.missing.join(', ')}`);
+    if (interaction.successVisibleBefore) failures.push('success state was visible before submission');
+    if (!interaction.successVisible) failures.push('success state did not become visible');
+    if (interaction.successText !== 'Capability complete') failures.push('success state text is not exact');
+    if (interaction.submittedValue !== 'Ada') failures.push('text input did not accept real keyboard input');
+    if (interaction.urlAfter !== interaction.urlBefore) failures.push('submission changed the document URL');
+    if (interaction.beforeSubmission?.innerWidth !== width || interaction.afterSubmission?.innerWidth !== width) failures.push(`viewport width did not remain ${width}`);
+    if (interaction.beforeSubmission?.scrollWidth > interaction.beforeSubmission?.clientWidth) failures.push('document has horizontal overflow before submission');
+    if (interaction.afterSubmission?.scrollWidth > interaction.afterSubmission?.clientWidth) failures.push('document has horizontal overflow after submission');
+    if (!interaction.focus.visible) failures.push('keyboard focus is not visibly indicated');
+    if (!interaction.reducedMotion) failures.push('reduced-motion emulation was not visible to the page');
     if (!motionSupported) failures.push('reduced-motion path did not suppress active motion');
-    if (externalRequests.length) failures.push('external network request observed');
+    if (externalRequests.length) failures.push('external network request attempted');
+    if (externalRequests.some((url) => !blockedRequestUrls.has(url))) failures.push('external network request was not blocked before transport');
 
     return {
       schemaVersion: 1,
       status: failures.length ? 'failed' : 'passed',
       chrome: { path: chromePath },
-      url: interaction?.urlAfter || null,
+      url: interaction.urlAfter || null,
       viewport: { width, height },
       interaction,
-      network: { requests, externalRequests },
+      network: { requests, externalRequests, blockedRequests, observationMs: NETWORK_OBSERVATION_MS },
       screenshot: 'browser-after-submit.png',
       failures,
     };
