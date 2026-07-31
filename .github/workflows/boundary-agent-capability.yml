@@ -27,7 +27,7 @@ permissions:
 
 env:
   COPILOT_CLI_VERSION: "1.0.74"
-  COPILOT_MODEL: "claude-haiku-4.5"
+  COPILOT_MODEL: "auto"
   CAPABILITY_OUTPUT: harness-output/benchmarks/milestone-0/agent-capability
 
 jobs:
