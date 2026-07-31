@@ -26,9 +26,16 @@ def load_module():
 
 
 class StructuredRunner:
-    def __init__(self, module, *, always_invalid: bool = False):
+    def __init__(
+        self,
+        module,
+        *,
+        always_invalid: bool = False,
+        missing_first: bool = False,
+    ):
         self.module = module
         self.always_invalid = always_invalid
+        self.missing_first = missing_first
         self.director_attempts = 0
         self.roles: list[str] = []
         self.prompts: list[str] = []
@@ -43,13 +50,14 @@ class StructuredRunner:
         if role == "director":
             self.director_attempts += 1
             invalid = self.always_invalid or self.director_attempts == 1
-            if invalid:
+            missing = self.missing_first and self.director_attempts == 1
+            if invalid and not missing:
                 (Path(cwd) / "direction.json").write_text(
                     '{"concept":"calm","palette":"warm","layout":"compact",'
                     '"interaction":"local">}\n',
                     encoding="utf-8",
                 )
-            else:
+            elif not invalid:
                 (Path(cwd) / "direction.json").write_text(
                     json.dumps(
                         {
@@ -186,6 +194,28 @@ class CopilotCliDirectorRetryTests(unittest.TestCase):
                 "director.attempt-1.direction.json",
             ):
                 self.assertTrue((root / "evidence" / name).is_file(), name)
+
+    def test_missing_director_output_is_retried_without_fabricating_file_evidence(self):
+        runner = StructuredRunner(self.module, missing_first=True)
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            report = self.run_gate(runner, root)
+
+            self.assertEqual("passed", report["status"])
+            self.assertEqual(
+                ["director", "director", "builder", "evaluator"],
+                runner.roles,
+            )
+            self.assertEqual(2, report["checks"]["director"]["attemptCount"])
+            for name in (
+                "director.attempt-1.command.json",
+                "director.attempt-1.stdout.jsonl",
+                "director.attempt-1.stderr.log",
+            ):
+                self.assertTrue((root / "evidence" / name).is_file(), name)
+            self.assertFalse(
+                (root / "evidence" / "director.attempt-1.direction.json").exists()
+            )
 
     def test_second_invalid_director_json_fails_without_starting_builder(self):
         runner = StructuredRunner(self.module, always_invalid=True)
