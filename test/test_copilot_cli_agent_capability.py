@@ -2,10 +2,13 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 from pathlib import Path
+import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -25,9 +28,18 @@ def load_module():
 
 
 class FakeCopilotRunner:
-    def __init__(self, *, failure_role: str | None = None, leak_canary: bool = False):
+    def __init__(
+        self,
+        *,
+        failure_role: str | None = None,
+        leak_canary: bool = False,
+        skip_baseline_tool_event: bool = False,
+        site_symlink_target: Path | None = None,
+    ):
         self.failure_role = failure_role
         self.leak_canary = leak_canary
+        self.skip_baseline_tool_event = skip_baseline_tool_event
+        self.site_symlink_target = site_symlink_target
         self.calls: list[dict[str, object]] = []
 
     def __call__(self, argv, *, cwd, env):
@@ -47,6 +59,7 @@ class FakeCopilotRunner:
                 stderr="Copilot Requests permission is unavailable for this token",
             )
 
+        events: list[dict[str, object]] = []
         if role == "director":
             (Path(cwd) / "direction.json").write_text(
                 json.dumps(
@@ -62,20 +75,46 @@ class FakeCopilotRunner:
         elif role == "builder":
             baseline = (Path(cwd) / "baseline.css").read_text()
             self.assert_canary(baseline)
+            if not self.skip_baseline_tool_event:
+                call_id = "call-baseline-view"
+                events.extend(
+                    [
+                        {
+                            "type": "tool.execution_start",
+                            "data": {
+                                "toolCallId": call_id,
+                                "toolName": "view",
+                                "arguments": {"path": str(Path(cwd) / "baseline.css")},
+                            },
+                        },
+                        {
+                            "type": "tool.execution_complete",
+                            "data": {
+                                "toolCallId": call_id,
+                                "toolName": "view",
+                                "success": True,
+                            },
+                        },
+                    ]
+                )
             leaked = self.module.SOURCE_CANARY if self.leak_canary else ""
             (Path(cwd) / "index.html").write_text(
                 "<!doctype html><meta name='viewport' content='width=device-width'>"
                 "<style>@media (prefers-reduced-motion: reduce){*{transition-duration:0s!important}}"
-                "input,button{transition:transform .18s}</style>"
+                "input,button{transition:transform .18s}"
+                "input:focus-visible,button:focus-visible{outline:3px solid #176b5b}</style>"
                 "<h1>Check Capability</h1><form id='capability-form'>"
                 "<label for='capability-name'>Capability Name</label>"
-                "<input id='capability-name' required><button>Check</button>"
+                "<input id='capability-name' required><button type='submit'>Check</button>"
                 "</form><p id='capability-success' hidden></p>"
                 "<script>document.querySelector('form').addEventListener('submit',e=>{"
                 "e.preventDefault();const p=document.querySelector('#capability-success');"
                 "p.hidden=false;p.textContent='Capability complete';});</script>"
                 + leaked
             )
+            if self.site_symlink_target is not None:
+                site_target = Path(cwd).parents[1] / "site" / "index.html"
+                site_target.symlink_to(self.site_symlink_target)
         elif role == "evaluator":
             (Path(cwd) / "evaluation.json").write_text(
                 json.dumps(
@@ -90,9 +129,12 @@ class FakeCopilotRunner:
                 )
                 + "\n"
             )
+        events.append(
+            {"type": "session.idle", "data": {"model": "gpt-5.4"}}
+        )
         return self.module.CommandOutcome(
             exit_code=0,
-            stdout='{"type":"session.idle","data":{"model":"gpt-5.4"}}\n',
+            stdout="".join(json.dumps(event) + "\n" for event in events),
             stderr="",
         )
 
@@ -102,22 +144,34 @@ class FakeCopilotRunner:
 
 
 class FakeBrowserRunner:
+    def __init__(self, screenshot_bytes: bytes = b"png-evidence") -> None:
+        self.screenshot_bytes = screenshot_bytes
+
     def __call__(self, site_dir: Path, evidence_dir: Path):
         if not (site_dir / "index.html").is_file():
             raise AssertionError("browser did not receive the built page")
         browser_dir = evidence_dir / "browser"
         browser_dir.mkdir(parents=True, exist_ok=True)
-        (browser_dir / "browser-after-submit.png").write_bytes(b"png-evidence")
+        (browser_dir / "browser-after-submit.png").write_bytes(
+            self.screenshot_bytes
+        )
         return {
             "viewport": {"width": 390, "height": 844},
             "interaction": {
                 "successVisible": True,
                 "successText": "Capability complete",
-                "urlUnchanged": True,
-                "horizontalOverflow": False,
-                "reducedMotionDurationMs": 0,
+                "submittedValue": "Ada",
+                "urlBefore": "about:blank",
+                "urlAfter": "about:blank",
+                "beforeSubmission": {"scrollWidth": 390, "clientWidth": 390},
+                "afterSubmission": {"scrollWidth": 390, "clientWidth": 390},
+                "focus": {"visible": True},
+                "motion": {"normalMaxMs": 180, "reducedMaxMs": 0},
             },
-            "network": {"externalRequests": []},
+            "network": {
+                "externalRequests": [],
+                "blockedRequests": [],
+            },
         }
 
 
@@ -127,21 +181,32 @@ class CopilotCliAgentCapabilityTests(unittest.TestCase):
         cls.module = load_module()
         FakeCopilotRunner.module = cls.module
 
-    def run_gate(self, runner, temporary: str):
+    def run_gate(
+        self,
+        runner,
+        temporary: str,
+        *,
+        browser_runner: FakeBrowserRunner | None = None,
+    ):
         return self.module.run_capability(
             token="secret-token",
             output_root=Path(temporary),
             copilot_version="1.0.74",
             model="gpt-5.4",
             command_runner=runner,
-            browser_runner=FakeBrowserRunner(),
+            browser_runner=browser_runner or FakeBrowserRunner(),
             now=lambda: "2026-07-31T00:00:00Z",
         )
 
     def test_three_roles_are_isolated_and_use_minimum_tools(self):
         runner = FakeCopilotRunner()
         with tempfile.TemporaryDirectory() as temporary:
-            report = self.run_gate(runner, temporary)
+            with mock.patch.dict(
+                os.environ,
+                {"UNRELATED_SECRET": "must-not-reach-copilot"},
+                clear=False,
+            ):
+                report = self.run_gate(runner, temporary)
             root = Path(temporary)
 
             self.assertEqual("passed", report["status"])
@@ -178,11 +243,21 @@ class CopilotCliAgentCapabilityTests(unittest.TestCase):
                 self.assertIn("--no-remote-export", argv)
                 self.assertIn("--max-ai-credits=30", argv)
                 self.assertEqual("secret-token", call["env"]["GITHUB_TOKEN"])
+                self.assertNotIn("UNRELATED_SECRET", call["env"])
+                role = call["role"]
+                command_record = json.loads(
+                    (root / "evidence" / f"{role}.command.json").read_text()
+                )
+                self.assertEqual(
+                    set(command_record["environmentContract"]),
+                    set(call["env"]),
+                )
 
             persisted = "\n".join(
                 path.read_text(errors="ignore")
                 for path in root.rglob("*")
-                if path.is_file() and path.suffix != ".png"
+                if path.is_file()
+                and path.suffix not in {".png", ".db", ".db-shm", ".db-wal"}
             )
             self.assertNotIn("secret-token", persisted)
 
@@ -212,6 +287,136 @@ class CopilotCliAgentCapabilityTests(unittest.TestCase):
         self.assertEqual("failed", report["status"])
         self.assertEqual("builder", report["error"]["step"])
         self.assertEqual(["director", "builder"], [call["role"] for call in runner.calls])
+
+    def test_builder_read_requires_observed_successful_view_event(self):
+        runner = FakeCopilotRunner(skip_baseline_tool_event=True)
+        with tempfile.TemporaryDirectory() as temporary:
+            report = self.run_gate(runner, temporary)
+
+        self.assertEqual("failed", report["status"])
+        self.assertEqual("sourceIsolation", report["error"]["step"])
+        self.assertFalse(
+            report["checks"]["sourceIsolation"]["builderReadCanarySource"]
+        )
+
+    def test_publishing_rejects_existing_site_symlink_before_mutation(self):
+        runner: FakeCopilotRunner
+        with tempfile.TemporaryDirectory() as temporary:
+            outside = Path(temporary) / "outside.html"
+            outside.write_text("sentinel", encoding="utf-8")
+            runner = FakeCopilotRunner(site_symlink_target=outside)
+            report = self.run_gate(runner, temporary)
+
+            self.assertEqual("failed", report["status"])
+            self.assertEqual("builder", report["error"]["step"])
+            self.assertIn("symlink", report["error"]["message"].lower())
+            self.assertEqual("sentinel", outside.read_text(encoding="utf-8"))
+
+    def test_relative_resource_reference_is_not_self_contained(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "index.html"
+            path.write_text(
+                "<!doctype html><meta name='viewport' content='width=device-width'>"
+                "<form id='capability-form'><label for='capability-name'>Name</label>"
+                "<input id='capability-name'><button type='submit'>Go</button></form>"
+                "<p id='capability-success'></p><audio src='missing.mp3'></audio>",
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(
+                self.module.core.ContractError,
+                "self-contained|resource",
+            ):
+                self.module.core.validate_site(path)
+
+    def test_evaluator_attachment_canary_is_detected_from_actual_bytes(self):
+        runner = FakeCopilotRunner()
+        browser = FakeBrowserRunner(
+            b"png-prefix" + self.module.SOURCE_CANARY.encode("utf-8")
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            report = self.run_gate(
+                runner,
+                temporary,
+                browser_runner=browser,
+            )
+
+        self.assertEqual("failed", report["status"])
+        self.assertEqual("evaluator", report["error"]["step"])
+        isolation = report["checks"]["sourceIsolation"]
+        self.assertFalse(isolation["evaluatorRequestCanaryAbsent"])
+
+    def test_same_output_root_can_be_rerun_without_stale_role_state(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            first = self.run_gate(FakeCopilotRunner(), temporary)
+            second_runner = FakeCopilotRunner()
+            second = self.run_gate(second_runner, temporary)
+
+        self.assertEqual("passed", first["status"])
+        self.assertEqual("passed", second["status"])
+        self.assertEqual(
+            ["director", "builder", "evaluator"],
+            [call["role"] for call in second_runner.calls],
+        )
+
+    def test_command_timeout_is_classified_blocked_with_partial_output(self):
+        timeout = subprocess.TimeoutExpired(
+            cmd=["copilot"],
+            timeout=360,
+            output=b'{"type":"partial"}\n',
+            stderr=b"partial stderr",
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            with mock.patch.object(
+                self.module.core.subprocess,
+                "run",
+                side_effect=timeout,
+            ):
+                outcome = self.module.core.default_command_runner(
+                    ["copilot"],
+                    cwd=Path(temporary),
+                    env={},
+                )
+
+        self.assertEqual(124, outcome.exit_code)
+        self.assertIn('{"type":"partial"}', outcome.stdout)
+        self.assertIn("partial stderr", outcome.stderr)
+        self.assertIn("timed out", outcome.stderr.lower())
+        self.assertEqual("blocked", self.module.classify_cli_failure(outcome))
+
+    def test_browser_timeout_is_blocked_and_writes_partial_logs(self):
+        timeout = subprocess.TimeoutExpired(
+            cmd=["node"],
+            timeout=90,
+            output=b"partial browser stdout",
+            stderr=b"partial browser stderr",
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            site = root / "site"
+            site.mkdir()
+            (site / "index.html").write_text("<!doctype html>", encoding="utf-8")
+            evidence = root / "evidence"
+            with mock.patch.object(
+                self.module.core.subprocess,
+                "run",
+                side_effect=timeout,
+            ):
+                with self.assertRaisesRegex(
+                    self.module.core.CapabilityBlocked,
+                    "timed out",
+                ):
+                    self.module.core.default_browser_runner(site, evidence)
+
+            browser = evidence / "browser"
+            self.assertEqual(
+                "partial browser stdout",
+                (browser / "stdout.log").read_text(encoding="utf-8"),
+            )
+            self.assertIn(
+                "partial browser stderr",
+                (browser / "stderr.log").read_text(encoding="utf-8"),
+            )
 
     def test_no_token_blocks_without_starting_a_role(self):
         runner = FakeCopilotRunner()
