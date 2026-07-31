@@ -4,24 +4,23 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - "scripts/run_boundary_agent_capability.py"
-      - "scripts/run_boundary_agent_capability_gate.py"
-      - "scripts/boundary_agent_evaluator_contract.py"
-      - "scripts/boundary_agent_tools.py"
-      - "scripts/boundary_agent_builder.py"
+      - "scripts/run_copilot_cli_agent_capability.py"
       - "scripts/run_browser_capability.mjs"
-      - "scripts/probe_github_models.py"
-      - "test/test_boundary_agent_capability.py"
-      - "test/test_boundary_agent_evaluator_prompt.py"
+      - "test/test_copilot_cli_agent_capability.py"
       - "test/test_boundary_agent_regressions.py"
-      - "test/test_github_models_capability.py"
       - "benchmarks/milestone-0/AGENT_HARNESS.md"
-      - "benchmarks/milestone-0/evidence/github-models-capability.json"
+      - "benchmarks/milestone-0/MODEL_HARNESS.md"
+      - "benchmarks/milestone-0/evidence/**"
       - ".github/workflows/boundary-agent-capability.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
+
+env:
+  COPILOT_CLI_VERSION: "1.0.74"
+  COPILOT_MODEL: "gpt-5.4"
+  CAPABILITY_OUTPUT: harness-output/benchmarks/milestone-0/agent-capability
 
 jobs:
   capability-contract:
@@ -40,8 +39,15 @@ jobs:
         with:
           node-version: 24
 
-      - name: Validate agent and browser contracts
-        run: python3 -m unittest discover -s test -p 'test_boundary_agent*.py'
+      - name: Validate Copilot agent contract
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s test -p 'test_copilot_cli_agent_capability.py' -v
+          python3 -m py_compile scripts/run_copilot_cli_agent_capability.py
+          node --check scripts/run_browser_capability.mjs
+
+      - name: Preserve browser security regressions
+        run: python3 -m unittest discover -s test -p 'test_boundary_agent_regressions.py' -v
 
   live-agent-capability:
     needs: capability-contract
@@ -49,10 +55,10 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     permissions:
       contents: read
-      models: read
+      copilot-requests: write
     steps:
       - name: Check out exact revision
         uses: actions/checkout@v4
@@ -66,18 +72,28 @@ jobs:
         with:
           node-version: 24
 
+      - name: Install pinned Copilot CLI
+        run: |
+          set -euo pipefail
+          npm install --global --no-audit --no-fund "@github/copilot@${COPILOT_CLI_VERSION}"
+          mkdir -p "${CAPABILITY_OUTPUT}/evidence"
+          copilot --version | tee "${CAPABILITY_OUTPUT}/evidence/copilot-version.txt"
+          grep -F "${COPILOT_CLI_VERSION}" "${CAPABILITY_OUTPUT}/evidence/copilot-version.txt"
+
       - name: Probe controlled tools, browser and role isolation
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: >-
-          python3 scripts/run_boundary_agent_capability_gate.py
-          --output-dir harness-output/benchmarks/milestone-0/agent-capability
+          python3 scripts/run_copilot_cli_agent_capability.py
+          --output-dir "${CAPABILITY_OUTPUT}"
+          --copilot-version "${COPILOT_CLI_VERSION}"
+          --model "${COPILOT_MODEL}"
 
       - name: Print sanitized capability report
         if: always()
         run: |
-          if test -f harness-output/benchmarks/milestone-0/agent-capability/capability-report.json; then
-            cat harness-output/benchmarks/milestone-0/agent-capability/capability-report.json
+          if test -f "${CAPABILITY_OUTPUT}/capability-report.json"; then
+            cat "${CAPABILITY_OUTPUT}/capability-report.json"
           else
             echo "Capability report was not created."
             exit 1
@@ -87,7 +103,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: boundary-agent-capability-${{ github.run_id }}
-          path: harness-output/benchmarks/milestone-0/agent-capability
+          name: copilot-cli-agent-capability-${{ github.run_id }}
+          path: ${{ env.CAPABILITY_OUTPUT }}
           if-no-files-found: error
           retention-days: 14
