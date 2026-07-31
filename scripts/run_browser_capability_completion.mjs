@@ -167,6 +167,30 @@ async function evaluate(client, expression) {
   return result.result?.value;
 }
 
+async function dispatchKey(client, key, code, virtualKeyCode, modifiers = 0) {
+  const params = {
+    key,
+    code,
+    windowsVirtualKeyCode: virtualKeyCode,
+    nativeVirtualKeyCode: virtualKeyCode,
+    modifiers,
+  };
+  await client.send('Input.dispatchKeyEvent', { type: 'keyDown', ...params });
+  await client.send('Input.dispatchKeyEvent', { type: 'keyUp', ...params });
+}
+
+async function tabUntil(client, expression, attempts = 20) {
+  for (let index = 0; index <= attempts; index += 1) {
+    if (await evaluate(client, expression)) return true;
+    await dispatchKey(client, 'Tab', 'Tab', 9);
+  }
+  return false;
+}
+
+function stylesDiffer(before, after) {
+  return JSON.stringify(before || null) !== JSON.stringify(after || null);
+}
+
 async function inspectCompletionState({ html, width, height }) {
   const chromePath = findChrome();
   const userDataDir = await mkdtemp(
@@ -197,6 +221,10 @@ async function inspectCompletionState({ html, width, height }) {
     await client.connect();
     await client.send('Page.enable');
     await client.send('Runtime.enable');
+    await client.send('Network.enable');
+    await client.send('Network.setBlockedURLs', {
+      urls: ['http://*', 'https://*', 'ws://*', 'wss://*', 'ftp://*'],
+    });
     await client.send('Emulation.setDeviceMetricsOverride', {
       width,
       height,
@@ -227,12 +255,111 @@ async function inspectCompletionState({ html, width, height }) {
             && rect.width > 0
             && rect.height > 0;
         };
+        const styleSignature = (element) => {
+          if (!element) return null;
+          const style = getComputedStyle(element);
+          return {
+            outlineStyle: style.outlineStyle,
+            outlineWidth: style.outlineWidth,
+            outlineColor: style.outlineColor,
+            outlineOffset: style.outlineOffset,
+            boxShadow: style.boxShadow,
+            borderColor: style.borderColor,
+            borderWidth: style.borderWidth,
+            backgroundColor: style.backgroundColor,
+            color: style.color,
+            filter: style.filter,
+          };
+        };
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
+        }
         return {
           successTextBefore: success?.textContent?.trim() || '',
           formVisibleBefore: [form, label, input, submit].every(rendered),
+          unfocusedStyles: {
+            input: styleSignature(input),
+            submit: styleSignature(submit),
+          },
         };
       })()`,
     );
+
+    const inputKeyboardReachable = await tabUntil(
+      client,
+      `document.activeElement === document.querySelector('#capability-name')`,
+    );
+    const focusedInputStyle = await evaluate(
+      client,
+      `(() => {
+        const element = document.querySelector('#capability-name');
+        if (!element || document.activeElement !== element) return null;
+        const style = getComputedStyle(element);
+        return {
+          outlineStyle: style.outlineStyle,
+          outlineWidth: style.outlineWidth,
+          outlineColor: style.outlineColor,
+          outlineOffset: style.outlineOffset,
+          boxShadow: style.boxShadow,
+          borderColor: style.borderColor,
+          borderWidth: style.borderWidth,
+          backgroundColor: style.backgroundColor,
+          color: style.color,
+          filter: style.filter,
+        };
+      })()`,
+    );
+    const submitKeyboardReachable = await tabUntil(
+      client,
+      `(() => {
+        const form = document.querySelector('#capability-form');
+        const submit = form?.querySelector('button[type="submit"], input[type="submit"]');
+        return document.activeElement === submit;
+      })()`,
+    );
+    const focusedSubmitStyle = await evaluate(
+      client,
+      `(() => {
+        const form = document.querySelector('#capability-form');
+        const element = form?.querySelector('button[type="submit"], input[type="submit"]');
+        if (!element || document.activeElement !== element) return null;
+        const style = getComputedStyle(element);
+        return {
+          outlineStyle: style.outlineStyle,
+          outlineWidth: style.outlineWidth,
+          outlineColor: style.outlineColor,
+          outlineOffset: style.outlineOffset,
+          boxShadow: style.boxShadow,
+          borderColor: style.borderColor,
+          borderWidth: style.borderWidth,
+          backgroundColor: style.backgroundColor,
+          color: style.color,
+          filter: style.filter,
+        };
+      })()`,
+    );
+    const inputStyleChanged = inputKeyboardReachable && stylesDiffer(
+      initial.unfocusedStyles?.input,
+      focusedInputStyle,
+    );
+    const submitStyleChanged = submitKeyboardReachable && stylesDiffer(
+      initial.unfocusedStyles?.submit,
+      focusedSubmitStyle,
+    );
+    const focusStyle = {
+      input: {
+        keyboardReachable: inputKeyboardReachable,
+        changed: inputStyleChanged,
+        unfocused: initial.unfocusedStyles?.input || null,
+        focused: focusedInputStyle,
+      },
+      submit: {
+        keyboardReachable: submitKeyboardReachable,
+        changed: submitStyleChanged,
+        unfocused: initial.unfocusedStyles?.submit || null,
+        focused: focusedSubmitStyle,
+      },
+    };
 
     await evaluate(
       client,
@@ -281,7 +408,12 @@ async function inspectCompletionState({ html, width, height }) {
       })()`,
     );
 
-    return { ...initial, ...after };
+    return {
+      ...initial,
+      ...after,
+      focusStyle,
+      focusStyleChanged: Boolean(inputStyleChanged && submitStyleChanged),
+    };
   } finally {
     client?.close();
     if (chrome.exitCode === null) chrome.kill('SIGTERM');
@@ -326,6 +458,9 @@ async function main() {
       }
       if (completion.successTextBefore) {
         failures.push('success state contained content before submission');
+      }
+      if (!completion.focusStyleChanged) {
+        failures.push('keyboard focus produced no visual style change');
       }
       if (!completion.formVisibleAfter) {
         failures.push('form controls did not remain visible after submission');
