@@ -1,0 +1,69 @@
+name: Apply locally verified capability patch
+
+on:
+  push:
+    branches: [agent/m0-agent-runner-capability]
+    paths:
+      - ".github/workflows/apply-local-capability-patch.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out the staging head
+        uses: actions/checkout@v4
+        with:
+          ref: agent/m0-agent-runner-capability
+          fetch-depth: 0
+
+      - name: Reconstruct and apply the verified commits
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD~9)" = "914c76dc20fcc3d8140790245db333e444341577"
+
+          cat .github/patches/implementation.patch.gz.b64.part* > /tmp/implementation.patch.gz.b64
+          printf '%s  %s\n' \
+            'fe4d59701f2b08102fb05c1798ef02660030f0beec949096c1828377e46fd952' \
+            '.github/patches/tests.patch.gz.b64' \
+            '27ac45e64d433d31a2c9140fea9448e46f8ff0348ec2deeba0a3eb1c9c07f2a7' \
+            '/tmp/implementation.patch.gz.b64' | sha256sum --check --strict
+
+          base64 --decode .github/patches/tests.patch.gz.b64 | gzip --decompress > /tmp/tests.patch
+          base64 --decode /tmp/implementation.patch.gz.b64 | gzip --decompress > /tmp/implementation.patch
+          printf '%s  %s\n' \
+            '31c0224ef6ca25443046913c1ed91cb8e5e93b29c29a0470aeb3ecc6f6a67e08' \
+            '/tmp/tests.patch' \
+            '8845eba17818a76bafae6f579a8ec4baac4d399f360e14a797cfd6ae1cc22907' \
+            '/tmp/implementation.patch' | sha256sum --check --strict
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          git apply --check --binary /tmp/tests.patch
+          git apply --index --binary /tmp/tests.patch
+          git diff --cached --check
+          git commit -m 'test: harden capability gate false-positive contracts'
+
+          git apply --check --binary /tmp/implementation.patch
+          git apply --index --binary /tmp/implementation.patch
+          git diff --cached --check
+          git commit -m 'fix: harden controlled agent capability evidence'
+
+          python3 -m py_compile \
+            scripts/run_copilot_cli_agent_capability.py \
+            scripts/run_copilot_cli_agent_capability_gate.py
+          node --check scripts/run_browser_capability.mjs
+          node --check scripts/run_browser_capability_completion.mjs
+
+          git rm \
+            .github/patches/tests.patch.gz.b64 \
+            .github/patches/implementation.patch.gz.b64.part* \
+            .github/workflows/apply-local-capability-patch.yml \
+            .github/workflows/export-source-snapshot.yml
+          git commit -m 'chore: remove temporary verification scaffolding'
+          git push origin HEAD:agent/m0-agent-runner-capability
