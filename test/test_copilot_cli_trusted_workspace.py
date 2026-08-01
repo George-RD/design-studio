@@ -88,6 +88,38 @@ class CopilotCliTrustedWorkspaceTests(unittest.TestCase):
             ):
                 self.module.successful_file_views(events, workspace)
 
+
+    def test_successful_file_write_must_remain_inside_workspace(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            workspace = root / "workspace"
+            workspace.mkdir()
+            outside = root / "outside.html"
+            events = [
+                {
+                    "type": "tool.execution_start",
+                    "data": {
+                        "toolCallId": "outside-create",
+                        "toolName": "create",
+                        "arguments": {"path": str(outside)},
+                    },
+                },
+                {
+                    "type": "tool.execution_complete",
+                    "data": {
+                        "toolCallId": "outside-create",
+                        "toolName": "create",
+                        "success": True,
+                    },
+                },
+            ]
+
+            with self.assertRaisesRegex(
+                self.module.core.ContractError,
+                "write escaped the trusted role workspace",
+            ):
+                self.module.successful_file_views(events, workspace)
+
     def test_json_writer_rejects_symlink_destination_without_mutating_target(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

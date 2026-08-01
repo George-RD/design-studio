@@ -10,22 +10,23 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 BROWSER_PATH = ROOT / "scripts" / "run_browser_capability.mjs"
+CSP_META = '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; base-uri \'none\'; connect-src \'none\'; form-action \'none\'; frame-src \'none\'; img-src data:; media-src data:; object-src \'none\'; script-src \'unsafe-inline\'; style-src \'unsafe-inline\'">'
 
 
 VALID_HTML = """<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Capability check</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; connect-src 'none'; form-action 'none'; frame-src 'none'; img-src data:; media-src data:; object-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'"><title>Capability check</title>
 <style>:root{--accent:#176b5b}*{box-sizing:border-box}body{margin:0;padding:2rem;font-family:system-ui;max-width:42rem}input,button{font:inherit;padding:.75rem}button{transition:transform .2s}button:focus-visible,input:focus-visible{outline:3px solid var(--accent)}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}</style></head>
 <body><main><h1>Capability check</h1><form id="capability-form"><label for="capability-name">Name</label><input id="capability-name" name="name"><button type="submit">Complete</button></form><p id="capability-success" hidden>Capability complete</p></main>
 <script>document.querySelector('#capability-form').addEventListener('submit',event=>{event.preventDefault();document.querySelector('#capability-success').hidden=false;});</script></body></html>"""
 
 EMPTY_SUCCESS_HTML = """<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Capability check</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; connect-src 'none'; form-action 'none'; frame-src 'none'; img-src data:; media-src data:; object-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'"><title>Capability check</title>
 <style>*{box-sizing:border-box}body{margin:0;padding:2rem;font-family:system-ui;max-width:42rem}input,button{font:inherit;padding:.75rem}button{transition:transform .2s}button:focus-visible,input:focus-visible{outline:3px solid #176b5b}#capability-success{min-height:1.5em;display:flex;align-items:center}@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}</style></head>
 <body><main><h1>Capability check</h1><form id="capability-form"><label for="capability-name">Name</label><input id="capability-name" name="name"><button type="submit">Complete</button></form><p id="capability-success" aria-live="polite"></p></main>
 <script>const success=document.querySelector('#capability-success');document.querySelector('#capability-form').addEventListener('submit',event=>{event.preventDefault();success.textContent='Capability complete';});</script></body></html>"""
 
 OPACITY_SUCCESS_HTML = """<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Capability check</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; connect-src 'none'; form-action 'none'; frame-src 'none'; img-src data:; media-src data:; object-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'"><title>Capability check</title>
 <style>:root{--accent:#176b5b}*{box-sizing:border-box}body{margin:0;padding:2rem;font-family:system-ui;max-width:42rem}input,button{font:inherit;padding:.75rem}button{transition:transform .2s}button:focus-visible,input:focus-visible{outline:3px solid var(--accent)}#capability-success{opacity:0;transition:opacity .2s}#capability-success.visible{opacity:1}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}</style></head>
 <body><main><h1>Capability check</h1><form id="capability-form"><label for="capability-name">Name</label><input id="capability-name" name="name"><button type="submit">Complete</button></form><p id="capability-success"></p></main>
 <script>document.querySelector('#capability-form').addEventListener('submit',event=>{event.preventDefault();const success=document.querySelector('#capability-success');success.textContent='Capability complete';success.classList.add('visible');});</script></body></html>"""
@@ -369,6 +370,68 @@ class BrowserCapabilityRegressionTests(unittest.TestCase):
             report["interaction"]["afterSubmission"]["scrollWidth"],
             report["interaction"]["afterSubmission"]["clientWidth"],
         )
+
+
+    def test_missing_durable_network_policy_fails(self):
+        html = EMPTY_SUCCESS_HTML.replace(CSP_META, "")
+        temporary, completed, report = self.run_browser(html)
+        self.addCleanup(temporary.cleanup)
+
+        self.assertEqual(1, completed.returncode)
+        self.assertIn(
+            "document lacks a durable no-network content security policy",
+            report["failures"],
+        )
+        self.assertFalse(report["network"]["durablePolicy"])
+
+    def test_keydown_prevention_blocks_real_keyboard_entry(self):
+        html = EMPTY_SUCCESS_HTML.replace(
+            "<script>",
+            "<script>document.querySelector('#capability-name').addEventListener('keydown',event=>{if(event.key.length===1)event.preventDefault()});</script><script>",
+            1,
+        )
+        temporary, completed, report = self.run_browser(html)
+        self.addCleanup(temporary.cleanup)
+
+        self.assertEqual(1, completed.returncode)
+        self.assertIn(
+            "text input did not accept real keyboard input",
+            report["failures"],
+        )
+        self.assertNotEqual("Ada", report["interaction"]["submittedValue"])
+
+    def test_non_rendering_focus_style_change_does_not_pass(self):
+        html = EMPTY_SUCCESS_HTML.replace(
+            "button:focus-visible,input:focus-visible{outline:3px solid #176b5b}",
+            "*:focus{outline:none;outline-offset:12px;filter:brightness(100%)}",
+        )
+        temporary, completed, report = self.run_browser(html)
+        self.addCleanup(temporary.cleanup)
+
+        self.assertEqual(1, completed.returncode)
+        self.assertIn(
+            "keyboard focus produced no rendered visual change",
+            report["failures"],
+        )
+        self.assertFalse(report["interaction"]["focusStyleChanged"])
+
+    def test_transparent_ancestor_hides_form_controls(self):
+        html = EMPTY_SUCCESS_HTML.replace(
+            '<form id="capability-form">',
+            '<div style="opacity:0"><form id="capability-form">',
+        ).replace(
+            '</form><p id="capability-success"',
+            '</form></div><p id="capability-success"',
+        )
+        temporary, completed, report = self.run_browser(html)
+        self.addCleanup(temporary.cleanup)
+
+        self.assertEqual(1, completed.returncode)
+        self.assertIn(
+            "form controls were not visible before submission",
+            report["failures"],
+        )
+        self.assertFalse(report["interaction"]["formVisibleBefore"])
 
 
 if __name__ == "__main__":

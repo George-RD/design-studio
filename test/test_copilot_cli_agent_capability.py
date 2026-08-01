@@ -13,6 +13,7 @@ from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULE_PATH = ROOT / "scripts" / "run_copilot_cli_agent_capability_gate.py"
+CSP_META = """<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; connect-src 'none'; form-action 'none'; frame-src 'none'; img-src data:; media-src data:; object-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'">"""
 
 
 def load_module():
@@ -100,7 +101,8 @@ class FakeCopilotRunner:
             leaked = self.module.SOURCE_CANARY if self.leak_canary else ""
             (Path(cwd) / "index.html").write_text(
                 "<!doctype html><meta name='viewport' content='width=device-width'>"
-                "<style>@media (prefers-reduced-motion: reduce){*{transition-duration:0s!important}}"
+                + CSP_META
+                + "<style>@media (prefers-reduced-motion: reduce){*{transition-duration:0s!important}}"
                 "input,button{transition:transform .18s}"
                 "input:focus-visible,button:focus-visible{outline:3px solid #176b5b}</style>"
                 "<h1>Check Capability</h1><form id='capability-form'>"
@@ -312,12 +314,77 @@ class CopilotCliAgentCapabilityTests(unittest.TestCase):
             self.assertIn("symlink", report["error"]["message"].lower())
             self.assertEqual("sentinel", outside.read_text(encoding="utf-8"))
 
-    def test_relative_resource_reference_is_not_self_contained(self):
+
+    def test_builder_prompt_fails_closed_when_base_contract_marker_changes(self):
+        with mock.patch.object(
+            self.module,
+            "_BASE_BUILDER_PROMPT",
+            return_value="base prompt contract changed",
+        ):
+            with self.assertRaisesRegex(
+                self.module.core.ContractError,
+                "builder prompt contract marker",
+            ):
+                self.module.builder_prompt()
+
+    def test_malformed_srcset_empty_candidates_are_ignored(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "index.html"
+            path.write_text(
+                "<!doctype html><meta name='viewport' content='width=device-width'>"
+                + CSP_META
+                + "<form id='capability-form'><label for='capability-name'>Name</label>"
+                "<input id='capability-name'><button type='submit'>Go</button></form>"
+                "<p id='capability-success'></p><img srcset=', , #local'>",
+                encoding="utf-8",
+            )
+
+            result = self.module.core.validate_site(path)
+
+        self.assertTrue(result["resourceReferencesAbsent"])
+
+    def test_site_requires_durable_no_network_csp(self):
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / "index.html"
             path.write_text(
                 "<!doctype html><meta name='viewport' content='width=device-width'>"
                 "<form id='capability-form'><label for='capability-name'>Name</label>"
+                "<input id='capability-name'><button type='submit'>Go</button></form>"
+                "<p id='capability-success'></p>",
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(
+                self.module.core.ContractError,
+                "content security policy|no-network",
+            ):
+                self.module.core.validate_site(path)
+
+    def test_site_rejects_network_api_even_with_durable_csp(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "index.html"
+            path.write_text(
+                "<!doctype html><meta name='viewport' content='width=device-width'>"
+                + CSP_META
+                + "<form id='capability-form'><label for='capability-name'>Name</label>"
+                "<input id='capability-name'><button type='submit'>Go</button></form>"
+                "<p id='capability-success'></p><script>setTimeout(()=>fetch('/later'),5000)</script>",
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(
+                self.module.core.ContractError,
+                "network API",
+            ):
+                self.module.core.validate_site(path)
+
+    def test_relative_resource_reference_is_not_self_contained(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "index.html"
+            path.write_text(
+                "<!doctype html><meta name='viewport' content='width=device-width'>"
+                + CSP_META
+                + "<form id='capability-form'><label for='capability-name'>Name</label>"
                 "<input id='capability-name'><button type='submit'>Go</button></form>"
                 "<p id='capability-success'></p><audio src='missing.mp3'></audio>",
                 encoding="utf-8",

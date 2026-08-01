@@ -267,5 +267,84 @@ class CopilotCliAutoModelTests(unittest.TestCase):
         )
 
 
+    def test_default_model_is_bound_before_core_execution(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output_root = Path(temporary)
+            seen = []
+            models = {
+                "director": "gpt-5-mini",
+                "builder": "claude-haiku-4.5",
+                "evaluator": "gpt-5-mini",
+            }
+
+            def fake_base_run(*args, **kwargs):
+                seen.append(kwargs.get("model"))
+                return {
+                    "schemaVersion": 1,
+                    "status": "passed",
+                    "executionSurface": {"name": "github-copilot-cli"},
+                    "checks": {
+                        role: {"resolvedModel": model}
+                        for role, model in models.items()
+                    },
+                    "error": None,
+                }
+
+            with mock.patch.object(
+                self.module,
+                "_BASE_RUN_CAPABILITY",
+                fake_base_run,
+            ):
+                report = self.module.run_capability(output_root=output_root)
+
+        self.assertEqual(["auto"], seen)
+        self.assertEqual("auto", report["executionSurface"]["requestedModel"])
+
+    def test_explicit_model_profile_is_persisted(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output_root = Path(temporary)
+            requested = "gpt-5-mini"
+            models = {
+                role: requested
+                for role in ("director", "builder", "evaluator")
+            }
+
+            def fake_base_run(*args, **kwargs):
+                return {
+                    "schemaVersion": 1,
+                    "status": "passed",
+                    "executionSurface": {"name": "github-copilot-cli"},
+                    "checks": {
+                        role: {"resolvedModel": model}
+                        for role, model in models.items()
+                    },
+                    "error": None,
+                }
+
+            with mock.patch.object(
+                self.module,
+                "_BASE_RUN_CAPABILITY",
+                fake_base_run,
+            ):
+                report = self.module.run_capability(
+                    output_root=output_root,
+                    model=requested,
+                )
+            persisted = json.loads(
+                (output_root / "capability-report.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+
+        surface = report["executionSurface"]
+        self.assertEqual("passed", report["status"])
+        self.assertEqual(requested, surface["requestedModel"])
+        self.assertEqual(requested, surface["model"])
+        self.assertEqual(requested, surface["resolvedModel"])
+        self.assertEqual("explicit", surface["modelPolicy"])
+        self.assertEqual(models, surface["resolvedModels"])
+        self.assertEqual(surface, persisted["executionSurface"])
+
+
 if __name__ == "__main__":
     unittest.main()

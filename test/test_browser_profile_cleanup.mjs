@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { removeBrowserProfile } from '../scripts/browser_profile_cleanup.mjs';
+import { removeBrowserProfile, removeBrowserProfileBestEffort } from '../scripts/browser_profile_cleanup.mjs';
 
 test('browser profile cleanup retries a transient ENOTEMPTY race', async () => {
   const calls = [];
@@ -43,4 +43,18 @@ test('browser profile cleanup does not mask a non-retryable failure', async () =
     }),
     (error) => error === expected,
   );
+});
+
+
+test('best-effort browser profile cleanup isolates the cleanup failure', async () => {
+  const expected = Object.assign(new Error('permission denied'), { code: 'EACCES' });
+  const observed = [];
+  const removed = await removeBrowserProfileBestEffort('/tmp/profile', {
+    remove: async () => { throw expected; },
+    delay: async () => {},
+    onError: (error) => observed.push(error),
+  });
+
+  assert.equal(removed, false);
+  assert.deepEqual(observed, [expected]);
 });

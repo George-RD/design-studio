@@ -10,6 +10,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 MODULE_PATH = ROOT / "scripts" / "run_copilot_cli_agent_capability_gate.py"
+CSP_META = """<meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; connect-src 'none'; form-action 'none'; frame-src 'none'; img-src data:; media-src data:; object-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'">"""
 
 
 def load_module():
@@ -96,7 +97,8 @@ class StructuredRunner:
             )
             (Path(cwd) / "index.html").write_text(
                 "<!doctype html><meta name='viewport' content='width=device-width'>"
-                "<style>@media (prefers-reduced-motion: reduce){*{transition-duration:0s!important}}"
+                + CSP_META
+                + "<style>@media (prefers-reduced-motion: reduce){*{transition-duration:0s!important}}"
                 "input,button{transition:transform .18s}"
                 "input:focus-visible,button:focus-visible{outline:3px solid #176b5b}</style>"
                 "<h1>Check Capability</h1><form id='capability-form'>"

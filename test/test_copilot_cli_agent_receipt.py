@@ -15,6 +15,7 @@ RECEIPT = (
 )
 DOCUMENT = ROOT / "benchmarks" / "milestone-0" / "AGENT_HARNESS.md"
 ROADMAP = ROOT / "ROADMAP.md"
+WORKFLOW = ROOT / ".github" / "workflows" / "boundary-agent-capability.yml"
 
 
 class CopilotCliAgentReceiptTests(unittest.TestCase):
@@ -90,6 +91,13 @@ class CopilotCliAgentReceiptTests(unittest.TestCase):
         self.assertIn("[ ] Impeccable alone", roadmap)
         self.assertIn("[ ] current Design Studio", roadmap)
         self.assertIn("[ ] current Design Studio with Impeccable enabled", roadmap)
+
+
+    def test_live_job_timeout_covers_all_role_and_browser_timeouts(self):
+        workflow = WORKFLOW.read_text(encoding="utf-8")
+        live_job = workflow.split("  live-agent-capability:", 1)[1]
+        live_header = live_job.split("    steps:", 1)[0]
+        self.assertIn("timeout-minutes: 30", live_header)
 
 
 if __name__ == "__main__":
