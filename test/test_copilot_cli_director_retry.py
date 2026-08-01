@@ -41,6 +41,35 @@ class StructuredRunner:
         self.roles: list[str] = []
         self.prompts: list[str] = []
 
+    @staticmethod
+    def tool_events(
+        tool_name: str,
+        path: Path,
+        call_id: str,
+        *,
+        turn_id: str = "0",
+    ) -> list[dict[str, object]]:
+        return [
+            {
+                "type": "tool.execution_start",
+                "data": {
+                    "toolCallId": call_id,
+                    "toolName": tool_name,
+                    "arguments": {"path": str(path)},
+                    "turnId": turn_id,
+                },
+            },
+            {
+                "type": "tool.execution_complete",
+                "data": {
+                    "toolCallId": call_id,
+                    "toolName": tool_name,
+                    "success": True,
+                    "turnId": turn_id,
+                },
+            },
+        ]
+
     def __call__(self, argv, *, cwd, env):
         role = Path(cwd).name
         self.roles.append(role)
@@ -71,30 +100,22 @@ class StructuredRunner:
                     + "\n",
                     encoding="utf-8",
                 )
-        elif role == "builder":
-            call_id = "call-baseline-view"
             events.extend(
-                [
-                    {
-                        "type": "tool.execution_start",
-                        "data": {
-                            "toolCallId": call_id,
-                            "toolName": "view",
-                            "arguments": {
-                                "path": str(Path(cwd) / "baseline.css")
-                            },
-                        },
-                    },
-                    {
-                        "type": "tool.execution_complete",
-                        "data": {
-                            "toolCallId": call_id,
-                            "toolName": "view",
-                            "success": True,
-                        },
-                    },
-                ]
+                self.tool_events(
+                    "create",
+                    Path(cwd) / "direction.json",
+                    f"call-director-{self.director_attempts}",
+                )
             )
+        elif role == "builder":
+            for name in ("brief.md", "direction.json", "baseline.css"):
+                events.extend(
+                    self.tool_events(
+                        "view",
+                        Path(cwd) / name,
+                        f"call-{name}-view",
+                    )
+                )
             (Path(cwd) / "index.html").write_text(
                 "<!doctype html><meta name='viewport' content='width=device-width'>"
                 + CSP_META
@@ -110,6 +131,14 @@ class StructuredRunner:
                 "p.hidden=false;p.textContent='Capability complete';});</script>",
                 encoding="utf-8",
             )
+            events.extend(
+                self.tool_events(
+                    "create",
+                    Path(cwd) / "index.html",
+                    "call-builder-create",
+                    turn_id="1",
+                )
+            )
         elif role == "evaluator":
             (Path(cwd) / "evaluation.json").write_text(
                 json.dumps(
@@ -124,6 +153,13 @@ class StructuredRunner:
                 )
                 + "\n",
                 encoding="utf-8",
+            )
+            events.extend(
+                self.tool_events(
+                    "create",
+                    Path(cwd) / "evaluation.json",
+                    "call-evaluator-create",
+                )
             )
         else:
             raise AssertionError(f"unexpected role workspace: {role}")
@@ -154,6 +190,11 @@ class BrowserRunner:
                 "beforeSubmission": {"scrollWidth": 390, "clientWidth": 390},
                 "afterSubmission": {"scrollWidth": 390, "clientWidth": 390},
                 "focus": {"visible": True},
+                "submission": {
+                    "trustedSubmit": True,
+                    "causedSuccess": True,
+                },
+                "forbiddenTextVisible": False,
                 "motion": {"normalMaxMs": 180, "reducedMaxMs": 0},
             },
             "network": {"externalRequests": [], "blockedRequests": []},

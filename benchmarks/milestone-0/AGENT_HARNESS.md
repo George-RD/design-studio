@@ -75,8 +75,8 @@ Neither state permits a comparison-lane checkbox to be completed.
 
 ## Evidence location
 
-- Copilot runner: [`scripts/run_copilot_cli_agent_capability.py`](../../scripts/run_copilot_cli_agent_capability.py)
-- CLI compatibility and receipt adapter: [`scripts/run_copilot_cli_agent_capability_gate.py`](../../scripts/run_copilot_cli_agent_capability_gate.py)
+- Executable capability gate: [`scripts/run_copilot_cli_agent_capability_gate.py`](../../scripts/run_copilot_cli_agent_capability_gate.py)
+- Shared capability implementation: [`scripts/run_copilot_cli_agent_capability.py`](../../scripts/run_copilot_cli_agent_capability.py)
 - Chromium probe: [`scripts/run_browser_capability.mjs`](../../scripts/run_browser_capability.mjs)
 - Completion-state probe: [`scripts/run_browser_capability_completion.mjs`](../../scripts/run_browser_capability_completion.mjs)
 - Role and permission contracts: [`test/test_copilot_cli_agent_capability.py`](../../test/test_copilot_cli_agent_capability.py)

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { spawn, spawnSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { lstat, mkdir, mkdtemp, readFile, realpath, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { isAbsolute, join, relative, resolve, sep } from 'node:path';
@@ -12,31 +13,61 @@ class BrowserBlockedError extends Error {}
 
 const NETWORK_OBSERVATION_MS = 1300;
 const MOTION_LIMIT_MS = 50;
-const REQUIRED_NO_NETWORK_DIRECTIVES = [
-  'default-src',
-  'base-uri',
-  'connect-src',
-  'form-action',
-  'frame-src',
-  'object-src',
-];
+const REQUIRED_NO_NETWORK_DIRECTIVES = new Map([
+  ['default-src', ["'none'"]],
+  ['base-uri', ["'none'"]],
+  ['connect-src', ["'none'"]],
+  ['form-action', ["'none'"]],
+  ['frame-src', ["'none'"]],
+  ['img-src', ['data:']],
+  ['media-src', ['data:']],
+  ['object-src', ["'none'"]],
+  ['script-src', ["'unsafe-inline'"]],
+  ['style-src', ["'unsafe-inline'"]],
+]);
+const ALLOWED_EXTRA_NO_NETWORK_DIRECTIVES = new Map([
+  ['child-src', ["'none'"]],
+  ['font-src', ["'none'"]],
+  ['manifest-src', ["'none'"]],
+  ['navigate-to', ["'none'"]],
+  ['prefetch-src', ["'none'"]],
+  ['worker-src', ["'none'"]],
+]);
 
 function contentSecurityPolicyDirectives(content) {
   const directives = new Map();
   for (const rawDirective of String(content || '').split(';')) {
     const parts = rawDirective.trim().split(/\s+/).filter(Boolean);
     if (!parts.length) continue;
-    directives.set(parts[0].toLowerCase(), parts.slice(1).map((value) => value.toLowerCase()));
+    const name = parts[0].toLowerCase();
+    if (directives.has(name)) return null;
+    directives.set(name, parts.slice(1).map((value) => value.toLowerCase()));
   }
   return directives;
 }
 
+function sameDirectiveValues(actual, expected) {
+  return Array.isArray(actual)
+    && actual.length === expected.length
+    && actual.every((value, index) => value === expected[index]);
+}
+
 function hasDurableNoNetworkPolicy(content) {
   const directives = contentSecurityPolicyDirectives(content);
-  return REQUIRED_NO_NETWORK_DIRECTIVES.every((name) => {
-    const values = directives.get(name);
-    return values?.length === 1 && values[0] === "'none'";
-  });
+  if (!directives) return false;
+  for (const [name, expected] of REQUIRED_NO_NETWORK_DIRECTIVES) {
+    if (!sameDirectiveValues(directives.get(name), expected)) return false;
+  }
+  const allowedNames = new Set([
+    ...REQUIRED_NO_NETWORK_DIRECTIVES.keys(),
+    ...ALLOWED_EXTRA_NO_NETWORK_DIRECTIVES.keys(),
+  ]);
+  for (const [name, values] of directives) {
+    if (!allowedNames.has(name)) return false;
+    const expected = ALLOWED_EXTRA_NO_NETWORK_DIRECTIVES.get(name);
+    if (expected && !sameDirectiveValues(values, expected)) return false;
+  }
+  return true;
 }
 
 function pixels(value) {
@@ -96,6 +127,21 @@ function focusStyleRenderedChange(before, after) {
   );
 }
 
+function focusSignatureRenderedChange(before, after) {
+  if (!Array.isArray(before) || !Array.isArray(after)) return false;
+  const count = Math.min(before.length, after.length);
+  for (let index = 0; index < count; index += 1) {
+    const beforeEntry = before[index];
+    const afterEntry = after[index];
+    if (!beforeEntry || !afterEntry || beforeEntry.role !== afterEntry.role) continue;
+    if (focusStyleRenderedChange(beforeEntry.style, afterEntry.style)) return true;
+    for (const pseudo of ['before', 'after']) {
+      if (focusStyleRenderedChange(beforeEntry[pseudo], afterEntry[pseudo])) return true;
+    }
+  }
+  return false;
+}
+
 function keyDescriptor(character) {
   const upper = character.toUpperCase();
   const letter = /^[A-Z]$/.test(upper);
@@ -125,7 +171,7 @@ async function typeWithKeyboard(client, text) {
 }
 
 function parseArgs(argv) {
-  const args = { root: null, outputDir: null, entrypoint: 'index.html', width: 390, height: 844 };
+  const args = { root: null, outputDir: null, entrypoint: 'index.html', width: 390, height: 844, forbiddenText: null };
   for (let index = 0; index < argv.length; index += 1) {
     const key = argv[index];
     const value = argv[index + 1];
@@ -134,6 +180,7 @@ function parseArgs(argv) {
     else if (key === '--entrypoint') args.entrypoint = value;
     else if (key === '--width') args.width = Number(value);
     else if (key === '--height') args.height = Number(value);
+    else if (key === '--forbidden-text') args.forbiddenText = value;
     else throw new BrowserContractError(`unknown or incomplete argument: ${key}`);
     index += 1;
   }
@@ -168,7 +215,12 @@ async function requireRegularFileInsideRoot(root, candidate) {
 }
 
 function findChrome() {
-  if (process.env.CHROME_PATH) return process.env.CHROME_PATH;
+  if (process.env.CHROME_PATH) {
+    if (!existsSync(process.env.CHROME_PATH)) {
+      throw new BrowserBlockedError(`Chrome executable does not exist: ${process.env.CHROME_PATH}`);
+    }
+    return process.env.CHROME_PATH;
+  }
   for (const candidate of ['google-chrome-stable', 'google-chrome', 'chromium', 'chromium-browser']) {
     const found = spawnSync('sh', ['-lc', `command -v ${candidate}`], { encoding: 'utf8' });
     if (found.status === 0 && found.stdout.trim()) return found.stdout.trim();
@@ -180,6 +232,9 @@ async function waitForDevTools(userDataDir, chrome, timeoutMs = 15000) {
   const activePort = join(userDataDir, 'DevToolsActivePort');
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
+    if (chrome.__designStudioSpawnError) {
+      throw new BrowserBlockedError(`Chrome could not start: ${chrome.__designStudioSpawnError.message || String(chrome.__designStudioSpawnError)}`);
+    }
     if (chrome.exitCode !== null) throw new BrowserBlockedError(`Chrome exited before DevTools was ready (status ${chrome.exitCode})`);
     try {
       const [portLine] = (await readFile(activePort, 'utf8')).trim().split(/\r?\n/);
@@ -222,10 +277,16 @@ class CdpClient {
 
   async connect() {
     this.socket = new WebSocket(this.url);
-    await new Promise((resolvePromise, reject) => {
-      this.socket.addEventListener('open', resolvePromise, { once: true });
-      this.socket.addEventListener('error', () => reject(new BrowserBlockedError('DevTools websocket failed to open')), { once: true });
-    });
+    await Promise.race([
+      new Promise((resolvePromise, reject) => {
+        this.socket.addEventListener('open', resolvePromise, { once: true });
+        this.socket.addEventListener('error', () => reject(new BrowserBlockedError('DevTools websocket failed to open')), { once: true });
+      }),
+      new Promise((_, reject) => setTimeout(
+        () => reject(new BrowserBlockedError('DevTools websocket timed out while opening')),
+        10000,
+      )),
+    ]);
     this.socket.addEventListener('message', (event) => {
       const message = JSON.parse(String(event.data));
       if (message.method) {
@@ -237,11 +298,15 @@ class CdpClient {
       const pending = this.pending.get(message.id);
       if (!pending) return;
       this.pending.delete(message.id);
+      clearTimeout(pending.timer);
       if (message.error) pending.reject(new BrowserContractError(`${pending.method}: ${message.error.message}`));
       else pending.resolve(message.result || {});
     });
     this.socket.addEventListener('close', () => {
-      for (const pending of this.pending.values()) pending.reject(new BrowserBlockedError('DevTools websocket closed unexpectedly'));
+      for (const pending of this.pending.values()) {
+        clearTimeout(pending.timer);
+        pending.reject(new BrowserBlockedError('DevTools websocket closed unexpectedly'));
+      }
       this.pending.clear();
     });
   }
@@ -259,7 +324,11 @@ class CdpClient {
     const id = this.nextId;
     this.nextId += 1;
     return new Promise((resolvePromise, reject) => {
-      this.pending.set(id, { method, resolve: resolvePromise, reject });
+      const timer = setTimeout(() => {
+        this.pending.delete(id);
+        reject(new BrowserBlockedError(`DevTools command timed out: ${method}`));
+      }, 10000);
+      this.pending.set(id, { method, resolve: resolvePromise, reject, timer });
       const message = { id, method, params };
       if (sessionId) message.sessionId = sessionId;
       this.socket.send(JSON.stringify(message));
@@ -290,7 +359,12 @@ async function dispatchKey(client, key, code, virtualKeyCode, modifiers = 0) {
     nativeVirtualKeyCode: virtualKeyCode,
     modifiers,
   };
-  await client.send('Input.dispatchKeyEvent', { type: 'keyDown', ...params });
+  const text = key === 'Enter' ? '\r' : key === ' ' ? ' ' : null;
+  await client.send('Input.dispatchKeyEvent', {
+    type: 'keyDown',
+    ...params,
+    ...(text === null ? {} : { text, unmodifiedText: text }),
+  });
   await client.send('Input.dispatchKeyEvent', { type: 'keyUp', ...params });
 }
 
@@ -303,28 +377,72 @@ async function tabUntil(client, expression, { reverse = false, attempts = 20 } =
 }
 
 async function measureMotion(client) {
-  return evaluate(client, `(async () => {
-    await new Promise((resolvePromise) => requestAnimationFrame(() => requestAnimationFrame(resolvePromise)));
+  return evaluate(client, `(() => {
     const parseTimes = (value) => String(value || '').split(',').map((part) => {
       const text = part.trim();
       if (text.endsWith('ms')) return Number.parseFloat(text) || 0;
       if (text.endsWith('s')) return (Number.parseFloat(text) || 0) * 1000;
       return 0;
     });
-    const maximum = (values) => values.length ? Math.max(...values) : 0;
+    const pairedMaximum = (durations, delays) => {
+      if (!durations.length) return 0;
+      const safeDelays = delays.length ? delays : [0];
+      const count = Math.max(durations.length, safeDelays.length);
+      let maximum = 0;
+      for (let index = 0; index < count; index += 1) {
+        maximum = Math.max(
+          maximum,
+          durations[index % durations.length] + Math.max(0, safeDelays[index % safeDelays.length]),
+        );
+      }
+      return maximum;
+    };
     let maxMs = 0;
     let activeElementCount = 0;
     const samples = [];
     for (const element of document.querySelectorAll('*')) {
       const style = getComputedStyle(element);
-      const transitionMs = maximum(parseTimes(style.transitionDuration)) + Math.max(0, maximum(parseTimes(style.transitionDelay)));
-      const animationMs = maximum(parseTimes(style.animationDuration)) + Math.max(0, maximum(parseTimes(style.animationDelay)));
+      const transitionMs = pairedMaximum(
+        parseTimes(style.transitionDuration),
+        parseTimes(style.transitionDelay),
+      );
+      const animationMs = pairedMaximum(
+        parseTimes(style.animationDuration),
+        parseTimes(style.animationDelay),
+      );
       const elementMaxMs = Math.max(transitionMs, animationMs);
       if (elementMaxMs > 1) {
         activeElementCount += 1;
         maxMs = Math.max(maxMs, elementMaxMs);
-        if (samples.length < 8) samples.push({ tag: element.tagName.toLowerCase(), id: element.id || null, maxMs: elementMaxMs });
+        if (samples.length < 8) {
+          samples.push({ source: 'computed-style', tag: element.tagName.toLowerCase(), id: element.id || null, maxMs: elementMaxMs });
+        }
       }
+    }
+    try {
+      for (const animation of document.getAnimations({ subtree: true })) {
+        if (!['running', 'pending'].includes(animation.playState) || animation.playbackRate === 0) continue;
+        const timing = animation.effect?.getComputedTiming?.() || {};
+        const endTime = Number(timing.endTime);
+        const animationMaxMs = Number.isFinite(endTime) && endTime >= 0
+          ? endTime
+          : 60_000;
+        if (animationMaxMs <= 1) continue;
+        activeElementCount += 1;
+        maxMs = Math.max(maxMs, animationMaxMs);
+        if (samples.length < 8) {
+          const target = animation.effect?.target;
+          samples.push({
+            source: 'web-animation',
+            tag: target?.tagName?.toLowerCase?.() || null,
+            id: target?.id || null,
+            pseudoElement: animation.effect?.pseudoElement || null,
+            maxMs: animationMaxMs,
+          });
+        }
+      }
+    } catch {
+      // Older Chromium builds may not expose subtree animation enumeration.
     }
     return {
       prefersReducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
@@ -521,7 +639,132 @@ const ELEMENT_RENDERED_SOURCE = `(element) => {
   return right > left && bottom > top;
 }`;
 
-async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
+
+const FOCUS_SIGNATURE_SOURCE = `(element) => {
+  const styleSnapshot = (node, pseudo = null) => {
+    if (!node) return null;
+    const style = getComputedStyle(node, pseudo);
+    if (pseudo && ['none', 'normal', ''].includes(String(style.content || '').replace(/^['"]|['"]$/g, ''))) {
+      return null;
+    }
+    return {
+      outlineStyle: style.outlineStyle,
+      outlineWidth: style.outlineWidth,
+      outlineColor: style.outlineColor,
+      outlineOffset: style.outlineOffset,
+      boxShadow: style.boxShadow,
+      borderColor: style.borderColor,
+      borderWidth: style.borderWidth,
+      borderStyle: style.borderStyle,
+      backgroundColor: style.backgroundColor,
+      color: style.color,
+      filter: style.filter,
+    };
+  };
+  const entries = [];
+  let current = element;
+  let depth = 0;
+  while (current && depth < 8) {
+    entries.push({
+      role: depth === 0 ? 'target' : 'ancestor-' + depth,
+      style: styleSnapshot(current),
+      before: styleSnapshot(current, '::before'),
+      after: styleSnapshot(current, '::after'),
+    });
+    if (current === document.body) break;
+    current = current.parentElement;
+    depth += 1;
+  }
+  return entries;
+}`;
+
+const SUBMISSION_TRACE_SOURCE = `(() => {
+  if (window.__designStudioSubmissionTraceInstalled) return true;
+  const trace = {
+    trustedKeydown: false,
+    trustedSubmit: false,
+    causedSuccess: false,
+    successObserved: false,
+    keydownAt: null,
+    submitAt: null,
+  };
+  const success = () => document.querySelector('#capability-success');
+  const rendered = ${ELEMENT_RENDERED_SOURCE};
+  const snapshot = () => {
+    const element = success();
+    return {
+      text: element?.textContent?.trim() || '',
+      hidden: Boolean(element?.hidden),
+      className: element?.className || '',
+      style: element?.getAttribute?.('style') || '',
+      ariaHidden: element?.getAttribute?.('aria-hidden') || '',
+    };
+  };
+  const observer = new MutationObserver(() => {
+    const element = success();
+    if (rendered(element) && element.textContent.trim().length > 0) {
+      trace.successObserved = true;
+    }
+  });
+  if (document.documentElement) {
+    observer.observe(document.documentElement, {
+      subtree: true,
+      childList: true,
+      characterData: true,
+      attributes: true,
+      attributeFilter: ['hidden', 'class', 'style', 'aria-hidden'],
+    });
+  }
+  document.addEventListener('keydown', (event) => {
+    const form = document.querySelector('#capability-form');
+    const submit = form?.querySelector('button[type="submit"], input[type="submit"]');
+    if (
+      event.isTrusted
+      && event.target === submit
+      && ['Enter', ' '].includes(event.key)
+    ) {
+      trace.trustedKeydown = true;
+      trace.keydownAt = performance.now();
+    }
+  }, true);
+  let beforeSubmitSnapshot = null;
+  const tracedForm = document.querySelector('#capability-form');
+  document.addEventListener('submit', (event) => {
+    const form = document.querySelector('#capability-form');
+    const recentKeyboardActivation = trace.trustedKeydown
+      && Number.isFinite(trace.keydownAt)
+      && performance.now() - trace.keydownAt < 1000;
+    if (event.target !== form || !event.isTrusted || !recentKeyboardActivation) return;
+    trace.trustedSubmit = true;
+    trace.submitAt = performance.now();
+    beforeSubmitSnapshot = snapshot();
+  }, true);
+  tracedForm?.addEventListener('submit', (event) => {
+    if (
+      !trace.trustedSubmit
+      || event.target !== tracedForm
+      || !beforeSubmitSnapshot
+    ) return;
+    queueMicrotask(() => {
+      const after = snapshot();
+      trace.causedSuccess = JSON.stringify(beforeSubmitSnapshot) !== JSON.stringify(after)
+        && after.text === 'Capability complete';
+    });
+  });
+  Object.defineProperty(window, '__designStudioSubmissionTrace', {
+    configurable: false,
+    enumerable: false,
+    get: () => ({ ...trace }),
+  });
+  Object.defineProperty(window, '__designStudioSubmissionTraceInstalled', {
+    configurable: false,
+    enumerable: false,
+    value: true,
+  });
+  return true;
+})()`;
+
+async function runBrowserProbe({ root, outputDir, entrypoint, width, height, forbiddenText }) {
   const resolvedRoot = resolve(root);
   const resolvedOutput = resolve(outputDir);
   const entryPath = safePath(resolvedRoot, entrypoint);
@@ -531,26 +774,31 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
 
   const chromePath = findChrome();
   const userDataDir = await mkdtemp(join(tmpdir(), 'design-studio-browser-'));
-  const chrome = spawn(chromePath, [
-    '--headless=new',
-    '--no-sandbox',
-    '--disable-dev-shm-usage',
-    '--disable-gpu',
-    '--disable-background-networking',
-    '--disable-component-update',
-    '--proxy-server=http://127.0.0.1:9',
-    '--hide-scrollbars',
-    '--remote-debugging-port=0',
-    `--user-data-dir=${userDataDir}`,
-    `--window-size=${width},${height}`,
-    'about:blank',
-  ], { stdio: ['ignore', 'ignore', 'pipe'] });
+  let chrome = null;
   let stderr = '';
-  chrome.stderr.setEncoding('utf8');
-  chrome.stderr.on('data', (chunk) => { stderr += chunk; });
-
   let client;
   try {
+    chrome = spawn(chromePath, [
+      '--headless=new',
+      '--no-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-gpu',
+      '--disable-background-networking',
+      '--disable-component-update',
+      '--proxy-server=http://127.0.0.1:9',
+      '--hide-scrollbars',
+      '--remote-debugging-port=0',
+      `--user-data-dir=${userDataDir}`,
+      `--window-size=${width},${height}`,
+      'about:blank',
+    ], { stdio: ['ignore', 'ignore', 'pipe'] });
+    chrome.__designStudioSpawnError = null;
+    chrome.once('error', (error) => { chrome.__designStudioSpawnError = error; });
+    if (chrome.stderr) {
+      chrome.stderr.setEncoding('utf8');
+      chrome.stderr.on('data', (chunk) => { stderr += chunk; });
+    }
+
     const devToolsPort = await waitForDevTools(userDataDir, chrome);
     const target = await getPageTarget(devToolsPort);
     client = new CdpClient(target.webSocketDebuggerUrl);
@@ -560,6 +808,7 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
     const externalRequestUrls = new Set();
     const blockedRequestUrls = new Set();
     const blockedPopupTargets = new Set();
+    const blockedAuxiliaryTargets = new Set();
     const requestById = new Map();
     const interceptionPromises = new Set();
 
@@ -602,19 +851,31 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
         );
       }
     });
-    const containPopupTarget = (info) => {
-      if (!info || info.type !== 'page' || !info.targetId || info.targetId === target.id) return;
+
+    const containTarget = (info) => {
+      if (!info || !info.targetId || info.targetId === target.id) return;
+      const containedTypes = new Set(['page', 'worker', 'shared_worker', 'service_worker']);
+      if (!containedTypes.has(info.type)) return;
       if (typeof info.url === 'string' && info.url) recordExternal(info.url, true);
-      blockedPopupTargets.add(info.targetId);
+      if (info.type === 'page') blockedPopupTargets.add(info.targetId);
+      else blockedAuxiliaryTargets.add(info.targetId);
       const close = Promise.race([
         client.send('Target.closeTarget', { targetId: info.targetId }).catch(() => {}),
         new Promise((resolvePromise) => setTimeout(resolvePromise, 500)),
       ]);
       trackPromise(interceptionPromises, close);
     };
-    client.on('Target.targetCreated', (params) => containPopupTarget(params?.targetInfo));
-    client.on('Target.targetInfoChanged', (params) => containPopupTarget(params?.targetInfo));
-
+    client.on('Target.targetCreated', (params) => containTarget(params?.targetInfo));
+    client.on('Target.targetInfoChanged', (params) => containTarget(params?.targetInfo));
+    client.on('Target.attachedToTarget', (params, sessionId) => {
+      containTarget(params?.targetInfo);
+      if (params?.waitingForDebugger) {
+        trackPromise(
+          interceptionPromises,
+          client.send('Runtime.runIfWaitingForDebugger', {}, params.sessionId || sessionId).catch(() => {}),
+        );
+      }
+    });
 
     await client.send('Page.enable');
     await client.send('Runtime.enable');
@@ -622,6 +883,7 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
     await client.send('Fetch.enable', { patterns: [{ urlPattern: '*', requestStage: 'Request' }] });
     await client.send('Network.setBlockedURLs', { urls: ['ws://*', 'wss://*', 'ftp://*'] });
     await client.send('Target.setDiscoverTargets', { discover: true });
+    await client.send('Target.setAutoAttach', { autoAttach: true, waitForDebuggerOnStart: true, flatten: true });
     await client.send('Page.addScriptToEvaluateOnNewDocument', { source: POPUP_GUARD_SOURCE });
     await evaluate(client, POPUP_GUARD_SOURCE);
     await client.send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false });
@@ -631,6 +893,7 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
     if (!frameId) throw new BrowserBlockedError('Chrome exposed no main frame');
     await client.send('Page.setDocumentContent', { frameId, html });
     await evaluate(client, POPUP_GUARD_SOURCE);
+    await evaluate(client, SUBMISSION_TRACE_SOURCE);
 
     const normalMotion = await measureMotion(client);
     await client.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
@@ -644,33 +907,19 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
       const submit = form?.querySelector('button[type="submit"], input[type="submit"]');
       const label = document.querySelector('label[for="capability-name"]');
       const rendered = ${ELEMENT_RENDERED_SOURCE};
-      const styleSignature = (element) => {
-        if (!element) return null;
-        const style = getComputedStyle(element);
-        return {
-          outlineStyle: style.outlineStyle,
-          outlineWidth: style.outlineWidth,
-          outlineColor: style.outlineColor,
-          outlineOffset: style.outlineOffset,
-          boxShadow: style.boxShadow,
-          borderColor: style.borderColor,
-          borderWidth: style.borderWidth,
-          borderStyle: style.borderStyle,
-          backgroundColor: style.backgroundColor,
-          color: style.color,
-          filter: style.filter,
-        };
-      };
+      const focusSignature = ${FOCUS_SIGNATURE_SOURCE};
       if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+      const policies = [...document.querySelectorAll('meta[http-equiv]')]
+        .filter((meta) => meta.httpEquiv.toLowerCase() === 'content-security-policy')
+        .map((meta) => meta.content.trim());
       return {
         missing: ['form', 'input', 'success', 'submit', 'label'].filter((key) => ({form, input, success, submit, label})[key] == null),
+        textInputContract: input instanceof HTMLInputElement && input.type === 'text',
         successVisibleBefore: rendered(success) && success.textContent.trim().length > 0,
         successTextBefore: success?.textContent?.trim() || '',
         formVisibleBefore: [form, label, input, submit].every(rendered),
         urlBefore: location.href,
-        contentSecurityPolicy: [...document.querySelectorAll('meta[http-equiv]')]
-          .find((meta) => meta.httpEquiv.toLowerCase() === 'content-security-policy')
-          ?.content?.trim() || '',
+        contentSecurityPolicies: policies,
         beforeSubmission: {
           innerWidth: window.innerWidth,
           scrollWidth: document.documentElement.scrollWidth,
@@ -679,8 +928,8 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
         inputDisabled: Boolean(input?.disabled),
         inputReadOnly: Boolean(input?.readOnly),
         unfocusedStyles: {
-          input: styleSignature(input),
-          submit: styleSignature(submit),
+          input: focusSignature(input),
+          submit: focusSignature(submit),
         },
       };
     })()`);
@@ -691,27 +940,21 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
     );
     const inputFocus = await evaluate(client, `(() => {
       const element = document.querySelector('#capability-name');
-      if (!element || document.activeElement !== element) return { reachable: false, changed: false };
-      const style = getComputedStyle(element);
-      const focused = {
-        outlineStyle: style.outlineStyle,
-        outlineWidth: style.outlineWidth,
-        outlineColor: style.outlineColor,
-        outlineOffset: style.outlineOffset,
-        boxShadow: style.boxShadow,
-        borderColor: style.borderColor,
-        borderWidth: style.borderWidth,
-        backgroundColor: style.backgroundColor,
-        color: style.color,
-        filter: style.filter,
+      const focusSignature = ${FOCUS_SIGNATURE_SOURCE};
+      return {
+        reachable: Boolean(element && document.activeElement === element),
+        focusVisible: Boolean(element?.matches?.(':focus-visible')),
+        focused: focusSignature(element),
       };
-      return { reachable: true, focused };
     })()`);
     inputFocus.unfocused = initial.unfocusedStyles?.input || null;
     inputFocus.changed = Boolean(
       inputFocus.reachable
-      && focusStyleRenderedChange(inputFocus.unfocused, inputFocus.focused || null)
+      && inputFocus.focusVisible
+      && focusSignatureRenderedChange(inputFocus.unfocused, inputFocus.focused),
     );
+
+    if (inputKeyboardReachable) await typeWithKeyboard(client, 'Ada');
 
     const submitKeyboardReachable = await tabUntil(
       client,
@@ -720,62 +963,58 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
     const submitFocus = await evaluate(client, `(() => {
       const form = document.querySelector('#capability-form');
       const element = form?.querySelector('button[type="submit"], input[type="submit"]');
-      if (!element || document.activeElement !== element) return { reachable: false, changed: false };
-      const style = getComputedStyle(element);
+      const focusSignature = ${FOCUS_SIGNATURE_SOURCE};
       return {
-        reachable: true,
-        focused: {
-          outlineStyle: style.outlineStyle,
-          outlineWidth: style.outlineWidth,
-          outlineColor: style.outlineColor,
-          outlineOffset: style.outlineOffset,
-          boxShadow: style.boxShadow,
-          borderColor: style.borderColor,
-          borderWidth: style.borderWidth,
-          borderStyle: style.borderStyle,
-          backgroundColor: style.backgroundColor,
-          color: style.color,
-          filter: style.filter,
-        },
+        reachable: Boolean(element && document.activeElement === element),
+        focusVisible: Boolean(element?.matches?.(':focus-visible')),
+        focused: focusSignature(element),
       };
     })()`);
     submitFocus.unfocused = initial.unfocusedStyles?.submit || null;
     submitFocus.changed = Boolean(
       submitFocus.reachable
-      && focusStyleRenderedChange(submitFocus.unfocused, submitFocus.focused || null)
+      && submitFocus.focusVisible
+      && focusSignatureRenderedChange(submitFocus.unfocused, submitFocus.focused),
     );
 
-    const returnedToInput = await tabUntil(
-      client,
-      `document.activeElement === document.querySelector('#capability-name')`,
-      { reverse: true },
-    );
-    if (inputKeyboardReachable && returnedToInput) {
-      await typeWithKeyboard(client, 'Ada');
-      await evaluate(client, `(() => {
-        const form = document.querySelector('#capability-form');
-        const submit = form?.querySelector('button[type="submit"], input[type="submit"]');
-        if (form && submit && typeof form.requestSubmit === 'function') form.requestSubmit(submit);
-        else if (submit instanceof HTMLElement) submit.click();
-        return true;
-      })()`);
+    if (submitKeyboardReachable) {
+      await dispatchKey(client, 'Enter', 'Enter', 13);
     }
 
     await new Promise((resolvePromise) => setTimeout(resolvePromise, NETWORK_OBSERVATION_MS));
     if (interceptionPromises.size) await Promise.allSettled([...interceptionPromises]);
 
-    const after = await evaluate(client, `(() => {
+    const snapshotExpression = (forbidden) => `(() => {
       const form = document.querySelector('#capability-form');
       const input = document.querySelector('#capability-name');
       const success = document.querySelector('#capability-success');
       const submit = form?.querySelector('button[type="submit"], input[type="submit"]');
       const label = document.querySelector('label[for="capability-name"]');
       const rendered = ${ELEMENT_RENDERED_SOURCE};
+      const forbidden = ${JSON.stringify(forbidden || '')};
+      let forbiddenTextVisible = false;
+      if (forbidden) {
+        forbiddenTextVisible = String(document.body?.innerText || '').includes(forbidden);
+        if (!forbiddenTextVisible) {
+          for (const element of document.querySelectorAll('*')) {
+            for (const pseudo of ['::before', '::after']) {
+              const style = getComputedStyle(element, pseudo);
+              const content = String(style.content || '').replace(/^['"]|['"]$/g, '');
+              if (content && content !== 'none' && content !== 'normal' && content.includes(forbidden)) {
+                forbiddenTextVisible = true;
+                break;
+              }
+            }
+            if (forbiddenTextVisible) break;
+          }
+        }
+      }
       return {
         successVisible: rendered(success) && success.textContent.trim().length > 0,
         successText: success?.textContent?.trim() || null,
         submittedValue: input?.value || null,
         formVisibleAfter: [form, label, input, submit].every(rendered),
+        textInputContract: input instanceof HTMLInputElement && input.type === 'text',
         urlAfter: location.href,
         afterSubmission: {
           innerWidth: window.innerWidth,
@@ -784,9 +1023,14 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
         },
         activeElementId: document.activeElement?.id || null,
         title: document.title,
+        submission: window.__designStudioSubmissionTrace
+          ? { ...window.__designStudioSubmissionTrace }
+          : { trustedSubmit: false, causedSuccess: false, successObserved: false },
+        forbiddenTextVisible,
       };
-    })()`);
+    })()`;
 
+    const earlyAfter = await evaluate(client, snapshotExpression(forbiddenText));
     const normalPostSubmitMotion = await measureMotion(client);
     await client.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
     const reducedPostSubmitMotion = await measureMotion(client);
@@ -806,17 +1050,32 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
     );
     for (const url of guardedNetworkAttempts || []) recordExternal(url, true);
 
-    const durableNetworkPolicy = hasDurableNoNetworkPolicy(
-      initial.contentSecurityPolicy,
-    );
+    const policies = Array.isArray(initial.contentSecurityPolicies)
+      ? initial.contentSecurityPolicies
+      : [];
+    const durableNetworkPolicy = policies.length === 1 && hasDurableNoNetworkPolicy(policies[0]);
     const focusStyleChanged = Boolean(inputFocus.changed && submitFocus.changed);
     const motionSupported = Boolean(
       motionPairSupported(normalMotion, reducedMotion)
       && motionPairSupported(normalPostSubmitMotion, reducedPostSubmitMotion)
     );
+
+    const beforeScreenshot = await evaluate(client, snapshotExpression(forbiddenText));
+    const screenshot = await client.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false, fromSurface: true });
+    await writeFile(join(resolvedOutput, 'browser-after-submit.png'), Buffer.from(screenshot.data, 'base64'));
+    const afterScreenshot = await evaluate(client, snapshotExpression(forbiddenText));
+    const finalStateStable = [
+      'successVisible',
+      'successText',
+      'submittedValue',
+      'formVisibleAfter',
+      'urlAfter',
+      'forbiddenTextVisible',
+    ].every((key) => JSON.stringify(beforeScreenshot[key]) === JSON.stringify(afterScreenshot[key]));
+
     const interaction = {
       ...initial,
-      ...after,
+      ...afterScreenshot,
       focus: {
         visible: focusStyleChanged,
         input: inputFocus,
@@ -825,6 +1084,7 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
         submitKeyboardReachable,
       },
       focusStyleChanged,
+      finalStateStable,
       reducedMotion: Boolean(
         reducedMotion.prefersReducedMotion
         && reducedPostSubmitMotion.prefersReducedMotion
@@ -849,15 +1109,21 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
     const requests = [...requestUrls].sort();
     const externalRequests = [...externalRequestUrls].sort();
     const blockedRequests = [...blockedRequestUrls].sort();
-    const screenshot = await client.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false, fromSurface: true });
-    await writeFile(join(resolvedOutput, 'browser-after-submit.png'), Buffer.from(screenshot.data, 'base64'));
-
     const failures = [];
     if (interaction.missing?.length) failures.push(`missing required elements: ${interaction.missing.join(', ')}`);
+    if (!interaction.textInputContract) failures.push('capability-name is not a text input');
     if (!interaction.formVisibleBefore) failures.push('form controls were not visible before submission');
     if (interaction.successVisibleBefore) failures.push('success state was visible before submission');
     if (interaction.successTextBefore) failures.push('success state contained content before submission');
-    if (!interaction.successVisible) failures.push('success state did not become visible');
+    if (!interaction.submission?.trustedSubmit) failures.push('no trusted keyboard submission was observed');
+    if (!interaction.submission?.causedSuccess) failures.push('success transition was not caused by the trusted submission');
+    if (!interaction.successVisible) {
+      if (earlyAfter.successVisible || interaction.submission?.successObserved) {
+        failures.push('success state did not remain visible at screenshot time');
+      } else {
+        failures.push('success state did not become visible');
+      }
+    }
     if (interaction.successText !== 'Capability complete') failures.push('success state text is not exact');
     if (!interaction.formVisibleAfter) failures.push('form controls did not remain visible after submission');
     if (interaction.submittedValue !== 'Ada') failures.push('text input did not accept real keyboard input');
@@ -875,6 +1141,8 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
     if (!durableNetworkPolicy) failures.push('document lacks a durable no-network content security policy');
     if (externalRequests.length) failures.push('external network request attempted');
     if (externalRequests.some((url) => !blockedRequestUrls.has(url))) failures.push('external network request was not blocked before transport');
+    if (interaction.forbiddenTextVisible) failures.push('forbidden text became visible');
+    if (!interaction.finalStateStable) failures.push('rendered state changed while the screenshot was captured');
 
     return {
       schemaVersion: 1,
@@ -885,11 +1153,13 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
       interaction,
       network: {
         durablePolicy: durableNetworkPolicy,
-        contentSecurityPolicy: initial.contentSecurityPolicy,
+        contentSecurityPolicy: policies[0] || '',
+        contentSecurityPolicies: policies,
         requests,
         externalRequests,
         blockedRequests,
         blockedPopupTargets: [...blockedPopupTargets].sort(),
+        blockedAuxiliaryTargets: [...blockedAuxiliaryTargets].sort(),
         popupAttempts: [...(popupAttempts || [])],
         guardedNetworkAttempts: [...(guardedNetworkAttempts || [])],
         observationMs: NETWORK_OBSERVATION_MS,
@@ -905,11 +1175,13 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
         process.stderr.write(`failed to close DevTools client: ${error?.message || String(error)}\n`);
       }
     }
-    try {
-      await stopChrome(chrome);
-    } catch (error) {
-      if (process.env.DEBUG_BROWSER_PROBE) {
-        process.stderr.write(`failed to stop Chrome cleanly: ${error?.message || String(error)}\n`);
+    if (chrome) {
+      try {
+        await stopChrome(chrome);
+      } catch (error) {
+        if (process.env.DEBUG_BROWSER_PROBE) {
+          process.stderr.write(`failed to stop Chrome cleanly: ${error?.message || String(error)}\n`);
+        }
       }
     }
     await removeBrowserProfileBestEffort(userDataDir, {
@@ -922,7 +1194,6 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
     if (stderr && process.env.DEBUG_BROWSER_PROBE) process.stderr.write(stderr);
   }
 }
-
 async function main() {
   let args;
   let report;

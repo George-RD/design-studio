@@ -5,14 +5,17 @@ import argparse
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from html.parser import HTMLParser
+import hashlib
 import json
 import os
 from pathlib import Path
 import re
 import shutil
+import stat
 import subprocess
-import sys
 import tempfile
+import threading
+import time
 from typing import Any, Callable, Sequence
 
 
@@ -25,6 +28,11 @@ DEFAULT_MODEL = "gpt-5.4"
 MAX_AI_CREDITS = 30
 COMMAND_TIMEOUT_SECONDS = 360
 BROWSER_TIMEOUT_SECONDS = 90
+MAX_STDOUT_BYTES = 4_000_000
+MAX_STDERR_BYTES = 1_000_000
+MAX_JSONL_EVENTS = 10_000
+MAX_JSONL_LINE_BYTES = 1_000_000
+OUTPUT_LIMIT_EXIT_CODE = 125
 
 COPILOT_ENV_ALLOWLIST = frozenset(
     {
@@ -135,6 +143,32 @@ def _coerce_subprocess_text(value: Any) -> str:
     return str(value)
 
 
+def _capture_stream_bounded(
+    stream: Any,
+    *,
+    limit: int,
+    destination: bytearray,
+    exceeded: threading.Event,
+) -> None:
+    try:
+        while True:
+            chunk = stream.read(65_536)
+            if not chunk:
+                return
+            if isinstance(chunk, str):
+                chunk = chunk.encode("utf-8", errors="replace")
+            remaining = max(0, limit - len(destination))
+            if remaining:
+                destination.extend(chunk[:remaining])
+            if len(chunk) > remaining:
+                exceeded.set()
+    finally:
+        try:
+            stream.close()
+        except Exception:
+            pass
+
+
 def default_command_runner(
     argv: Sequence[str],
     *,
@@ -142,29 +176,104 @@ def default_command_runner(
     env: dict[str, str],
 ) -> CommandOutcome:
     try:
-        completed = subprocess.run(
+        process = subprocess.Popen(
             [str(part) for part in argv],
             cwd=cwd,
             env=env,
-            capture_output=True,
-            text=True,
-            check=False,
-            timeout=COMMAND_TIMEOUT_SECONDS,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
         )
-    except subprocess.TimeoutExpired as error:
-        stdout = _coerce_subprocess_text(
-            getattr(error, "stdout", None) or getattr(error, "output", None)
+    except OSError as error:
+        return CommandOutcome(
+            exit_code=127,
+            stdout="",
+            stderr=f"Copilot CLI could not start: {type(error).__name__}: {error}",
         )
-        stderr = _coerce_subprocess_text(getattr(error, "stderr", None))
+
+    if process.stdout is None or process.stderr is None:
+        process.kill()
+        return CommandOutcome(
+            exit_code=127,
+            stdout="",
+            stderr="Copilot CLI did not expose stdout and stderr pipes",
+        )
+
+    stdout_bytes = bytearray()
+    stderr_bytes = bytearray()
+    stdout_exceeded = threading.Event()
+    stderr_exceeded = threading.Event()
+    readers = [
+        threading.Thread(
+            target=_capture_stream_bounded,
+            kwargs={
+                "stream": process.stdout,
+                "limit": MAX_STDOUT_BYTES,
+                "destination": stdout_bytes,
+                "exceeded": stdout_exceeded,
+            },
+            daemon=True,
+        ),
+        threading.Thread(
+            target=_capture_stream_bounded,
+            kwargs={
+                "stream": process.stderr,
+                "limit": MAX_STDERR_BYTES,
+                "destination": stderr_bytes,
+                "exceeded": stderr_exceeded,
+            },
+            daemon=True,
+        ),
+    ]
+    for reader in readers:
+        reader.start()
+
+    deadline = time.monotonic() + COMMAND_TIMEOUT_SECONDS
+    timed_out = False
+    output_exceeded = False
+    while process.poll() is None:
+        if stdout_exceeded.is_set() or stderr_exceeded.is_set():
+            output_exceeded = True
+            process.kill()
+            break
+        if time.monotonic() >= deadline:
+            timed_out = True
+            process.kill()
+            break
+        time.sleep(0.02)
+
+    try:
+        exit_code = process.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        exit_code = process.wait()
+    for reader in readers:
+        reader.join(timeout=5)
+
+    stdout = bytes(stdout_bytes).decode("utf-8", errors="replace")
+    stderr = bytes(stderr_bytes).decode("utf-8", errors="replace")
+    if timed_out:
         timeout_message = (
             f"Copilot CLI timed out after {COMMAND_TIMEOUT_SECONDS} seconds"
         )
         stderr = f"{stderr.rstrip()}\n{timeout_message}\n" if stderr else timeout_message
         return CommandOutcome(exit_code=124, stdout=stdout, stderr=stderr)
+    if output_exceeded or stdout_exceeded.is_set() or stderr_exceeded.is_set():
+        streams = []
+        if stdout_exceeded.is_set():
+            streams.append(f"stdout>{MAX_STDOUT_BYTES} bytes")
+        if stderr_exceeded.is_set():
+            streams.append(f"stderr>{MAX_STDERR_BYTES} bytes")
+        message = "Copilot CLI output limit exceeded: " + ", ".join(streams)
+        stderr = f"{stderr.rstrip()}\n{message}\n" if stderr else message
+        return CommandOutcome(
+            exit_code=OUTPUT_LIMIT_EXIT_CODE,
+            stdout=stdout,
+            stderr=stderr,
+        )
     return CommandOutcome(
-        exit_code=completed.returncode,
-        stdout=completed.stdout,
-        stderr=completed.stderr,
+        exit_code=exit_code,
+        stdout=stdout,
+        stderr=stderr,
     )
 
 
@@ -186,6 +295,8 @@ def default_browser_runner(site_dir: Path, evidence_dir: Path) -> dict[str, Any]
                 "390",
                 "--height",
                 "844",
+                "--forbidden-text",
+                SOURCE_CANARY,
             ],
             capture_output=True,
             text=True,
@@ -231,6 +342,15 @@ def parse_jsonl(text: str, label: str) -> list[dict[str, Any]]:
     for line_number, raw_line in enumerate(text.splitlines(), start=1):
         if not raw_line.strip():
             continue
+        if len(raw_line.encode("utf-8")) > MAX_JSONL_LINE_BYTES:
+            raise ContractError(
+                f"{label} line {line_number} exceeds "
+                f"{MAX_JSONL_LINE_BYTES} bytes"
+            )
+        if len(events) >= MAX_JSONL_EVENTS:
+            raise ContractError(
+                f"{label} exceeds {MAX_JSONL_EVENTS} JSON events"
+            )
         try:
             value = json.loads(raw_line)
         except json.JSONDecodeError as exc:
@@ -266,6 +386,19 @@ def classify_cli_failure(outcome: CommandOutcome) -> str:
         "timeout",
     )
     return "blocked" if any(marker in text for marker in blocked_markers) else "failed"
+
+
+def ensure_command_output_bounds(outcome: CommandOutcome) -> None:
+    stdout_bytes = len(outcome.stdout.encode("utf-8"))
+    stderr_bytes = len(outcome.stderr.encode("utf-8"))
+    if stdout_bytes > MAX_STDOUT_BYTES:
+        raise ContractError(
+            f"Copilot CLI stdout exceeds {MAX_STDOUT_BYTES} bytes"
+        )
+    if stderr_bytes > MAX_STDERR_BYTES:
+        raise ContractError(
+            f"Copilot CLI stderr exceeds {MAX_STDERR_BYTES} bytes"
+        )
 
 
 def safe_persist_output(path: Path, text: str, token: str) -> None:
@@ -356,12 +489,19 @@ def ensure_exact_workspace_files(
 ) -> list[str]:
     actual: set[str] = set()
     for path in root.rglob("*"):
-        if path.is_symlink():
+        relative_path = path.relative_to(root)
+        mode = path.lstat().st_mode
+        if stat.S_ISLNK(mode):
             raise ContractError(
-                f"{label} contains a symlink: {path.relative_to(root)}"
+                f"{label} contains a symlink: {relative_path}"
             )
-        if path.is_file():
-            actual.add(path.relative_to(root).as_posix())
+        if stat.S_ISDIR(mode):
+            continue
+        if not stat.S_ISREG(mode):
+            raise ContractError(
+                f"{label} contains an unsupported file type: {relative_path}"
+            )
+        actual.add(relative_path.as_posix())
     if actual != expected:
         missing = sorted(expected - actual)
         unexpected = sorted(actual - expected)
@@ -370,6 +510,33 @@ def ensure_exact_workspace_files(
             f"missing={missing}, unexpected={unexpected}"
         )
     return sorted(actual)
+
+
+def snapshot_file_digests(
+    root: Path,
+    names: set[str],
+    label: str,
+) -> dict[str, str]:
+    digests: dict[str, str] = {}
+    for name in sorted(names):
+        path = root / name
+        if path.is_symlink() or not path.is_file():
+            raise ContractError(f"{label} is not a regular file: {name}")
+        digests[name] = hashlib.sha256(path.read_bytes()).hexdigest()
+    return digests
+
+
+def require_unchanged_file_digests(
+    root: Path,
+    expected: dict[str, str],
+    label: str,
+) -> None:
+    current = snapshot_file_digests(root, set(expected), label)
+    changed = sorted(
+        name for name, digest in expected.items() if current.get(name) != digest
+    )
+    if changed:
+        raise ContractError(f"{label} changed: {changed}")
 
 
 def validate_direction(path: Path) -> dict[str, str]:
@@ -400,8 +567,21 @@ _REQUIRED_NO_NETWORK_CSP = {
     "connect-src": ("'none'",),
     "form-action": ("'none'",),
     "frame-src": ("'none'",),
+    "img-src": ("data:",),
+    "media-src": ("data:",),
     "object-src": ("'none'",),
+    "script-src": ("'unsafe-inline'",),
+    "style-src": ("'unsafe-inline'",),
 }
+_ALLOWED_EXTRA_CSP = {
+    "child-src": ("'none'",),
+    "font-src": ("'none'",),
+    "manifest-src": ("'none'",),
+    "navigate-to": ("'none'",),
+    "prefetch-src": ("'none'",),
+    "worker-src": ("'none'",),
+}
+
 _NETWORK_API_PATTERNS = {
     "fetch": re.compile(r"(?<![\w$])fetch\s*\(", re.IGNORECASE),
     "XMLHttpRequest": re.compile(r"\bXMLHttpRequest\b", re.IGNORECASE),
@@ -412,21 +592,37 @@ _NETWORK_API_PATTERNS = {
 }
 
 
-def _parse_content_security_policy(content: str) -> dict[str, tuple[str, ...]]:
+def _parse_content_security_policy(
+    content: str,
+) -> dict[str, tuple[str, ...]] | None:
     directives: dict[str, tuple[str, ...]] = {}
     for raw_directive in content.split(";"):
         parts = raw_directive.strip().lower().split()
         if not parts:
             continue
-        directives[parts[0]] = tuple(parts[1:])
+        name = parts[0]
+        if name in directives:
+            return None
+        directives[name] = tuple(parts[1:])
     return directives
 
 
 def _has_durable_no_network_policy(content: str) -> bool:
     directives = _parse_content_security_policy(content)
-    return all(
+    if directives is None:
+        return False
+    if not all(
         directives.get(name) == expected
         for name, expected in _REQUIRED_NO_NETWORK_CSP.items()
+    ):
+        return False
+    allowed_names = set(_REQUIRED_NO_NETWORK_CSP) | set(_ALLOWED_EXTRA_CSP)
+    if set(directives) - allowed_names:
+        return False
+    return all(
+        directives.get(name) == expected
+        for name, expected in _ALLOWED_EXTRA_CSP.items()
+        if name in directives
     )
 
 
@@ -452,6 +648,8 @@ class CapabilityHtmlParser(HTMLParser):
     def __init__(self) -> None:
         super().__init__()
         self.ids: set[str] = set()
+        self.elements_by_id: dict[str, tuple[str, dict[str, str | None]]] = {}
+        self.duplicate_ids: set[str] = set()
         self.has_submit = False
         self.has_viewport = False
         self.content_security_policies: list[str] = []
@@ -475,7 +673,10 @@ class CapabilityHtmlParser(HTMLParser):
         values = {name.lower(): value for name, value in attrs}
         element_id = values.get("id")
         if element_id:
+            if element_id in self.elements_by_id:
+                self.duplicate_ids.add(element_id)
             self.ids.add(element_id)
+            self.elements_by_id[element_id] = (tag, values)
         if (
             tag == "button"
             and values.get("type", "submit").lower() == "submit"
@@ -555,9 +756,14 @@ class CapabilityHtmlParser(HTMLParser):
 
 def validate_site(path: Path) -> dict[str, Any]:
     try:
-        text = path.read_text(encoding="utf-8")
+        file_stat = path.lstat()
     except FileNotFoundError as exc:
         raise ContractError("builder did not produce index.html") from exc
+    if not stat.S_ISREG(file_stat.st_mode):
+        raise ContractError("builder index.html is not a regular file")
+    if file_stat.st_size > 200_000:
+        raise ContractError("index.html exceeds the 200 KB capability limit")
+    text = path.read_text(encoding="utf-8")
     if len(text.encode("utf-8")) > 200_000:
         raise ContractError("index.html exceeds the 200 KB capability limit")
     if SOURCE_CANARY in text:
@@ -574,16 +780,24 @@ def validate_site(path: Path) -> dict[str, Any]:
         raise ContractError(
             f"index.html is missing required IDs: {missing_ids}"
         )
+    if parser.duplicate_ids:
+        raise ContractError(
+            f"index.html contains duplicate required IDs: {sorted(parser.duplicate_ids)}"
+        )
+    input_element = parser.elements_by_id.get("capability-name")
+    input_tag, input_attrs = input_element or (None, {})
+    input_type = str(input_attrs.get("type") or "text").lower()
+    if input_tag != "input" or input_type != "text":
+        raise ContractError(
+            "index.html capability-name is not a text input"
+        )
     if not parser.has_submit:
         raise ContractError("index.html has no submit control")
     if not parser.has_viewport:
         raise ContractError("index.html has no viewport declaration")
-    durable_policies = [
-        policy
-        for policy in parser.content_security_policies
-        if _has_durable_no_network_policy(policy)
-    ]
-    if not durable_policies:
+    if len(parser.content_security_policies) != 1 or not _has_durable_no_network_policy(
+        parser.content_security_policies[0]
+    ):
         raise ContractError(
             "index.html has no durable no-network content security policy"
         )
@@ -610,6 +824,7 @@ def validate_site(path: Path) -> dict[str, Any]:
         "entrypoint": "index.html",
         "bytes": len(text.encode("utf-8")),
         "requiredIds": sorted(required_ids),
+        "textInputContract": True,
         "durableNetworkPolicy": True,
         "networkApisAbsent": True,
         "resourceReferencesAbsent": True,
@@ -799,6 +1014,7 @@ def invoke_role(
         },
     )
     outcome = command_runner(command, cwd=workspace, env=environment)
+    ensure_command_output_bounds(outcome)
     stdout_path = evidence_dir / f"{role}.stdout.jsonl"
     stderr_path = evidence_dir / f"{role}.stderr.log"
     safe_persist_output(stdout_path, outcome.stdout, token)
@@ -960,6 +1176,16 @@ def run_capability(
             f"/* {SOURCE_CANARY} */\n",
             encoding="utf-8",
         )
+        builder_seed_names = {"brief.md", "direction.json", "baseline.css"}
+        builder_seed_digests = snapshot_file_digests(
+            builder_dir,
+            builder_seed_names,
+            "builder source input",
+        )
+        report["checks"]["builder"] = {
+            "status": "running",
+            "sourceInputDigests": builder_seed_digests,
+        }
         builder_result = invoke_role(
             role="builder",
             workspace=builder_dir,
@@ -972,6 +1198,11 @@ def run_capability(
             allow_tools="read,write",
             deny_tools="shell,url,memory",
             command_runner=command_runner,
+        )
+        require_unchanged_file_digests(
+            builder_dir,
+            builder_seed_digests,
+            "builder source inputs",
         )
         site_contract = validate_site(builder_dir / "index.html")
         builder_files = ensure_exact_workspace_files(
@@ -1006,6 +1237,11 @@ def run_capability(
         }
 
         current_step = "sourceIsolation"
+        interaction = browser.get("interaction")
+        rendered_canary_absent = (
+            isinstance(interaction, dict)
+            and interaction.get("forbiddenTextVisible") is False
+        )
         isolation = {
             "directorHasNoSource": not (
                 director_dir / "baseline.css"
@@ -1017,6 +1253,7 @@ def run_capability(
                 site_dir / "index.html",
                 SOURCE_CANARY,
             ),
+            "renderedCanaryAbsent": rendered_canary_absent,
         }
         isolation_passed = all(isolation.values())
         report["checks"]["sourceIsolation"] = {
@@ -1118,7 +1355,7 @@ def run_capability(
         )
         report["error"] = {
             "step": current_step,
-            "kind": "copilot-auth",
+            "kind": "capability-blocked",
             "message": str(error),
         }
     except ContractError as error:
@@ -1208,7 +1445,3 @@ def main(argv: Sequence[str] | None = None) -> int:
     if report["status"] == "blocked":
         return 2
     return 1
-
-
-if __name__ == "__main__":
-    sys.exit(main())

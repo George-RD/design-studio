@@ -102,12 +102,15 @@ def classify_cli_failure(outcome: CommandOutcome) -> str:
     text = f"{outcome.stdout}\n{outcome.stderr}".lower()
     model_blockers = (
         "model is not available",
-        "model \"",
         "unsupported model",
         "no models available",
         "cannot use model",
     )
-    if any(marker in text for marker in model_blockers):
+    unavailable_named_model = core.re.search(
+        r"\bmodel\s+[\"'][^\"']+[\"'](?:\s+from\s+[^.\n]+)?\s+is\s+not\s+available\b",
+        text,
+    )
+    if unavailable_named_model or any(marker in text for marker in model_blockers):
         return "blocked"
     return _BASE_CLASSIFIER(outcome)
 
@@ -306,6 +309,175 @@ def successful_file_views(
     return successful_file_operations(events, workspace)["read"]
 
 
+def validate_role_tool_receipt(
+    role: str,
+    events: list[dict[str, Any]],
+    workspace: Path,
+) -> dict[str, Any]:
+    read_tools = {"read", "view"}
+    write_tools = {"create", "edit", "apply_patch"}
+    allowed_tools = read_tools | write_tools
+    role_contracts = {
+        "director": {
+            "reads": set(),
+            "writes": {"direction.json"},
+            "first_turn": {"write"},
+        },
+        "builder": {
+            "reads": {"brief.md", "direction.json", "baseline.css"},
+            "writes": {"index.html"},
+            "first_turn": {"read"},
+        },
+        "evaluator": {
+            "reads": set(),
+            "writes": {"evaluation.json"},
+            "first_turn": {"write"},
+        },
+    }
+    contract = role_contracts.get(role)
+    if contract is None:
+        raise core.ContractError(f"unknown capability role: {role}")
+
+    starts: dict[str, dict[str, Any]] = {}
+    completed: set[str] = set()
+    successful_calls: list[dict[str, Any]] = []
+    for event_index, event in enumerate(events):
+        event_type = event.get("type")
+        if event_type not in {"tool.execution_start", "tool.execution_complete"}:
+            continue
+        data = event.get("data")
+        if not isinstance(data, dict):
+            raise core.ContractError(
+                f"{role} tool receipt event {event_index} has no data object"
+            )
+        call_id = data.get("toolCallId")
+        if not isinstance(call_id, str) or not call_id.strip():
+            raise core.ContractError(
+                f"{role} tool receipt event {event_index} has no toolCallId"
+            )
+        call_id = call_id.strip()
+        if event_type == "tool.execution_start":
+            if call_id in starts:
+                raise core.ContractError(
+                    f"{role} tool receipt repeats call ID {call_id}"
+                )
+            tool_name = str(data.get("toolName", "")).strip().lower()
+            if tool_name not in allowed_tools:
+                raise core.ContractError(
+                    f"{role} tool receipt used unsupported tool {tool_name!r}"
+                )
+            relative = _workspace_relative_path(
+                workspace,
+                _operation_path(data.get("arguments")),
+            )
+            if relative is None:
+                raise core.ContractError(
+                    f"{role} tool receipt path escaped the trusted role workspace"
+                )
+            operation = "read" if tool_name in read_tools else "write"
+            allowed_paths = contract[f"{operation}s"]
+            if relative not in allowed_paths:
+                raise core.ContractError(
+                    f"{role} tool receipt attempted unauthorized {operation}: {relative}"
+                )
+            turn_id = str(data.get("turnId", "")).strip()
+            if not turn_id:
+                raise core.ContractError(
+                    f"{role} tool receipt call {call_id} has no turnId"
+                )
+            starts[call_id] = {
+                "id": call_id,
+                "tool": tool_name,
+                "operation": operation,
+                "path": relative,
+                "turnId": turn_id,
+                "startIndex": event_index,
+            }
+            continue
+
+        if call_id not in starts:
+            raise core.ContractError(
+                f"{role} tool receipt completed unknown call {call_id}"
+            )
+        if call_id in completed:
+            raise core.ContractError(
+                f"{role} tool receipt completed call {call_id} more than once"
+            )
+        start = starts[call_id]
+        complete_tool = str(data.get("toolName", "")).strip().lower()
+        if complete_tool and complete_tool != start["tool"]:
+            raise core.ContractError(
+                f"{role} tool receipt changed tool for call {call_id}"
+            )
+        complete_turn = str(data.get("turnId", "")).strip()
+        if complete_turn and complete_turn != start["turnId"]:
+            raise core.ContractError(
+                f"{role} tool receipt changed turn for call {call_id}"
+            )
+        if data.get("success") is not True:
+            raise core.ContractError(
+                f"{role} tool receipt call {call_id} did not succeed"
+            )
+        completed.add(call_id)
+        successful_calls.append({**start, "completeIndex": event_index})
+
+    incomplete = sorted(set(starts) - completed)
+    if incomplete:
+        raise core.ContractError(
+            f"{role} tool receipt has incomplete calls: {incomplete}"
+        )
+    if not successful_calls:
+        raise core.ContractError(f"{role} tool receipt contains no successful calls")
+
+    reads = {call["path"] for call in successful_calls if call["operation"] == "read"}
+    writes = {call["path"] for call in successful_calls if call["operation"] == "write"}
+    if reads != contract["reads"] or writes != contract["writes"]:
+        raise core.ContractError(
+            f"{role} tool receipt does not match the role contract: "
+            f"reads={sorted(reads)}, writes={sorted(writes)}"
+        )
+
+    turn_zero_operations = {
+        call["operation"]
+        for call in successful_calls
+        if call["turnId"] == "0"
+    }
+    if not contract["first_turn"].issubset(turn_zero_operations):
+        raise core.ContractError(
+            f"{role} tool receipt does not prove required first-turn tool use"
+        )
+
+    if role == "builder":
+        read_completions = [
+            call["completeIndex"]
+            for call in successful_calls
+            if call["operation"] == "read"
+        ]
+        write_starts = [
+            call["startIndex"]
+            for call in successful_calls
+            if call["operation"] == "write"
+        ]
+        if not read_completions or not write_starts or max(read_completions) >= min(write_starts):
+            raise core.ContractError(
+                "builder tool receipt does not prove all required reads completed before writing"
+            )
+        if any(
+            call["turnId"] != "0"
+            for call in successful_calls
+            if call["operation"] == "read"
+        ):
+            raise core.ContractError(
+                "builder tool receipt does not prove all required reads happened on turn 0"
+            )
+
+    return {
+        "read": sorted(reads),
+        "written": sorted(writes),
+        "calls": successful_calls,
+    }
+
+
 def _role_tools(role: str) -> tuple[str, list[str]]:
     if role in {"director", "evaluator"}:
         return "create", ["create"]
@@ -343,13 +515,18 @@ def invoke_role(*args: Any, **kwargs: Any) -> dict[str, Any]:
         f"{role} Copilot JSONL",
     )
     resolved_model = resolved_model_from_events(events, role)
-    file_operations = successful_file_operations(events, workspace)
-    read_files = file_operations["read"]
+    receipt = validate_role_tool_receipt(role, events, workspace)
+    read_files = receipt["read"]
     result.update(
         {
             "availableTools": available_tool_list,
             "readFiles": read_files,
-            "writtenFiles": file_operations["written"],
+            "writtenFiles": receipt["written"],
+            "toolReceipt": {
+                "status": "passed",
+                "callCount": len(receipt["calls"]),
+                "calls": receipt["calls"],
+            },
             "resolvedModel": resolved_model,
             "trustedWorkspace": str(workspace.resolve()),
             "trustedWorkspaceConfig": str(

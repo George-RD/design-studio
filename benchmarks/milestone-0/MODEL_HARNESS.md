@@ -26,7 +26,7 @@ The replacement [Copilot CLI agent gate](AGENT_HARNESS.md) proves the broader co
 
 - Probe contract: [`test/test_github_models_capability.py`](../../test/test_github_models_capability.py)
 - Probe implementation: [`scripts/probe_github_models.py`](../../scripts/probe_github_models.py)
-- Archived workflow contract: [`.github/workflows/model-capability.yml`](../../.github/workflows/model-capability.yml)
+- Historical-evidence validator: [`.github/workflows/model-capability.yml`](../../.github/workflows/model-capability.yml)
 - Permanent receipt: [`evidence/github-models-capability.json`](evidence/github-models-capability.json)
 
 The old probe does not complete a benchmark lane and is not used by the current comparison runner.

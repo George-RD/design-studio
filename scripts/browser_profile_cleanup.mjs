@@ -2,6 +2,8 @@ import { rm } from 'node:fs/promises';
 
 const RETRYABLE_REMOVAL_ERRORS = new Set([
   'EBUSY',
+  'EMFILE',
+  'ENFILE',
   'ENOTEMPTY',
   'EPERM',
 ]);
@@ -47,7 +49,6 @@ export async function removeBrowserProfile(
       await delay(retryDelayMs * attempt);
     }
   }
-  throw lastError;
 }
 
 export async function removeBrowserProfileBestEffort(
