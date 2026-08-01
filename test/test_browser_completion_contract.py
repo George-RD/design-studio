@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -42,6 +43,11 @@ class BrowserCompletionContractTests(unittest.TestCase):
     def setUp(self) -> None:
         if shutil.which("node") is None:
             self.skipTest("node unavailable")
+        configured = os.environ.get("CHROME_PATH")
+        if configured:
+            if not Path(configured).is_file():
+                self.skipTest("configured Chrome unavailable")
+            return
         if not any(
             shutil.which(name)
             for name in (
@@ -133,7 +139,13 @@ class BrowserCompletionWrapperTests(unittest.TestCase):
         if shutil.which("node") is None:
             self.skipTest("node unavailable")
 
-    def run_stubbed_wrapper(self, stub_source: str):
+    def run_stubbed_wrapper(
+        self,
+        stub_source: str,
+        *,
+        environment: dict[str, str] | None = None,
+        timeout: int = 10,
+    ):
         temporary = tempfile.TemporaryDirectory()
         root = Path(temporary.name) / "wrapper path ✓ with spaces"
         root.mkdir()
@@ -162,7 +174,8 @@ class BrowserCompletionWrapperTests(unittest.TestCase):
             capture_output=True,
             text=True,
             check=False,
-            timeout=10,
+            timeout=timeout,
+            env={**os.environ, **(environment or {})},
         )
         return temporary, completed, evidence
 
@@ -195,6 +208,32 @@ process.stdout.write('stub stdout\\n');process.stderr.write('stub stderr\\n');pr
         self.assertIn("base browser probe exited 3", failure)
         self.assertIn("stub stdout", failure)
         self.assertIn("stub stderr", failure)
+
+    def test_wrapper_timeout_terminates_browser_descendants(self):
+        stub = """import { spawn } from 'node:child_process';
+import { mkdir, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+const args=process.argv.slice(2);const output=args[args.indexOf('--output-dir')+1];
+await mkdir(output,{recursive:true});
+const marker=join(output,'grandchild-terminated');
+const childSource=`const {writeFileSync}=require('node:fs');process.on('SIGTERM',()=>{writeFileSync(${JSON.stringify(marker)},'terminated');process.exit(0)});setInterval(()=>{},1000);`;
+const child=spawn(process.execPath,['-e',childSource],{stdio:'ignore'});
+await writeFile(join(output,'grandchild.pid'),String(child.pid));
+await new Promise(()=>{});
+"""
+        temporary, completed, evidence = self.run_stubbed_wrapper(
+            stub,
+            environment={
+                "DESIGN_STUDIO_BROWSER_COMPLETION_TIMEOUT_MS": "250",
+            },
+            timeout=5,
+        )
+        self.addCleanup(temporary.cleanup)
+
+        self.assertEqual(1, completed.returncode)
+        self.assertTrue((evidence / "grandchild-terminated").is_file())
+        report = json.loads((evidence / "browser-report.json").read_text())
+        self.assertIn("timed out", report["error"].lower())
 
     def test_failure_fallback_still_emits_status_when_report_cannot_be_written(self):
         with tempfile.TemporaryDirectory() as temporary:

@@ -16,6 +16,8 @@ RECEIPT = (
 DOCUMENT = ROOT / "benchmarks" / "milestone-0" / "AGENT_HARNESS.md"
 ROADMAP = ROOT / "ROADMAP.md"
 WORKFLOW = ROOT / ".github" / "workflows" / "boundary-agent-capability.yml"
+CORE_RUNNER = ROOT / "scripts" / "run_copilot_cli_agent_capability.py"
+GATE_RUNNER = ROOT / "scripts" / "run_copilot_cli_agent_capability_gate.py"
 
 
 class CopilotCliAgentReceiptTests(unittest.TestCase):
@@ -92,6 +94,22 @@ class CopilotCliAgentReceiptTests(unittest.TestCase):
         self.assertIn("[ ] current Design Studio", roadmap)
         self.assertIn("[ ] current Design Studio with Impeccable enabled", roadmap)
 
+
+    def test_only_hardened_gate_is_an_executable_entrypoint(self):
+        core_source = CORE_RUNNER.read_text(encoding="utf-8")
+        gate_source = GATE_RUNNER.read_text(encoding="utf-8")
+        document = DOCUMENT.read_text(encoding="utf-8")
+
+        self.assertNotIn('if __name__ == "__main__"', core_source)
+        self.assertIn('if __name__ == "__main__"', gate_source)
+        self.assertIn(
+            "scripts/run_copilot_cli_agent_capability_gate.py",
+            document,
+        )
+        self.assertIn(
+            "scripts/run_copilot_cli_agent_capability.py",
+            document,
+        )
 
     def test_live_job_timeout_covers_all_role_and_browser_timeouts(self):
         workflow = WORKFLOW.read_text(encoding="utf-8")

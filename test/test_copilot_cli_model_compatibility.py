@@ -37,6 +37,15 @@ class CopilotCliModelCompatibilityTests(unittest.TestCase):
 
         self.assertEqual("blocked", self.module.classify_cli_failure(outcome))
 
+    def test_generic_quoted_model_text_is_not_misclassified_as_unavailable(self):
+        outcome = self.module.CommandOutcome(
+            exit_code=1,
+            stdout="",
+            stderr='Schema error: data model "capability" did not validate.',
+        )
+
+        self.assertEqual("failed", self.module.classify_cli_failure(outcome))
+
     def test_default_requests_auto_selection_for_separate_model_receipting(self):
         self.assertEqual("auto", self.module.DEFAULT_MODEL)
 

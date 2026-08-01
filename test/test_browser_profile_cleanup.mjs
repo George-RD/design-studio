@@ -46,6 +46,24 @@ test('browser profile cleanup does not mask a non-retryable failure', async () =
 });
 
 
+test('browser profile cleanup retries transient descriptor exhaustion', async () => {
+  for (const code of ['EMFILE', 'ENFILE']) {
+    let calls = 0;
+    await removeBrowserProfile('/tmp/profile', {
+      remove: async () => {
+        calls += 1;
+        if (calls === 1) {
+          const error = new Error('descriptor exhaustion');
+          error.code = code;
+          throw error;
+        }
+      },
+      delay: async () => {},
+    });
+    assert.equal(calls, 2);
+  }
+});
+
 test('best-effort browser profile cleanup isolates the cleanup failure', async () => {
   const expected = Object.assign(new Error('permission denied'), { code: 'EACCES' });
   const observed = [];

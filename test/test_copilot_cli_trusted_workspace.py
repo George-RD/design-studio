@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 from pathlib import Path
 import sys
 import tempfile
@@ -154,6 +155,56 @@ class CopilotCliTrustedWorkspaceTests(unittest.TestCase):
                 self.assertEqual(
                     expected,
                     self.module.classify_blocker_kind(step, message),
+                )
+
+    def test_workspace_boundary_rejects_fifo_and_other_special_files(self):
+        if not hasattr(os, "mkfifo"):
+            self.skipTest("FIFO creation unavailable")
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "direction.json").write_text("{}\n", encoding="utf-8")
+            os.mkfifo(root / "hidden-channel")
+            with self.assertRaisesRegex(
+                self.module.core.ContractError,
+                "unsupported file type",
+            ):
+                self.module.core.ensure_exact_workspace_files(
+                    root,
+                    {"direction.json"},
+                    "director workspace",
+                )
+
+    def test_tool_receipt_rejects_builder_write_before_required_reads(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            workspace = Path(temporary)
+            events = [
+                {
+                    "type": "tool.execution_start",
+                    "data": {
+                        "toolCallId": "write",
+                        "toolName": "create",
+                        "arguments": {"path": str(workspace / "index.html")},
+                        "turnId": "0",
+                    },
+                },
+                {
+                    "type": "tool.execution_complete",
+                    "data": {
+                        "toolCallId": "write",
+                        "toolName": "create",
+                        "success": True,
+                        "turnId": "0",
+                    },
+                },
+            ]
+            with self.assertRaisesRegex(
+                self.module.core.ContractError,
+                "tool receipt",
+            ):
+                self.module.validate_role_tool_receipt(
+                    "builder",
+                    events,
+                    workspace,
                 )
 
 

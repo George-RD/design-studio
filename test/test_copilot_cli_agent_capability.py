@@ -36,12 +36,45 @@ class FakeCopilotRunner:
         leak_canary: bool = False,
         skip_baseline_tool_event: bool = False,
         site_symlink_target: Path | None = None,
+        mutate_builder_input: str | None = None,
+        omit_output_tool_event_role: str | None = None,
     ):
         self.failure_role = failure_role
         self.leak_canary = leak_canary
         self.skip_baseline_tool_event = skip_baseline_tool_event
         self.site_symlink_target = site_symlink_target
+        self.mutate_builder_input = mutate_builder_input
+        self.omit_output_tool_event_role = omit_output_tool_event_role
         self.calls: list[dict[str, object]] = []
+
+    @staticmethod
+    def tool_events(
+        tool_name: str,
+        path: Path,
+        call_id: str,
+        *,
+        turn_id: str = "0",
+    ) -> list[dict[str, object]]:
+        return [
+            {
+                "type": "tool.execution_start",
+                "data": {
+                    "toolCallId": call_id,
+                    "toolName": tool_name,
+                    "arguments": {"path": str(path)},
+                    "turnId": turn_id,
+                },
+            },
+            {
+                "type": "tool.execution_complete",
+                "data": {
+                    "toolCallId": call_id,
+                    "toolName": tool_name,
+                    "success": True,
+                    "turnId": turn_id,
+                },
+            },
+        ]
 
     def __call__(self, argv, *, cwd, env):
         role = Path(cwd).name
@@ -62,7 +95,8 @@ class FakeCopilotRunner:
 
         events: list[dict[str, object]] = []
         if role == "director":
-            (Path(cwd) / "direction.json").write_text(
+            direction_path = Path(cwd) / "direction.json"
+            direction_path.write_text(
                 json.dumps(
                     {
                         "concept": "Calm capability card",
@@ -73,31 +107,36 @@ class FakeCopilotRunner:
                 )
                 + "\n"
             )
+            if self.omit_output_tool_event_role != role:
+                events.extend(
+                    self.tool_events(
+                        "create",
+                        direction_path,
+                        "call-director-create",
+                    )
+                )
         elif role == "builder":
             baseline = (Path(cwd) / "baseline.css").read_text()
             self.assert_canary(baseline)
-            if not self.skip_baseline_tool_event:
-                call_id = "call-baseline-view"
+            for name in ("brief.md", "direction.json"):
                 events.extend(
-                    [
-                        {
-                            "type": "tool.execution_start",
-                            "data": {
-                                "toolCallId": call_id,
-                                "toolName": "view",
-                                "arguments": {"path": str(Path(cwd) / "baseline.css")},
-                            },
-                        },
-                        {
-                            "type": "tool.execution_complete",
-                            "data": {
-                                "toolCallId": call_id,
-                                "toolName": "view",
-                                "success": True,
-                            },
-                        },
-                    ]
+                    self.tool_events(
+                        "view",
+                        Path(cwd) / name,
+                        f"call-{name}-view",
+                    )
                 )
+            if not self.skip_baseline_tool_event:
+                events.extend(
+                    self.tool_events(
+                        "view",
+                        Path(cwd) / "baseline.css",
+                        "call-baseline-view",
+                    )
+                )
+            if self.mutate_builder_input:
+                seed = Path(cwd) / self.mutate_builder_input
+                seed.write_text(seed.read_text() + "mutated\n")
             leaked = self.module.SOURCE_CANARY if self.leak_canary else ""
             (Path(cwd) / "index.html").write_text(
                 "<!doctype html><meta name='viewport' content='width=device-width'>"
@@ -114,11 +153,21 @@ class FakeCopilotRunner:
                 "p.hidden=false;p.textContent='Capability complete';});</script>"
                 + leaked
             )
+            if self.omit_output_tool_event_role != role:
+                events.extend(
+                    self.tool_events(
+                        "create",
+                        Path(cwd) / "index.html",
+                        "call-builder-create",
+                        turn_id="1",
+                    )
+                )
             if self.site_symlink_target is not None:
                 site_target = Path(cwd).parents[1] / "site" / "index.html"
                 site_target.symlink_to(self.site_symlink_target)
         elif role == "evaluator":
-            (Path(cwd) / "evaluation.json").write_text(
+            evaluation_path = Path(cwd) / "evaluation.json"
+            evaluation_path.write_text(
                 json.dumps(
                     {
                         "titleVisible": True,
@@ -131,6 +180,14 @@ class FakeCopilotRunner:
                 )
                 + "\n"
             )
+            if self.omit_output_tool_event_role != role:
+                events.extend(
+                    self.tool_events(
+                        "create",
+                        evaluation_path,
+                        "call-evaluator-create",
+                    )
+                )
         events.append(
             {"type": "session.idle", "data": {"model": "gpt-5.4"}}
         )
@@ -146,8 +203,14 @@ class FakeCopilotRunner:
 
 
 class FakeBrowserRunner:
-    def __init__(self, screenshot_bytes: bytes = b"png-evidence") -> None:
+    def __init__(
+        self,
+        screenshot_bytes: bytes = b"png-evidence",
+        *,
+        forbidden_text_visible: bool = False,
+    ) -> None:
         self.screenshot_bytes = screenshot_bytes
+        self.forbidden_text_visible = forbidden_text_visible
 
     def __call__(self, site_dir: Path, evidence_dir: Path):
         if not (site_dir / "index.html").is_file():
@@ -168,6 +231,11 @@ class FakeBrowserRunner:
                 "beforeSubmission": {"scrollWidth": 390, "clientWidth": 390},
                 "afterSubmission": {"scrollWidth": 390, "clientWidth": 390},
                 "focus": {"visible": True},
+                "submission": {
+                    "trustedSubmit": True,
+                    "causedSuccess": True,
+                },
+                "forbiddenTextVisible": self.forbidden_text_visible,
                 "motion": {"normalMaxMs": 180, "reducedMaxMs": 0},
             },
             "network": {
@@ -296,10 +364,8 @@ class CopilotCliAgentCapabilityTests(unittest.TestCase):
             report = self.run_gate(runner, temporary)
 
         self.assertEqual("failed", report["status"])
-        self.assertEqual("sourceIsolation", report["error"]["step"])
-        self.assertFalse(
-            report["checks"]["sourceIsolation"]["builderReadCanarySource"]
-        )
+        self.assertEqual("builder", report["error"]["step"])
+        self.assertIn("tool receipt", report["error"]["message"])
 
     def test_publishing_rejects_existing_site_symlink_before_mutation(self):
         runner: FakeCopilotRunner
@@ -342,6 +408,19 @@ class CopilotCliAgentCapabilityTests(unittest.TestCase):
             result = self.module.core.validate_site(path)
 
         self.assertTrue(result["resourceReferencesAbsent"])
+
+    def test_site_size_is_rejected_before_reading_content(self):
+        path = mock.Mock()
+        path.lstat.return_value.st_mode = 0o100644
+        path.lstat.return_value.st_size = 200_001
+
+        with self.assertRaisesRegex(
+            self.module.core.ContractError,
+            "exceeds the 200 KB capability limit",
+        ):
+            self.module.core.validate_site(path)
+
+        path.read_text.assert_not_called()
 
     def test_site_requires_durable_no_network_csp(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -427,20 +506,25 @@ class CopilotCliAgentCapabilityTests(unittest.TestCase):
         )
 
     def test_command_timeout_is_classified_blocked_with_partial_output(self):
-        timeout = subprocess.TimeoutExpired(
-            cmd=["copilot"],
-            timeout=360,
-            output=b'{"type":"partial"}\n',
-            stderr=b"partial stderr",
-        )
+        command = [
+            sys.executable,
+            "-S",
+            "-c",
+            (
+                "import sys,time; "
+                "print('{\"type\":\"partial\"}', flush=True); "
+                "print('partial stderr', file=sys.stderr, flush=True); "
+                "time.sleep(5)"
+            ),
+        ]
         with tempfile.TemporaryDirectory() as temporary:
             with mock.patch.object(
-                self.module.core.subprocess,
-                "run",
-                side_effect=timeout,
+                self.module.core,
+                "COMMAND_TIMEOUT_SECONDS",
+                0.1,
             ):
                 outcome = self.module.core.default_command_runner(
-                    ["copilot"],
+                    command,
                     cwd=Path(temporary),
                     env={},
                 )
@@ -497,6 +581,57 @@ class CopilotCliAgentCapabilityTests(unittest.TestCase):
 
         self.assertEqual("blocked", report["status"])
         self.assertEqual([], runner.calls)
+
+    def test_builder_seed_inputs_must_remain_unchanged(self):
+        runner = FakeCopilotRunner(mutate_builder_input="baseline.css")
+        with tempfile.TemporaryDirectory() as temporary:
+            report = self.run_gate(runner, temporary)
+
+        self.assertEqual("failed", report["status"])
+        self.assertEqual("builder", report["error"]["step"])
+        self.assertIn("builder source inputs changed", report["error"]["message"])
+        self.assertEqual(2, len(runner.calls))
+
+    def test_each_role_output_requires_a_successful_tool_receipt(self):
+        for role in ("director", "builder", "evaluator"):
+            with self.subTest(role=role), tempfile.TemporaryDirectory() as temporary:
+                runner = FakeCopilotRunner(omit_output_tool_event_role=role)
+                report = self.run_gate(runner, temporary)
+
+            self.assertEqual("failed", report["status"])
+            self.assertEqual(role, report["error"]["step"])
+            self.assertIn("tool receipt", report["error"]["message"])
+
+    def test_browser_must_prove_rendered_canary_absence(self):
+        runner = FakeCopilotRunner()
+        with tempfile.TemporaryDirectory() as temporary:
+            report = self.run_gate(
+                runner,
+                temporary,
+                browser_runner=FakeBrowserRunner(forbidden_text_visible=True),
+            )
+
+        self.assertEqual("failed", report["status"])
+        self.assertEqual("sourceIsolation", report["error"]["step"])
+        self.assertIn("rendered", report["error"]["message"])
+        self.assertEqual(2, len(runner.calls))
+
+    def test_site_rejects_network_capable_csp_override(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "index.html"
+            path.write_text(
+                "<!doctype html><meta name='viewport' content='width=device-width'>"
+                + CSP_META.replace("img-src data:;", "img-src data: https:;")
+                + "<form id='capability-form'><label for='capability-name'>Name</label>"
+                "<input id='capability-name'><button type='submit'>Go</button></form>"
+                "<p id='capability-success' hidden></p>",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(
+                self.module.core.ContractError,
+                "durable no-network",
+            ):
+                self.module.core.validate_site(path)
 
 
 if __name__ == "__main__":

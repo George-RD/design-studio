@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import base64
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -36,6 +38,11 @@ class BrowserCapabilityRegressionTests(unittest.TestCase):
     def setUp(self) -> None:
         if shutil.which("node") is None:
             self.skipTest("node unavailable")
+        configured = os.environ.get("CHROME_PATH")
+        if configured:
+            if not Path(configured).is_file():
+                self.skipTest("configured Chrome unavailable")
+            return
         if not any(
             shutil.which(name)
             for name in (
@@ -47,32 +54,43 @@ class BrowserCapabilityRegressionTests(unittest.TestCase):
         ):
             self.skipTest("Chrome unavailable")
 
-    def run_browser(self, html: str):
+    def run_browser(
+        self,
+        html: str,
+        *,
+        forbidden_text: str | None = None,
+        environment: dict[str, str] | None = None,
+        timeout: int = 35,
+    ):
         temporary = tempfile.TemporaryDirectory()
         root = Path(temporary.name)
         site = root / "site"
         evidence = root / "evidence"
         site.mkdir()
         (site / "index.html").write_text(html, encoding="utf-8")
+        command = [
+            "node",
+            str(BROWSER_PATH),
+            "--root",
+            str(site),
+            "--output-dir",
+            str(evidence),
+            "--entrypoint",
+            "index.html",
+            "--width",
+            "390",
+            "--height",
+            "844",
+        ]
+        if forbidden_text is not None:
+            command.extend(["--forbidden-text", forbidden_text])
         completed = subprocess.run(
-            [
-                "node",
-                str(BROWSER_PATH),
-                "--root",
-                str(site),
-                "--output-dir",
-                str(evidence),
-                "--entrypoint",
-                "index.html",
-                "--width",
-                "390",
-                "--height",
-                "844",
-            ],
+            command,
             capture_output=True,
             text=True,
             check=False,
-            timeout=35,
+            timeout=timeout,
+            env={**os.environ, **(environment or {})},
         )
         self.assertTrue(
             (evidence / "browser-report.json").is_file(),
@@ -432,6 +450,174 @@ class BrowserCapabilityRegressionTests(unittest.TestCase):
             report["failures"],
         )
         self.assertFalse(report["interaction"]["formVisibleBefore"])
+
+    def test_textarea_cannot_impersonate_the_required_text_input(self):
+        html = EMPTY_SUCCESS_HTML.replace(
+            '<input id="capability-name" name="name">',
+            '<textarea id="capability-name" name="name"></textarea>',
+        )
+        temporary, completed, report = self.run_browser(html)
+        self.addCleanup(temporary.cleanup)
+
+        self.assertEqual(1, completed.returncode)
+        self.assertIn(
+            "capability-name is not a text input",
+            report["failures"],
+        )
+        self.assertFalse(report["interaction"]["textInputContract"])
+
+    def test_timer_success_without_a_trusted_submit_fails(self):
+        html = EMPTY_SUCCESS_HTML.replace(
+            "document.querySelector('#capability-form').addEventListener('submit',event=>{event.preventDefault();success.textContent='Capability complete';});",
+            "document.querySelector('#capability-form').addEventListener('submit',event=>event.preventDefault());setTimeout(()=>{success.textContent='Capability complete';},450);",
+        )
+        temporary, completed, report = self.run_browser(html)
+        self.addCleanup(temporary.cleanup)
+
+        self.assertEqual(1, completed.returncode)
+        self.assertIn(
+            "success transition was not caused by the trusted submission",
+            report["failures"],
+        )
+        self.assertFalse(report["interaction"]["submission"]["causedSuccess"])
+
+    def test_microtask_success_from_trusted_submit_is_attributed(self):
+        html = EMPTY_SUCCESS_HTML.replace(
+            "document.querySelector('#capability-form').addEventListener('submit',event=>{event.preventDefault();success.textContent='Capability complete';});",
+            "document.querySelector('#capability-form').addEventListener('submit',event=>{event.preventDefault();Promise.resolve().then(()=>{success.textContent='Capability complete';});});",
+        )
+        temporary, completed, report = self.run_browser(html)
+        self.addCleanup(temporary.cleanup)
+
+        self.assertEqual(0, completed.returncode, completed.stderr + completed.stdout)
+        self.assertTrue(report["interaction"]["submission"]["causedSuccess"])
+
+    def test_keyboard_submit_prevention_cannot_be_bypassed(self):
+        html = EMPTY_SUCCESS_HTML.replace(
+            "<script>",
+            "<script>document.querySelector('button[type=submit]').addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' ')event.preventDefault()});</script><script>",
+            1,
+        )
+        temporary, completed, report = self.run_browser(html)
+        self.addCleanup(temporary.cleanup)
+
+        self.assertEqual(1, completed.returncode)
+        self.assertIn(
+            "no trusted keyboard submission was observed",
+            report["failures"],
+        )
+        self.assertFalse(report["interaction"]["submission"]["trustedSubmit"])
+
+    def test_final_state_is_resampled_at_screenshot_time(self):
+        html = EMPTY_SUCCESS_HTML.replace(
+            "success.textContent='Capability complete';",
+            "success.textContent='Capability complete';setTimeout(()=>{success.textContent='';},1600);",
+        )
+        temporary, completed, report = self.run_browser(html)
+        self.addCleanup(temporary.cleanup)
+
+        self.assertEqual(1, completed.returncode)
+        self.assertIn(
+            "success state did not remain visible at screenshot time",
+            report["failures"],
+        )
+        self.assertFalse(report["interaction"]["successVisible"])
+
+    def test_runtime_rendered_forbidden_text_fails(self):
+        canary = "RUNTIME_VISIBLE_PRIVATE_CANARY_73a6"
+        html = EMPTY_SUCCESS_HTML.replace(
+            "success.textContent='Capability complete';",
+            "success.textContent='Capability complete';const leak=document.createElement('p');leak.textContent=atob('"
+            + base64.b64encode(b"RUNTIME_VISIBLE_PRIVATE_CANARY_73a6").decode()
+            + "');document.body.append(leak);",
+        )
+        temporary, completed, report = self.run_browser(
+            html,
+            forbidden_text=canary,
+        )
+        self.addCleanup(temporary.cleanup)
+
+        self.assertEqual(1, completed.returncode)
+        self.assertIn("forbidden text became visible", report["failures"])
+        self.assertTrue(report["interaction"]["forbiddenTextVisible"])
+
+    def test_permissive_fetch_directive_override_is_not_durable(self):
+        html = EMPTY_SUCCESS_HTML.replace(
+            "img-src data:;",
+            "img-src data: https:;",
+        )
+        temporary, completed, report = self.run_browser(html)
+        self.addCleanup(temporary.cleanup)
+
+        self.assertEqual(1, completed.returncode)
+        self.assertIn(
+            "document lacks a durable no-network content security policy",
+            report["failures"],
+        )
+        self.assertFalse(report["network"]["durablePolicy"])
+
+    def test_web_animations_api_motion_must_be_suppressed_for_reduced_users(self):
+        html = EMPTY_SUCCESS_HTML.replace(
+            "<script>",
+            "<script>document.querySelector('button').animate([{transform:'translateX(0)'},{transform:'translateX(8px)'}],{duration:1000,iterations:Infinity});</script><script>",
+            1,
+        )
+        temporary, completed, report = self.run_browser(html)
+        self.addCleanup(temporary.cleanup)
+
+        self.assertEqual(1, completed.returncode)
+        self.assertIn(
+            "reduced-motion path did not suppress active motion",
+            report["failures"],
+        )
+        self.assertGreater(
+            report["interaction"]["motion"]["reducedMaxMs"],
+            50,
+        )
+
+    def test_page_request_animation_frame_override_cannot_hang_probe(self):
+        html = EMPTY_SUCCESS_HTML.replace(
+            "<script>",
+            "<script>window.requestAnimationFrame=()=>0;</script><script>",
+            1,
+        )
+        temporary, completed, report = self.run_browser(html, timeout=25)
+        self.addCleanup(temporary.cleanup)
+
+        self.assertIn(completed.returncode, (0, 1), completed.stderr + completed.stdout)
+        self.assertIn(report["status"], ("passed", "failed"))
+
+    def test_parent_focus_within_indicator_is_accepted(self):
+        html = EMPTY_SUCCESS_HTML.replace(
+            '<form id="capability-form">',
+            '<form id="capability-form"><div class="input-shell">',
+        ).replace(
+            '<button type="submit">',
+            '</div><div class="submit-shell"><button type="submit">',
+        ).replace(
+            '</button></form>',
+            '</button></div></form>',
+        ).replace(
+            "button:focus-visible,input:focus-visible{outline:3px solid #176b5b}",
+            "button:focus-visible,input:focus-visible{outline:none}.input-shell:focus-within,.submit-shell:focus-within{outline:3px solid #176b5b}",
+        )
+        temporary, completed, report = self.run_browser(html)
+        self.addCleanup(temporary.cleanup)
+
+        self.assertEqual(0, completed.returncode, completed.stderr + completed.stdout)
+        self.assertTrue(report["interaction"]["focus"]["visible"])
+
+    def test_invalid_chrome_path_is_reported_as_blocked(self):
+        temporary, completed, report = self.run_browser(
+            EMPTY_SUCCESS_HTML,
+            environment={"CHROME_PATH": "/definitely/missing/design-studio-chrome"},
+            timeout=10,
+        )
+        self.addCleanup(temporary.cleanup)
+
+        self.assertEqual(2, completed.returncode, completed.stderr + completed.stdout)
+        self.assertEqual("blocked", report["status"])
+        self.assertIn("Chrome", report["error"])
 
 
 if __name__ == "__main__":
