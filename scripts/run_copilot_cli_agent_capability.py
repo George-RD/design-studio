@@ -394,6 +394,41 @@ _CSS_IMPORT = re.compile(
     re.IGNORECASE,
 )
 
+_REQUIRED_NO_NETWORK_CSP = {
+    "default-src": ("'none'",),
+    "base-uri": ("'none'",),
+    "connect-src": ("'none'",),
+    "form-action": ("'none'",),
+    "frame-src": ("'none'",),
+    "object-src": ("'none'",),
+}
+_NETWORK_API_PATTERNS = {
+    "fetch": re.compile(r"(?<![\w$])fetch\s*\(", re.IGNORECASE),
+    "XMLHttpRequest": re.compile(r"\bXMLHttpRequest\b", re.IGNORECASE),
+    "WebSocket": re.compile(r"\bWebSocket\s*\(", re.IGNORECASE),
+    "EventSource": re.compile(r"\bEventSource\s*\(", re.IGNORECASE),
+    "sendBeacon": re.compile(r"\bsendBeacon\s*\(", re.IGNORECASE),
+    "window.open": re.compile(r"\bwindow\s*\.\s*open\s*\(", re.IGNORECASE),
+}
+
+
+def _parse_content_security_policy(content: str) -> dict[str, tuple[str, ...]]:
+    directives: dict[str, tuple[str, ...]] = {}
+    for raw_directive in content.split(";"):
+        parts = raw_directive.strip().lower().split()
+        if not parts:
+            continue
+        directives[parts[0]] = tuple(parts[1:])
+    return directives
+
+
+def _has_durable_no_network_policy(content: str) -> bool:
+    directives = _parse_content_security_policy(content)
+    return all(
+        directives.get(name) == expected
+        for name, expected in _REQUIRED_NO_NETWORK_CSP.items()
+    )
+
 
 def _inline_reference(value: str) -> bool:
     normalized = value.strip().lower()
@@ -419,6 +454,7 @@ class CapabilityHtmlParser(HTMLParser):
         self.ids: set[str] = set()
         self.has_submit = False
         self.has_viewport = False
+        self.content_security_policies: list[str] = []
         self.resource_references: list[tuple[str, str]] = []
         self._style_depth = 0
         self._style_chunks: list[str] = []
@@ -452,6 +488,13 @@ class CapabilityHtmlParser(HTMLParser):
             self.has_submit = True
         if tag == "meta" and values.get("name", "").lower() == "viewport":
             self.has_viewport = True
+        if (
+            tag == "meta"
+            and values.get("http-equiv", "").lower()
+            == "content-security-policy"
+            and values.get("content")
+        ):
+            self.content_security_policies.append(values["content"].strip())
 
         for attribute in (
             "action",
@@ -470,11 +513,14 @@ class CapabilityHtmlParser(HTMLParser):
             self._record_reference(f"{tag}[href]", values.get("href"))
         if "srcset" in values and values["srcset"]:
             srcset = values["srcset"].strip()
-            candidates = (
-                [srcset]
-                if srcset.lower().startswith("data:")
-                else [part.strip().split()[0] for part in srcset.split(",")]
-            )
+            if srcset.lower().startswith("data:"):
+                candidates = [srcset]
+            else:
+                candidates = []
+                for part in srcset.split(","):
+                    fields = part.strip().split()
+                    if fields:
+                        candidates.append(fields[0])
             for candidate in candidates:
                 self._record_reference(f"{tag}[srcset]", candidate)
         if "style" in values and values["style"]:
@@ -532,6 +578,25 @@ def validate_site(path: Path) -> dict[str, Any]:
         raise ContractError("index.html has no submit control")
     if not parser.has_viewport:
         raise ContractError("index.html has no viewport declaration")
+    durable_policies = [
+        policy
+        for policy in parser.content_security_policies
+        if _has_durable_no_network_policy(policy)
+    ]
+    if not durable_policies:
+        raise ContractError(
+            "index.html has no durable no-network content security policy"
+        )
+    network_apis = [
+        name
+        for name, pattern in _NETWORK_API_PATTERNS.items()
+        if pattern.search(text)
+    ]
+    if network_apis:
+        raise ContractError(
+            "index.html contains forbidden network API use: "
+            + ", ".join(network_apis)
+        )
     if parser.resource_references:
         formatted = [
             f"{context}={value!r}"
@@ -545,6 +610,8 @@ def validate_site(path: Path) -> dict[str, Any]:
         "entrypoint": "index.html",
         "bytes": len(text.encode("utf-8")),
         "requiredIds": sorted(required_ids),
+        "durableNetworkPolicy": True,
+        "networkApisAbsent": True,
         "resourceReferencesAbsent": True,
         "sourceCanaryAbsent": True,
         "singleFile": True,
@@ -614,6 +681,8 @@ Required behavioral contract:
 - labeled text input id: capability-name
 - success region id: capability-success, initially empty and not visible
 - submit control with type=submit
+- include this exact durable no-network policy in the head: <meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; connect-src 'none'; form-action 'none'; frame-src 'none'; img-src data:; media-src data:; object-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'">
+- do not call fetch, XMLHttpRequest, WebSocket, EventSource, sendBeacon, or window.open
 - local submission prevents navigation, preserves the entered value, and reveals exact text: Capability complete
 - visible keyboard focus
 - responsive at 390x844 without horizontal overflow

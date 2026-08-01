@@ -49,3 +49,19 @@ export async function removeBrowserProfile(
   }
   throw lastError;
 }
+
+export async function removeBrowserProfileBestEffort(
+  profilePath,
+  {
+    onError = () => {},
+    ...options
+  } = {},
+) {
+  try {
+    await removeBrowserProfile(profilePath, options);
+    return true;
+  } catch (error) {
+    onError(error);
+    return false;
+  }
+}

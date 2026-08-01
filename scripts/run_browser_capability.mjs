@@ -5,13 +5,124 @@ import { tmpdir } from 'node:os';
 import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 import process from 'node:process';
 
-import { removeBrowserProfile } from './browser_profile_cleanup.mjs';
+import { removeBrowserProfileBestEffort } from './browser_profile_cleanup.mjs';
 
 class BrowserContractError extends Error {}
 class BrowserBlockedError extends Error {}
 
 const NETWORK_OBSERVATION_MS = 1300;
 const MOTION_LIMIT_MS = 50;
+const REQUIRED_NO_NETWORK_DIRECTIVES = [
+  'default-src',
+  'base-uri',
+  'connect-src',
+  'form-action',
+  'frame-src',
+  'object-src',
+];
+
+function contentSecurityPolicyDirectives(content) {
+  const directives = new Map();
+  for (const rawDirective of String(content || '').split(';')) {
+    const parts = rawDirective.trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) continue;
+    directives.set(parts[0].toLowerCase(), parts.slice(1).map((value) => value.toLowerCase()));
+  }
+  return directives;
+}
+
+function hasDurableNoNetworkPolicy(content) {
+  const directives = contentSecurityPolicyDirectives(content);
+  return REQUIRED_NO_NETWORK_DIRECTIVES.every((name) => {
+    const values = directives.get(name);
+    return values?.length === 1 && values[0] === "'none'";
+  });
+}
+
+function pixels(value) {
+  const parsed = Number.parseFloat(String(value || '0'));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function colorHasVisibleAlpha(value) {
+  const text = String(value || '').trim().toLowerCase();
+  if (!text || text === 'transparent') return false;
+  const rgba = text.match(/^rgba\([^,]+,[^,]+,[^,]+,\s*([\d.]+)\)$/);
+  return !rgba || Number(rgba[1]) > 0.01;
+}
+
+function shadowIsVisible(value) {
+  const text = String(value || '').trim().toLowerCase();
+  if (!text || text === 'none') return false;
+  const alphaValues = [...text.matchAll(/rgba\([^,]+,[^,]+,[^,]+,\s*([\d.]+)\)/g)]
+    .map((match) => Number(match[1]));
+  return !alphaValues.length || alphaValues.some((alpha) => alpha > 0.01);
+}
+
+function focusStyleRenderedChange(before, after) {
+  if (!before || !after) return false;
+  const outlineChanged = [
+    'outlineStyle',
+    'outlineWidth',
+    'outlineColor',
+    'outlineOffset',
+  ].some((key) => before[key] !== after[key]);
+  const outlineVisible = outlineChanged
+    && !['none', 'hidden'].includes(String(after.outlineStyle || '').toLowerCase())
+    && pixels(after.outlineWidth) > 0
+    && colorHasVisibleAlpha(after.outlineColor);
+
+  const shadowVisible = before.boxShadow !== after.boxShadow
+    && shadowIsVisible(after.boxShadow);
+  const borderVisible = [
+    'borderStyle',
+    'borderWidth',
+    'borderColor',
+  ].some((key) => before[key] !== after[key])
+    && !['none', 'hidden'].includes(String(after.borderStyle || '').toLowerCase())
+    && pixels(after.borderWidth) > 0
+    && colorHasVisibleAlpha(after.borderColor);
+  const backgroundVisible = before.backgroundColor !== after.backgroundColor
+    && colorHasVisibleAlpha(after.backgroundColor);
+  const foregroundVisible = before.color !== after.color
+    && colorHasVisibleAlpha(after.color);
+
+  return Boolean(
+    outlineVisible
+    || shadowVisible
+    || borderVisible
+    || backgroundVisible
+    || foregroundVisible
+  );
+}
+
+function keyDescriptor(character) {
+  const upper = character.toUpperCase();
+  const letter = /^[A-Z]$/.test(upper);
+  const digit = /^\d$/.test(character);
+  return {
+    key: character,
+    code: letter ? `Key${upper}` : digit ? `Digit${character}` : character,
+    windowsVirtualKeyCode: upper.codePointAt(0),
+    nativeVirtualKeyCode: upper.codePointAt(0),
+  };
+}
+
+async function typeWithKeyboard(client, text) {
+  for (const character of text) {
+    const descriptor = keyDescriptor(character);
+    await client.send('Input.dispatchKeyEvent', {
+      type: 'keyDown',
+      ...descriptor,
+      text: character,
+      unmodifiedText: character,
+    });
+    await client.send('Input.dispatchKeyEvent', {
+      type: 'keyUp',
+      ...descriptor,
+    });
+  }
+}
 
 function parseArgs(argv) {
   const args = { root: null, outputDir: null, entrypoint: 'index.html', width: 390, height: 844 };
@@ -243,7 +354,7 @@ function isExternalNetworkUrl(value) {
 
 function trackPromise(set, promise) {
   set.add(promise);
-  promise.finally(() => set.delete(promise));
+  promise.finally(() => set.delete(promise)).catch(() => {});
 }
 
 async function stopChrome(chrome) {
@@ -264,17 +375,68 @@ async function stopChrome(chrome) {
 const POPUP_GUARD_SOURCE = `(() => {
   if (window.__designStudioPopupGuardInstalled) return true;
   const attempts = [];
+  const networkAttempts = [];
   const record = (value) => attempts.push(String(value ?? 'about:blank'));
+  const recordNetwork = (value) => networkAttempts.push(String(value ?? 'about:blank'));
   Object.defineProperty(window, '__designStudioPopupAttempts', {
     configurable: false,
     enumerable: false,
     get: () => attempts.slice(),
+  });
+  Object.defineProperty(window, '__designStudioNetworkAttempts', {
+    configurable: false,
+    enumerable: false,
+    get: () => networkAttempts.slice(),
   });
   Object.defineProperty(window, '__designStudioPopupGuardInstalled', {
     configurable: false,
     enumerable: false,
     value: true,
   });
+  const blockedNetworkError = () => new DOMException(
+    'External network access is blocked by the Design Studio capability probe',
+    'SecurityError',
+  );
+  const BlockedWebSocket = function (url) {
+    recordNetwork(url);
+    throw blockedNetworkError();
+  };
+  for (const [name, value] of Object.entries({ CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 })) {
+    Object.defineProperty(BlockedWebSocket, name, { value, enumerable: true });
+    Object.defineProperty(BlockedWebSocket.prototype, name, { value, enumerable: true });
+  }
+  Object.defineProperty(window, 'WebSocket', { configurable: false, value: BlockedWebSocket });
+  if ('EventSource' in window) {
+    Object.defineProperty(window, 'EventSource', {
+      configurable: false,
+      value: function BlockedEventSource(url) {
+        recordNetwork(url);
+        throw blockedNetworkError();
+      },
+    });
+  }
+  if ('XMLHttpRequest' in window) {
+    Object.defineProperty(window, 'XMLHttpRequest', {
+      configurable: false,
+      value: function BlockedXMLHttpRequest() {
+        recordNetwork('XMLHttpRequest');
+        throw blockedNetworkError();
+      },
+    });
+  }
+  window.fetch = (input) => {
+    recordNetwork(input instanceof Request ? input.url : input);
+    return Promise.reject(blockedNetworkError());
+  };
+  if (navigator && typeof navigator.sendBeacon === 'function') {
+    Object.defineProperty(navigator, 'sendBeacon', {
+      configurable: false,
+      value: (url) => {
+        recordNetwork(url);
+        return false;
+      },
+    });
+  }
   window.open = (url) => {
     record(url);
     return null;
@@ -314,6 +476,50 @@ const POPUP_GUARD_SOURCE = `(() => {
   }, true);
   return true;
 })()`;
+
+const ELEMENT_RENDERED_SOURCE = `(element) => {
+  if (!element) return false;
+  const rect = element.getBoundingClientRect();
+  if (
+    rect.width <= 0
+    || rect.height <= 0
+    || rect.bottom <= 0
+    || rect.right <= 0
+    || rect.top >= window.innerHeight
+    || rect.left >= window.innerWidth
+  ) return false;
+
+  let left = Math.max(0, rect.left);
+  let top = Math.max(0, rect.top);
+  let right = Math.min(window.innerWidth, rect.right);
+  let bottom = Math.min(window.innerHeight, rect.bottom);
+  let effectiveOpacity = 1;
+  for (let current = element; current; current = current.parentElement) {
+    const style = getComputedStyle(current);
+    effectiveOpacity *= Number.parseFloat(style.opacity || '1');
+    if (
+      current.hidden
+      || style.display === 'none'
+      || style.visibility === 'hidden'
+      || style.visibility === 'collapse'
+      || effectiveOpacity <= 0.01
+    ) return false;
+
+    if (current !== element) {
+      const clips = [style.overflow, style.overflowX, style.overflowY]
+        .some((value) => ['hidden', 'clip', 'auto', 'scroll'].includes(value));
+      if (clips) {
+        const ancestorRect = current.getBoundingClientRect();
+        left = Math.max(left, ancestorRect.left);
+        top = Math.max(top, ancestorRect.top);
+        right = Math.min(right, ancestorRect.right);
+        bottom = Math.min(bottom, ancestorRect.bottom);
+        if (right <= left || bottom <= top) return false;
+      }
+    }
+  }
+  return right > left && bottom > top;
+}`;
 
 async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
   const resolvedRoot = resolve(root);
@@ -437,21 +643,7 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
       const success = document.querySelector('#capability-success');
       const submit = form?.querySelector('button[type="submit"], input[type="submit"]');
       const label = document.querySelector('label[for="capability-name"]');
-      const rendered = (element) => {
-        if (!element) return false;
-        const style = getComputedStyle(element);
-        const rect = element.getBoundingClientRect();
-        return !element.hidden
-          && style.display !== 'none'
-          && style.visibility !== 'hidden'
-          && Number.parseFloat(style.opacity || '1') > 0.01
-          && rect.width > 0
-          && rect.height > 0
-          && rect.bottom > 0
-          && rect.right > 0
-          && rect.top < window.innerHeight
-          && rect.left < window.innerWidth;
-      };
+      const rendered = ${ELEMENT_RENDERED_SOURCE};
       const styleSignature = (element) => {
         if (!element) return null;
         const style = getComputedStyle(element);
@@ -463,6 +655,7 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
           boxShadow: style.boxShadow,
           borderColor: style.borderColor,
           borderWidth: style.borderWidth,
+          borderStyle: style.borderStyle,
           backgroundColor: style.backgroundColor,
           color: style.color,
           filter: style.filter,
@@ -475,6 +668,9 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
         successTextBefore: success?.textContent?.trim() || '',
         formVisibleBefore: [form, label, input, submit].every(rendered),
         urlBefore: location.href,
+        contentSecurityPolicy: [...document.querySelectorAll('meta[http-equiv]')]
+          .find((meta) => meta.httpEquiv.toLowerCase() === 'content-security-policy')
+          ?.content?.trim() || '',
         beforeSubmission: {
           innerWidth: window.innerWidth,
           scrollWidth: document.documentElement.scrollWidth,
@@ -509,13 +705,12 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
         color: style.color,
         filter: style.filter,
       };
-      const unfocused = ${JSON.stringify(null)};
       return { reachable: true, focused };
     })()`);
     inputFocus.unfocused = initial.unfocusedStyles?.input || null;
     inputFocus.changed = Boolean(
       inputFocus.reachable
-      && JSON.stringify(inputFocus.unfocused) !== JSON.stringify(inputFocus.focused || null)
+      && focusStyleRenderedChange(inputFocus.unfocused, inputFocus.focused || null)
     );
 
     const submitKeyboardReachable = await tabUntil(
@@ -537,6 +732,7 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
           boxShadow: style.boxShadow,
           borderColor: style.borderColor,
           borderWidth: style.borderWidth,
+          borderStyle: style.borderStyle,
           backgroundColor: style.backgroundColor,
           color: style.color,
           filter: style.filter,
@@ -546,7 +742,7 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
     submitFocus.unfocused = initial.unfocusedStyles?.submit || null;
     submitFocus.changed = Boolean(
       submitFocus.reachable
-      && JSON.stringify(submitFocus.unfocused) !== JSON.stringify(submitFocus.focused || null)
+      && focusStyleRenderedChange(submitFocus.unfocused, submitFocus.focused || null)
     );
 
     const returnedToInput = await tabUntil(
@@ -555,7 +751,7 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
       { reverse: true },
     );
     if (inputKeyboardReachable && returnedToInput) {
-      await client.send('Input.insertText', { text: 'Ada' });
+      await typeWithKeyboard(client, 'Ada');
       await evaluate(client, `(() => {
         const form = document.querySelector('#capability-form');
         const submit = form?.querySelector('button[type="submit"], input[type="submit"]');
@@ -574,21 +770,7 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
       const success = document.querySelector('#capability-success');
       const submit = form?.querySelector('button[type="submit"], input[type="submit"]');
       const label = document.querySelector('label[for="capability-name"]');
-      const rendered = (element) => {
-        if (!element) return false;
-        const style = getComputedStyle(element);
-        const rect = element.getBoundingClientRect();
-        return !element.hidden
-          && style.display !== 'none'
-          && style.visibility !== 'hidden'
-          && Number.parseFloat(style.opacity || '1') > 0.01
-          && rect.width > 0
-          && rect.height > 0
-          && rect.bottom > 0
-          && rect.right > 0
-          && rect.top < window.innerHeight
-          && rect.left < window.innerWidth;
-      };
+      const rendered = ${ELEMENT_RENDERED_SOURCE};
       return {
         successVisible: rendered(success) && success.textContent.trim().length > 0,
         successText: success?.textContent?.trim() || null,
@@ -618,7 +800,15 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
       `Array.isArray(window.__designStudioPopupAttempts) ? window.__designStudioPopupAttempts.slice() : []`,
     );
     for (const url of popupAttempts || []) recordExternal(url, true);
+    const guardedNetworkAttempts = await evaluate(
+      client,
+      `Array.isArray(window.__designStudioNetworkAttempts) ? window.__designStudioNetworkAttempts.slice() : []`,
+    );
+    for (const url of guardedNetworkAttempts || []) recordExternal(url, true);
 
+    const durableNetworkPolicy = hasDurableNoNetworkPolicy(
+      initial.contentSecurityPolicy,
+    );
     const focusStyleChanged = Boolean(inputFocus.changed && submitFocus.changed);
     const motionSupported = Boolean(
       motionPairSupported(normalMotion, reducedMotion)
@@ -678,9 +868,11 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
     if (!interaction.focus.visible) {
       failures.push('keyboard focus is not visibly indicated');
       failures.push('keyboard focus produced no visual style change');
+      failures.push('keyboard focus produced no rendered visual change');
     }
     if (!interaction.reducedMotion) failures.push('reduced-motion emulation was not visible to the page');
     if (!motionSupported) failures.push('reduced-motion path did not suppress active motion');
+    if (!durableNetworkPolicy) failures.push('document lacks a durable no-network content security policy');
     if (externalRequests.length) failures.push('external network request attempted');
     if (externalRequests.some((url) => !blockedRequestUrls.has(url))) failures.push('external network request was not blocked before transport');
 
@@ -692,20 +884,41 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height }) {
       viewport: { width, height },
       interaction,
       network: {
+        durablePolicy: durableNetworkPolicy,
+        contentSecurityPolicy: initial.contentSecurityPolicy,
         requests,
         externalRequests,
         blockedRequests,
         blockedPopupTargets: [...blockedPopupTargets].sort(),
         popupAttempts: [...(popupAttempts || [])],
+        guardedNetworkAttempts: [...(guardedNetworkAttempts || [])],
         observationMs: NETWORK_OBSERVATION_MS,
       },
       screenshot: 'browser-after-submit.png',
       failures,
     };
   } finally {
-    client?.close();
-    await stopChrome(chrome);
-    await removeBrowserProfile(userDataDir);
+    try {
+      client?.close();
+    } catch (error) {
+      if (process.env.DEBUG_BROWSER_PROBE) {
+        process.stderr.write(`failed to close DevTools client: ${error?.message || String(error)}\n`);
+      }
+    }
+    try {
+      await stopChrome(chrome);
+    } catch (error) {
+      if (process.env.DEBUG_BROWSER_PROBE) {
+        process.stderr.write(`failed to stop Chrome cleanly: ${error?.message || String(error)}\n`);
+      }
+    }
+    await removeBrowserProfileBestEffort(userDataDir, {
+      onError: (error) => {
+        if (process.env.DEBUG_BROWSER_PROBE) {
+          process.stderr.write(`failed to remove browser profile: ${error?.message || String(error)}\n`);
+        }
+      },
+    });
     if (stderr && process.env.DEBUG_BROWSER_PROBE) process.stderr.write(stderr);
   }
 }

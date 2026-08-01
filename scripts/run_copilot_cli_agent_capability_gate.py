@@ -81,13 +81,21 @@ def director_prompt(brief: str) -> str:
 
 def builder_prompt() -> str:
     prompt = _BASE_BUILDER_PROMPT()
-    prompt = prompt.replace(
-        "- local submission prevents navigation, preserves the entered value, and reveals exact text: Capability complete",
+    marker = (
+        "- local submission prevents navigation, preserves the entered value, "
+        "and reveals exact text: Capability complete"
+    )
+    if marker not in prompt:
+        raise core.ContractError(
+            "builder prompt contract marker is missing from the base harness"
+        )
+    return prompt.replace(
+        marker,
         "- local submission prevents navigation and preserves the entered value\n"
         "- Keep the form, label, input and submit control visible after submission\n"
         "- on submit, set its textContent to exactly Capability complete, with no icon or additional text inside that region",
+        1,
     )
-    return prompt
 
 
 def classify_cli_failure(outcome: CommandOutcome) -> str:
@@ -234,12 +242,25 @@ def _workspace_relative_path(
     return relative.as_posix()
 
 
-def successful_file_views(
+def _operation_path(arguments: Any) -> Any:
+    if not isinstance(arguments, dict):
+        return None
+    for key in ("path", "filePath", "file_path", "filename"):
+        value = arguments.get(key)
+        if isinstance(value, str) and value.strip():
+            return value
+    return None
+
+
+def successful_file_operations(
     events: list[dict[str, Any]],
     workspace: Path,
-) -> list[str]:
-    starts: dict[str, str | None] = {}
-    successful: set[str] = set()
+) -> dict[str, list[str]]:
+    read_tools = {"read", "view"}
+    write_tools = {"create", "edit", "apply_patch"}
+    starts: dict[str, tuple[str, str | None]] = {}
+    successful_reads: set[str] = set()
+    successful_writes: set[str] = set()
     for event in events:
         event_type = event.get("type")
         data = event.get("data")
@@ -250,23 +271,39 @@ def successful_file_views(
             continue
         if event_type == "tool.execution_start":
             tool_name = str(data.get("toolName", "")).strip().lower()
-            if tool_name not in {"read", "view"}:
+            if tool_name not in read_tools | write_tools:
                 continue
-            arguments = data.get("arguments")
-            path_value = arguments.get("path") if isinstance(arguments, dict) else None
-            starts[call_id] = _workspace_relative_path(workspace, path_value)
+            path_value = _operation_path(data.get("arguments"))
+            starts[call_id] = (
+                tool_name,
+                _workspace_relative_path(workspace, path_value),
+            )
         elif (
             event_type == "tool.execution_complete"
             and data.get("success") is True
             and call_id in starts
         ):
-            relative = starts[call_id]
+            tool_name, relative = starts[call_id]
+            operation = "read" if tool_name in read_tools else "write"
             if relative is None:
                 raise core.ContractError(
-                    "successful Copilot file view escaped the trusted role workspace"
+                    f"successful Copilot {operation} escaped the trusted role workspace"
                 )
-            successful.add(relative)
-    return sorted(successful)
+            if operation == "read":
+                successful_reads.add(relative)
+            else:
+                successful_writes.add(relative)
+    return {
+        "read": sorted(successful_reads),
+        "written": sorted(successful_writes),
+    }
+
+
+def successful_file_views(
+    events: list[dict[str, Any]],
+    workspace: Path,
+) -> list[str]:
+    return successful_file_operations(events, workspace)["read"]
 
 
 def _role_tools(role: str) -> tuple[str, list[str]]:
@@ -306,11 +343,13 @@ def invoke_role(*args: Any, **kwargs: Any) -> dict[str, Any]:
         f"{role} Copilot JSONL",
     )
     resolved_model = resolved_model_from_events(events, role)
-    read_files = successful_file_views(events, workspace)
+    file_operations = successful_file_operations(events, workspace)
+    read_files = file_operations["read"]
     result.update(
         {
             "availableTools": available_tool_list,
             "readFiles": read_files,
+            "writtenFiles": file_operations["written"],
             "resolvedModel": resolved_model,
             "trustedWorkspace": str(workspace.resolve()),
             "trustedWorkspaceConfig": str(
@@ -577,6 +616,8 @@ def _run_core_with_director_retry(
 
 
 def run_capability(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    kwargs = dict(kwargs)
+    kwargs.setdefault("model", DEFAULT_MODEL)
     report = _run_core_with_director_retry(*args, **kwargs)
     output_root_value = kwargs.get("output_root")
     if not isinstance(output_root_value, Path):
@@ -615,7 +656,10 @@ def run_capability(*args: Any, **kwargs: Any) -> dict[str, Any]:
             )
             for role in ("director", "builder", "evaluator")
         }
-        requested_model = kwargs.get("model", DEFAULT_MODEL)
+        requested_model = core.require_text(
+            kwargs["model"],
+            "model",
+        )
         resolved_models = validate_resolved_models(
             models,
             requested_model=requested_model,
