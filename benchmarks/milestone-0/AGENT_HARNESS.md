@@ -30,7 +30,7 @@ One exact workflow run must prove all of the following:
 5. Every role preserves its exact command, JSONL output, stderr, resolved model and produced files.
 6. With `--model=auto`, each role must preserve one concrete resolved model; different roles may resolve to different models. With an explicit model, every role must match it. A missing, ambiguous or inconsistent role receipt fails closed.
 7. The Builder produces exactly one runnable HTML entrypoint with the required form, input and success-state IDs.
-8. Chromium confirms that the success state starts empty and hidden and becomes visible after submission, the entered value survives, the form remains visible, the document URL does not change, there is no horizontal overflow, keyboard focus has a distinct visual state, reduced motion suppresses active motion and no external request occurs.
+8. Chromium confirms that the success state starts empty and hidden, including pseudo-element content, and becomes genuinely rendered after a trusted keyboard submission. The entered value survives, the form remains visible, the document URL does not change, there is no horizontal overflow, keyboard focus has a rendered visual difference, reduced-motion replay reproduces the complete post-submit contract while suppressing active motion, and no external request occurs.
 9. The Evaluator confirms that the title, form, success state and usable mobile layout are visible and that the source canary is absent.
 10. Authentication, policy, unavailable-model, rate-limit and missing-browser conditions are distinguished from reachable-but-invalid contract failures. Both preserve partial evidence and fail CI.
 
@@ -66,7 +66,7 @@ The permanent sanitized receipt is [`evidence/copilot-cli-agent-capability.json`
 
 ## Failure and cost boundary
 
-Each role has a maximum of 30 AI credits. The workflow grants repository content read access and Copilot request access only; it has no repository write permission. The Copilot subprocess receives an explicit environment allowlist. The browser loads the self-contained output directly and observes Chrome DevTools Protocol network events rather than trusting a source scan.
+Each role has a maximum of 30 AI credits. The workflow grants repository content read access and Copilot request access only; it has no repository write permission. The Copilot subprocess receives an explicit environment allowlist. The browser loads the self-contained output directly and observes Chrome DevTools Protocol network events rather than trusting a source scan. It replays the same keyboard submission under reduced motion and records both the causal success contract and transient motion windows; source declarations alone do not pass.
 
 - **blocked:** authentication, account policy, unavailable model, service availability, rate limit, credit exhaustion or missing Chromium prevents a valid test;
 - **failed:** the CLI or browser is reachable, but output, tool use, isolation, interaction or evidence violates the contract.
