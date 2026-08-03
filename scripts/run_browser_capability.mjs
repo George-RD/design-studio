@@ -756,7 +756,6 @@ const SUBMISSION_TRACE_SOURCE = `(() => {
       trace.keydownAt = performance.now();
     }
   }, true);
-  const tracedForm = document.querySelector('#capability-form');
   document.addEventListener('submit', (event) => {
     const form = document.querySelector('#capability-form');
     const recentKeyboardActivation = trace.trustedKeydown
@@ -769,21 +768,11 @@ const SUBMISSION_TRACE_SOURCE = `(() => {
     trace.submitAt = performance.now();
     submissionSnapshots.set(submissionId, snapshot());
     activeSubmissionId = submissionId;
-    nativeQueueMicrotask(() => {
+    nativeSetTimeout(() => {
+      markSuccessTransition(submissionId);
       if (activeSubmissionId === submissionId) activeSubmissionId = null;
-    });
+    }, 0);
   }, true);
-  tracedForm?.addEventListener('submit', (event) => {
-    const submissionId = activeSubmissionId;
-    if (
-      !trace.trustedSubmit
-      || event.target !== tracedForm
-      || submissionId === null
-      || !submissionSnapshots.has(submissionId)
-    ) return;
-    activeSubmissionId = null;
-    nativeQueueMicrotask(() => markSuccessTransition(submissionId));
-  });
   Object.defineProperty(window, '__designStudioSubmissionTrace', {
     configurable: false,
     enumerable: false,
