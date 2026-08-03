@@ -695,6 +695,40 @@ const SUBMISSION_TRACE_SOURCE = `(() => {
       ariaHidden: element?.getAttribute?.('aria-hidden') || '',
     };
   };
+  const nativeSetTimeout = window.setTimeout.bind(window);
+  const nativeQueueMicrotask = window.queueMicrotask.bind(window);
+  const submissionSnapshots = new Map();
+  let submissionSequence = 0;
+  let activeSubmissionId = null;
+  const markSuccessTransition = (submissionId, beforeOverride = null) => {
+    const before = beforeOverride || submissionSnapshots.get(submissionId);
+    if (!before) return;
+    const after = snapshot();
+    if (
+      JSON.stringify(before) !== JSON.stringify(after)
+      && after.text === 'Capability complete'
+    ) {
+      trace.causedSuccess = true;
+      submissionSnapshots.delete(submissionId);
+    }
+  };
+  window.setTimeout = function tracedSetTimeout(callback, delay, ...args) {
+    if (typeof callback !== 'function' || activeSubmissionId === null) {
+      return nativeSetTimeout(callback, delay, ...args);
+    }
+    const submissionId = activeSubmissionId;
+    return nativeSetTimeout(function tracedTimeoutCallback(...callbackArgs) {
+      const beforeCallback = snapshot();
+      try {
+        return callback.apply(this, callbackArgs);
+      } finally {
+        nativeQueueMicrotask(() => markSuccessTransition(
+          submissionId,
+          beforeCallback,
+        ));
+      }
+    }, delay, ...args);
+  };
   const observer = new MutationObserver(() => {
     const element = success();
     if (rendered(element) && element.textContent.trim().length > 0) {
@@ -722,7 +756,6 @@ const SUBMISSION_TRACE_SOURCE = `(() => {
       trace.keydownAt = performance.now();
     }
   }, true);
-  let beforeSubmitSnapshot = null;
   const tracedForm = document.querySelector('#capability-form');
   document.addEventListener('submit', (event) => {
     const form = document.querySelector('#capability-form');
@@ -730,21 +763,26 @@ const SUBMISSION_TRACE_SOURCE = `(() => {
       && Number.isFinite(trace.keydownAt)
       && performance.now() - trace.keydownAt < 1000;
     if (event.target !== form || !event.isTrusted || !recentKeyboardActivation) return;
+    submissionSequence += 1;
+    const submissionId = submissionSequence;
     trace.trustedSubmit = true;
     trace.submitAt = performance.now();
-    beforeSubmitSnapshot = snapshot();
+    submissionSnapshots.set(submissionId, snapshot());
+    activeSubmissionId = submissionId;
+    nativeQueueMicrotask(() => {
+      if (activeSubmissionId === submissionId) activeSubmissionId = null;
+    });
   }, true);
   tracedForm?.addEventListener('submit', (event) => {
+    const submissionId = activeSubmissionId;
     if (
       !trace.trustedSubmit
       || event.target !== tracedForm
-      || !beforeSubmitSnapshot
+      || submissionId === null
+      || !submissionSnapshots.has(submissionId)
     ) return;
-    queueMicrotask(() => {
-      const after = snapshot();
-      trace.causedSuccess = JSON.stringify(beforeSubmitSnapshot) !== JSON.stringify(after)
-        && after.text === 'Capability complete';
-    });
+    activeSubmissionId = null;
+    nativeQueueMicrotask(() => markSuccessTransition(submissionId));
   });
   Object.defineProperty(window, '__designStudioSubmissionTrace', {
     configurable: false,
