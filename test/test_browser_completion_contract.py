@@ -6,6 +6,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import tempfile
+import time
 import unittest
 
 
@@ -230,9 +231,16 @@ await new Promise(()=>{});
         )
         self.addCleanup(temporary.cleanup)
 
-        self.assertEqual(1, completed.returncode)
+        self.assertEqual(2, completed.returncode)
+        deadline = time.monotonic() + 5
+        while (
+            not (evidence / "grandchild-terminated").is_file()
+            and time.monotonic() < deadline
+        ):
+            time.sleep(0.05)
         self.assertTrue((evidence / "grandchild-terminated").is_file())
         report = json.loads((evidence / "browser-report.json").read_text())
+        self.assertEqual("blocked", report["status"])
         self.assertIn("timed out", report["error"].lower())
 
     def test_failure_fallback_still_emits_status_when_report_cannot_be_written(self):
