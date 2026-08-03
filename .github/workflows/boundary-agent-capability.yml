@@ -31,9 +31,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  issues: read
-  pull-requests: read
+  contents: read
 
 env:
   COPILOT_CLI_VERSION: "1.0.74"
@@ -50,94 +48,7 @@ jobs:
         with:
           repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          persist-credentials: true
-
-      - name: Apply reviewed TDD patch to PR branch
-        if: github.event_name == 'pull_request'
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
-        run: |
-          set -euo pipefail
-          if grep -q "test_site_rejects_delayed_meta_refresh_navigation" test/test_copilot_cli_agent_capability.py; then
-            echo "Reviewed patch is already present."
-            exit 0
-          fi
-
-          python3 - <<'PY'
-          import base64
-          import gzip
-          import json
-          import os
-          from pathlib import Path
-          import re
-          from urllib.request import Request, urlopen
-
-          api = os.environ["GITHUB_API_URL"]
-          repo = os.environ["GITHUB_REPOSITORY"]
-          number = os.environ["PR_NUMBER"]
-          token = os.environ["GITHUB_TOKEN"]
-          request = Request(
-              f"{api}/repos/{repo}/issues/{number}/comments?per_page=100",
-              headers={
-                  "Accept": "application/vnd.github+json",
-                  "Authorization": f"Bearer {token}",
-                  "X-GitHub-Api-Version": "2022-11-28",
-              },
-          )
-          with urlopen(request, timeout=30) as response:
-              comments = json.load(response)
-
-          payloads = {
-              "tests": "DESIGN_STUDIO_TDD_PATCH_TESTS_GZIP_BASE64",
-              "implementation": "DESIGN_STUDIO_TDD_PATCH_IMPLEMENTATION_GZIP_BASE64",
-          }
-          for name, marker in payloads.items():
-              body = next(
-                  (
-                      str(comment.get("body") or "")
-                      for comment in reversed(comments)
-                      if marker in str(comment.get("body") or "")
-                  ),
-                  None,
-              )
-              if body is None:
-                  raise SystemExit(f"missing maintenance payload: {marker}")
-              match = re.search(r"```text\s+([A-Za-z0-9+/=\s]+?)\s+```", body)
-              if match is None:
-                  raise SystemExit(f"invalid maintenance payload: {marker}")
-              encoded = "".join(match.group(1).split())
-              Path(f"/tmp/design-studio-{name}.patch").write_bytes(
-                  gzip.decompress(base64.b64decode(encoded, validate=True))
-              )
-          PY
-
-          git apply --check /tmp/design-studio-tests.patch
-          git apply /tmp/design-studio-tests.patch
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add test/test_copilot_cli_agent_capability.py test/test_browser_capability_regressions.py test/test_browser_submission_attribution.py
-          git commit -m "test: cover capability boundary regressions"
-
-          git apply --check /tmp/design-studio-implementation.patch
-          git apply /tmp/design-studio-implementation.patch
-          git add scripts/run_copilot_cli_agent_capability.py scripts/run_browser_capability.mjs
-          git commit -m "fix: harden capability boundary enforcement"
-          git push origin "HEAD:${PR_HEAD_REF}"
-
-      - name: Package exact source for maintenance
-        run: |
-          set -euo pipefail
-          tar --exclude=.git --exclude=harness-output -czf /tmp/design-studio-source.tgz .
-
-      - name: Upload exact source for maintenance
-        uses: actions/upload-artifact@v4
-        with:
-          name: design-studio-source-${{ github.run_id }}
-          path: /tmp/design-studio-source.tgz
-          if-no-files-found: error
-          retention-days: 1
+          persist-credentials: false
 
       - name: Use Node.js 24
         uses: actions/setup-node@v4
