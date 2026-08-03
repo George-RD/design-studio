@@ -93,7 +93,10 @@ def builder_prompt() -> str:
         marker,
         "- local submission prevents navigation and preserves the entered value\n"
         "- Keep the form, label, input and submit control visible after submission\n"
-        "- on submit, set its textContent to exactly Capability complete, with no icon or additional text inside that region",
+        "- on submit, set its textContent to exactly Capability complete, with no icon or additional text inside that region\n"
+        "- capability-success must be genuinely rendered after submission; do not leave an "
+        "ID-level display:none rule active or rely on a lower-specificity reveal class "
+        "to override it. Remove hidden or set an explicit visible display value",
         1,
     )
 

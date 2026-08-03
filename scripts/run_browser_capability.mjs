@@ -14,6 +14,7 @@ class BrowserBlockedError extends Error {}
 
 const NETWORK_OBSERVATION_MS = 1300;
 const MOTION_LIMIT_MS = 50;
+const MOTION_OBSERVATION_POINTS_MS = [0, 50, 150, 300, 600, 1000, 1250];
 const REQUIRED_NO_NETWORK_DIRECTIVES = new Map([
   ['default-src', ["'none'"]],
   ['base-uri', ["'none'"]],
@@ -71,6 +72,20 @@ function hasDurableNoNetworkPolicy(content) {
   return true;
 }
 
+function inlineClassicScriptSources(html) {
+  const sources = [];
+  const scriptPattern = /<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi;
+  for (const match of String(html || '').matchAll(scriptPattern)) {
+    const attributes = match[1] || '';
+    if (/\bsrc\s*=/i.test(attributes)) continue;
+    const typeMatch = attributes.match(/\btype\s*=\s*(["'])(.*?)\1/i);
+    const type = String(typeMatch?.[2] || '').trim().toLowerCase();
+    if (type && !['text/javascript', 'application/javascript'].includes(type)) continue;
+    sources.push(match[2] || '');
+  }
+  return sources;
+}
+
 function pixels(value) {
   const parsed = Number.parseFloat(String(value || '0'));
   return Number.isFinite(parsed) ? parsed : 0;
@@ -89,6 +104,24 @@ function shadowIsVisible(value) {
   const alphaValues = [...text.matchAll(/rgba\([^,]+,[^,]+,[^,]+,\s*([\d.]+)\)/g)]
     .map((match) => Number(match[1]));
   return !alphaValues.length || alphaValues.some((alpha) => alpha > 0.01);
+}
+
+function filterHasRenderedEffect(value) {
+  let text = String(value || '').trim().toLowerCase();
+  if (!text || text === 'none') return false;
+  const neutralFilters = [
+    /brightness\((?:1(?:\.0+)?|100(?:\.0+)?%)\)/g,
+    /contrast\((?:1(?:\.0+)?|100(?:\.0+)?%)\)/g,
+    /opacity\((?:1(?:\.0+)?|100(?:\.0+)?%)\)/g,
+    /saturate\((?:1(?:\.0+)?|100(?:\.0+)?%)\)/g,
+    /blur\(0(?:\.0+)?(?:px|em|rem|vh|vw|vmin|vmax|cm|mm|in|pt|pc)?\)/g,
+    /grayscale\((?:0(?:\.0+)?|0(?:\.0+)?%)\)/g,
+    /invert\((?:0(?:\.0+)?|0(?:\.0+)?%)\)/g,
+    /sepia\((?:0(?:\.0+)?|0(?:\.0+)?%)\)/g,
+    /hue-rotate\(0(?:\.0+)?(?:deg|grad|rad|turn)\)/g,
+  ];
+  for (const neutral of neutralFilters) text = text.replace(neutral, '');
+  return text.replace(/\s+/g, '').length > 0;
 }
 
 function focusStyleRenderedChange(before, after) {
@@ -118,6 +151,8 @@ function focusStyleRenderedChange(before, after) {
     && colorHasVisibleAlpha(after.backgroundColor);
   const foregroundVisible = before.color !== after.color
     && colorHasVisibleAlpha(after.color);
+  const filterVisible = before.filter !== after.filter
+    && filterHasRenderedEffect(after.filter);
 
   return Boolean(
     outlineVisible
@@ -125,6 +160,7 @@ function focusStyleRenderedChange(before, after) {
     || borderVisible
     || backgroundVisible
     || foregroundVisible
+    || filterVisible
   );
 }
 
@@ -467,6 +503,44 @@ async function measureMotion(client) {
   })()`);
 }
 
+function mergeMotionEvidence(samples) {
+  const evidence = (samples || []).filter(Boolean);
+  if (!evidence.length) {
+    return {
+      prefersReducedMotion: false,
+      maxMs: 0,
+      activeElementCount: 0,
+      samples: [],
+    };
+  }
+  return {
+    prefersReducedMotion: evidence.every((sample) => sample.prefersReducedMotion),
+    maxMs: Math.max(...evidence.map((sample) => Number(sample.maxMs) || 0)),
+    activeElementCount: Math.max(
+      ...evidence.map((sample) => Number(sample.activeElementCount) || 0),
+    ),
+    samples: evidence.flatMap((sample, index) => (sample.samples || []).map((entry) => ({
+      ...entry,
+      observedAtMs: MOTION_OBSERVATION_POINTS_MS[index] ?? null,
+    }))).slice(0, 8),
+  };
+}
+
+async function sampleMotionWindow(client) {
+  const evidence = [];
+  let elapsedMs = 0;
+  for (const pointMs of MOTION_OBSERVATION_POINTS_MS) {
+    const delayMs = Math.max(0, pointMs - elapsedMs);
+    if (delayMs) await new Promise((resolvePromise) => setTimeout(resolvePromise, delayMs));
+    evidence.push(await measureMotion(client));
+    elapsedMs = pointMs;
+  }
+  return {
+    ...mergeMotionEvidence(evidence),
+    observedForMs: elapsedMs,
+  };
+}
+
 function motionPairSupported(normal, reduced) {
   return Boolean(
     reduced?.prefersReducedMotion
@@ -653,6 +727,29 @@ const ELEMENT_RENDERED_SOURCE = `(element) => {
   return right > left && bottom > top;
 }`;
 
+const PSEUDO_TEXT_SOURCE = `(element) => {
+  if (!(element instanceof Element)) return '';
+  return ['::before', '::after']
+    .map((pseudo) => {
+      const style = getComputedStyle(element, pseudo);
+      const raw = String(style.content || '').trim();
+      const normalizedRaw = raw.toLowerCase();
+      if (
+        !raw
+        || normalizedRaw === 'none'
+        || normalizedRaw === 'normal'
+        || style.display === 'none'
+        || style.visibility === 'hidden'
+        || Number.parseFloat(style.opacity || '1') <= 0.01
+      ) return '';
+      const quoted = raw.match(/^(['"])(.*)\\1$/);
+      return quoted ? quoted[2] : raw;
+    })
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+}`;
+
 
 const FOCUS_SIGNATURE_SOURCE = `(element) => {
   const styleSnapshot = (node, pseudo = null) => {
@@ -704,10 +801,12 @@ const SUBMISSION_TRACE_SOURCE = `(() => {
   };
   const success = () => document.querySelector('#capability-success');
   const rendered = ${ELEMENT_RENDERED_SOURCE};
+  const pseudoText = ${PSEUDO_TEXT_SOURCE};
   const snapshot = () => {
     const element = success();
     return {
       text: element?.textContent?.trim() || '',
+      pseudoText: pseudoText(element),
       hidden: Boolean(element?.hidden),
       className: element?.className || '',
       style: element?.getAttribute?.('style') || '',
@@ -807,6 +906,118 @@ const SUBMISSION_TRACE_SOURCE = `(() => {
   });
   return true;
 })()`;
+
+async function replaySubmissionWithReducedMotion(client, frameId, html) {
+  const fallback = {
+    performed: false,
+    inputKeyboardReachable: false,
+    submitKeyboardReachable: false,
+    prefersReducedMotion: false,
+    maxMs: 0,
+    activeElementCount: 0,
+    samples: [],
+    observedForMs: 0,
+    contractPassed: false,
+    error: null,
+  };
+  try {
+    await client.send('Emulation.setEmulatedMedia', {
+      features: [{ name: 'prefers-reduced-motion', value: 'reduce' }],
+    });
+    await evaluate(client, `document.documentElement?.setAttribute('data-design-studio-replay-stale', 'true')`);
+    await client.send('Page.setDocumentContent', { frameId, html });
+    const replayReadyDeadline = Date.now() + 5000;
+    let replayReady = false;
+    while (Date.now() < replayReadyDeadline) {
+      try {
+        replayReady = Boolean(await evaluate(client, `Boolean(
+          document.readyState !== 'loading'
+          && !document.documentElement?.hasAttribute('data-design-studio-replay-stale')
+          && document.querySelector('#capability-form')
+          && document.querySelector('#capability-name')
+        )`));
+      } catch {
+        replayReady = false;
+      }
+      if (replayReady) break;
+      await new Promise((resolvePromise) => setTimeout(resolvePromise, 25));
+    }
+    if (!replayReady) throw new BrowserContractError('reduced-motion replay document did not become ready');
+    await evaluate(client, POPUP_GUARD_SOURCE);
+    for (const source of inlineClassicScriptSources(html)) {
+      await evaluate(client, `(() => {\n${source}\n})()`);
+    }
+    await evaluate(client, `(() => {
+      document.dispatchEvent(new Event('DOMContentLoaded', { bubbles: true }));
+      window.dispatchEvent(new Event('load'));
+      return true;
+    })()`);
+    if (await evaluate(client, `Boolean(document.activeElement instanceof HTMLElement)`)) {
+      await evaluate(client, `document.activeElement.blur()`);
+    }
+    const inputKeyboardReachable = await tabUntil(
+      client,
+      `document.activeElement === document.querySelector('#capability-name')`,
+    );
+    if (inputKeyboardReachable) await typeWithKeyboard(client, 'Ada');
+    const submitKeyboardReachable = await tabUntil(
+      client,
+      `(() => { const form = document.querySelector('#capability-form'); const submit = form?.querySelector('button[type="submit"], input[type="submit"]'); return document.activeElement === submit; })()`,
+    );
+    if (submitKeyboardReachable) await dispatchKey(client, 'Enter', 'Enter', 13);
+    const motion = await sampleMotionWindow(client);
+    const remainingObservationMs = Math.max(
+      0,
+      NETWORK_OBSERVATION_MS - motion.observedForMs,
+    );
+    if (remainingObservationMs) {
+      await new Promise((resolvePromise) => setTimeout(resolvePromise, remainingObservationMs));
+    }
+    const replayState = await evaluate(client, `(() => {
+      const form = document.querySelector('#capability-form');
+      const input = document.querySelector('#capability-name');
+      const success = document.querySelector('#capability-success');
+      const submit = form?.querySelector('button[type="submit"], input[type="submit"]');
+      const label = document.querySelector('label[for="capability-name"]');
+      const rendered = ${ELEMENT_RENDERED_SOURCE};
+      const pseudoText = ${PSEUDO_TEXT_SOURCE};
+      return {
+        successVisible: rendered(success),
+        successText: success?.textContent?.trim() || '',
+        successPseudoText: pseudoText(success),
+        inputValue: input?.value || '',
+        formVisibleAfter: [form, label, input, submit].every(rendered),
+        url: location.href,
+        activeElementTag: document.activeElement?.tagName?.toLowerCase?.() || null,
+        activeElementType: document.activeElement?.getAttribute?.('type') || null,
+      };
+    })()`);
+    const contractPassed = Boolean(
+      inputKeyboardReachable
+      && submitKeyboardReachable
+      && replayState.successVisible
+      && replayState.successText === 'Capability complete'
+      && !replayState.successPseudoText
+      && replayState.inputValue === 'Ada'
+      && replayState.formVisibleAfter
+      && replayState.url === 'about:blank'
+    );
+    return {
+      ...motion,
+      performed: Boolean(inputKeyboardReachable && submitKeyboardReachable),
+      contractPassed,
+      inputKeyboardReachable,
+      submitKeyboardReachable,
+      replayState,
+      error: null,
+    };
+  } catch (error) {
+    return {
+      ...fallback,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
 
 async function runBrowserProbe({ root, outputDir, entrypoint, width, height, forbiddenText }) {
   const resolvedRoot = resolve(root);
@@ -953,16 +1164,21 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height, for
       const rendered = ${ELEMENT_RENDERED_SOURCE};
       const focusSignature = ${FOCUS_SIGNATURE_SOURCE};
       const accessibleName = ${ACCESSIBLE_NAME_SOURCE};
+      const pseudoText = ${PSEUDO_TEXT_SOURCE};
       if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
       const policies = [...document.querySelectorAll('meta[http-equiv]')]
         .filter((meta) => meta.httpEquiv.toLowerCase() === 'content-security-policy')
         .map((meta) => meta.content.trim());
+      const successPseudoTextBefore = pseudoText(success);
       return {
         missing: ['form', 'input', 'success', 'submit', 'label'].filter((key) => ({form, input, success, submit, label})[key] == null),
         textInputContract: input instanceof HTMLInputElement && input.type === 'text',
         inputAccessibleNameBefore: accessibleName(input),
-        successVisibleBefore: rendered(success) && success.textContent.trim().length > 0,
+        successVisibleBefore: rendered(success) && Boolean(
+          success.textContent.trim().length > 0 || successPseudoTextBefore
+        ),
         successTextBefore: success?.textContent?.trim() || '',
+        successPseudoTextBefore,
         formVisibleBefore: [form, label, input, submit].every(rendered),
         urlBefore: location.href,
         contentSecurityPolicies: policies,
@@ -1027,7 +1243,14 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height, for
       await dispatchKey(client, 'Enter', 'Enter', 13);
     }
 
-    await new Promise((resolvePromise) => setTimeout(resolvePromise, NETWORK_OBSERVATION_MS));
+    const normalSubmissionMotion = await sampleMotionWindow(client);
+    const remainingNormalObservationMs = Math.max(
+      0,
+      NETWORK_OBSERVATION_MS - normalSubmissionMotion.observedForMs,
+    );
+    if (remainingNormalObservationMs) {
+      await new Promise((resolvePromise) => setTimeout(resolvePromise, remainingNormalObservationMs));
+    }
     if (interceptionPromises.size) await Promise.allSettled([...interceptionPromises]);
 
     const snapshotExpression = (forbidden) => `(() => {
@@ -1038,6 +1261,7 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height, for
       const label = document.querySelector('label[for="capability-name"]');
       const rendered = ${ELEMENT_RENDERED_SOURCE};
       const accessibleName = ${ACCESSIBLE_NAME_SOURCE};
+      const pseudoText = ${PSEUDO_TEXT_SOURCE};
       const forbidden = ${JSON.stringify(forbidden || '')};
       let forbiddenTextVisible = false;
       if (forbidden) {
@@ -1056,9 +1280,13 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height, for
           }
         }
       }
+      const successPseudoText = pseudoText(success);
       return {
-        successVisible: rendered(success) && success.textContent.trim().length > 0,
+        successVisible: rendered(success) && Boolean(
+          success.textContent.trim().length > 0 || successPseudoText
+        ),
         successText: success?.textContent?.trim() || null,
+        successPseudoText,
         submittedValue: input?.value || null,
         formVisibleAfter: [form, label, input, submit].every(rendered),
         textInputContract: input instanceof HTMLInputElement && input.type === 'text',
@@ -1103,10 +1331,6 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height, for
       : [];
     const durableNetworkPolicy = policies.length === 1 && hasDurableNoNetworkPolicy(policies[0]);
     const focusStyleChanged = Boolean(inputFocus.changed && submitFocus.changed);
-    const motionSupported = Boolean(
-      motionPairSupported(normalMotion, reducedMotion)
-      && motionPairSupported(normalPostSubmitMotion, reducedPostSubmitMotion)
-    );
 
     const beforeScreenshot = await evaluate(client, snapshotExpression(forbiddenText));
     const screenshot = await client.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false, fromSurface: true });
@@ -1115,12 +1339,38 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height, for
     const finalStateStable = [
       'successVisible',
       'successText',
+      'successPseudoText',
       'submittedValue',
       'formVisibleAfter',
       'urlAfter',
       'forbiddenTextVisible',
       'inputAccessibleName',
     ].every((key) => JSON.stringify(beforeScreenshot[key]) === JSON.stringify(afterScreenshot[key]));
+
+    const reducedSubmissionMotion = await replaySubmissionWithReducedMotion(
+      client,
+      frameId,
+      html,
+    );
+    if (interceptionPromises.size) await Promise.allSettled([...interceptionPromises]);
+    const replayPopupAttempts = await evaluate(
+      client,
+      `Array.isArray(window.__designStudioPopupAttempts) ? window.__designStudioPopupAttempts.slice() : []`,
+    ).catch(() => []);
+    for (const url of replayPopupAttempts || []) recordExternal(url, true);
+    const replayGuardedNetworkAttempts = await evaluate(
+      client,
+      `Array.isArray(window.__designStudioNetworkAttempts) ? window.__designStudioNetworkAttempts.slice() : []`,
+    ).catch(() => []);
+    for (const url of replayGuardedNetworkAttempts || []) recordExternal(url, true);
+
+    const motionSupported = Boolean(
+      motionPairSupported(normalMotion, reducedMotion)
+      && motionPairSupported(normalPostSubmitMotion, reducedPostSubmitMotion)
+      && reducedSubmissionMotion.performed
+      && reducedSubmissionMotion.contractPassed
+      && motionPairSupported(normalSubmissionMotion, reducedSubmissionMotion)
+    );
 
     const interaction = {
       ...initial,
@@ -1137,6 +1387,7 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height, for
       reducedMotion: Boolean(
         reducedMotion.prefersReducedMotion
         && reducedPostSubmitMotion.prefersReducedMotion
+        && reducedSubmissionMotion.prefersReducedMotion
       ),
       motion: {
         supported: motionSupported,
@@ -1144,14 +1395,24 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height, for
         reducedMaxMs: reducedMotion.maxMs,
         normalPostSubmitMaxMs: normalPostSubmitMotion.maxMs,
         reducedPostSubmitMaxMs: reducedPostSubmitMotion.maxMs,
+        normalSubmissionMaxMs: normalSubmissionMotion.maxMs,
+        reducedSubmissionMaxMs: reducedSubmissionMotion.maxMs,
+        reducedSubmissionReplayPerformed: reducedSubmissionMotion.performed,
+        reducedSubmissionReplayContractPassed: reducedSubmissionMotion.contractPassed,
+        reducedSubmissionReplayError: reducedSubmissionMotion.error,
+        reducedSubmissionReplayState: reducedSubmissionMotion.replayState || null,
         normalActiveElementCount: normalMotion.activeElementCount,
         reducedActiveElementCount: reducedMotion.activeElementCount,
         normalPostSubmitActiveElementCount: normalPostSubmitMotion.activeElementCount,
         reducedPostSubmitActiveElementCount: reducedPostSubmitMotion.activeElementCount,
+        normalSubmissionActiveElementCount: normalSubmissionMotion.activeElementCount,
+        reducedSubmissionActiveElementCount: reducedSubmissionMotion.activeElementCount,
         normalSamples: normalMotion.samples,
         reducedSamples: reducedMotion.samples,
         normalPostSubmitSamples: normalPostSubmitMotion.samples,
         reducedPostSubmitSamples: reducedPostSubmitMotion.samples,
+        normalSubmissionSamples: normalSubmissionMotion.samples,
+        reducedSubmissionSamples: reducedSubmissionMotion.samples,
       },
     };
 
@@ -1174,7 +1435,10 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height, for
         failures.push('success state did not become visible');
       }
     }
-    if (interaction.successText !== 'Capability complete') failures.push('success state text is not exact');
+    if (
+      interaction.successText !== 'Capability complete'
+      || interaction.successPseudoText
+    ) failures.push('success state text is not exact');
     if (!interaction.formVisibleAfter) failures.push('form controls did not remain visible after submission');
     if (interaction.submittedValue !== 'Ada') failures.push('text input did not accept real keyboard input');
     if (interaction.urlAfter !== interaction.urlBefore) failures.push('submission changed the document URL');
