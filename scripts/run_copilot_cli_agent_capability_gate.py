@@ -338,11 +338,59 @@ def validate_role_tool_receipt(
     if contract is None:
         raise core.ContractError(f"unknown capability role: {role}")
 
+    first_turn_id: str | None = None
+    for event_index, event in enumerate(events):
+        if event.get("type") != "assistant.turn_start":
+            continue
+        data = event.get("data")
+        if not isinstance(data, dict):
+            raise core.ContractError(
+                f"{role} assistant turn event {event_index} has no data object"
+            )
+        first_turn_id = str(data.get("turnId", "")).strip()
+        if not first_turn_id:
+            raise core.ContractError(
+                f"{role} assistant turn event {event_index} has no turnId"
+            )
+        break
+    has_assistant_turns = first_turn_id is not None
+
     starts: dict[str, dict[str, Any]] = {}
     completed: set[str] = set()
     successful_calls: list[dict[str, Any]] = []
+    active_turn_id: str | None = None
     for event_index, event in enumerate(events):
         event_type = event.get("type")
+        if event_type in {"assistant.turn_start", "assistant.turn_end"}:
+            data = event.get("data")
+            if not isinstance(data, dict):
+                raise core.ContractError(
+                    f"{role} assistant turn event {event_index} has no data object"
+                )
+            turn_id = str(data.get("turnId", "")).strip()
+            if not turn_id:
+                raise core.ContractError(
+                    f"{role} assistant turn event {event_index} has no turnId"
+                )
+            if event_type == "assistant.turn_start":
+                if active_turn_id is not None:
+                    raise core.ContractError(
+                        f"{role} assistant turn {turn_id} started before turn "
+                        f"{active_turn_id} ended"
+                    )
+                active_turn_id = turn_id
+            else:
+                if active_turn_id is None:
+                    raise core.ContractError(
+                        f"{role} assistant turn {turn_id} ended without a start"
+                    )
+                if turn_id != active_turn_id:
+                    raise core.ContractError(
+                        f"{role} assistant turn ended as {turn_id} after starting "
+                        f"as {active_turn_id}"
+                    )
+                active_turn_id = None
+            continue
         if event_type not in {"tool.execution_start", "tool.execution_complete"}:
             continue
         data = event.get("data")
@@ -380,11 +428,26 @@ def validate_role_tool_receipt(
                 raise core.ContractError(
                     f"{role} tool receipt attempted unauthorized {operation}: {relative}"
                 )
-            turn_id = str(data.get("turnId", "")).strip()
+            explicit_turn_id = str(data.get("turnId", "")).strip()
+            if has_assistant_turns and active_turn_id is None:
+                raise core.ContractError(
+                    f"{role} tool receipt call {call_id} occurred outside an assistant turn"
+                )
+            if (
+                explicit_turn_id
+                and active_turn_id is not None
+                and explicit_turn_id != active_turn_id
+            ):
+                raise core.ContractError(
+                    f"{role} tool receipt call {call_id} changed the active turn"
+                )
+            turn_id = explicit_turn_id or active_turn_id
             if not turn_id:
                 raise core.ContractError(
-                    f"{role} tool receipt call {call_id} has no turnId"
+                    f"{role} tool receipt call {call_id} cannot be associated with an assistant turn"
                 )
+            if first_turn_id is None:
+                first_turn_id = turn_id
             starts[call_id] = {
                 "id": call_id,
                 "tool": tool_name,
@@ -414,6 +477,10 @@ def validate_role_tool_receipt(
             raise core.ContractError(
                 f"{role} tool receipt changed turn for call {call_id}"
             )
+        if has_assistant_turns and active_turn_id != start["turnId"]:
+            raise core.ContractError(
+                f"{role} tool receipt completed call {call_id} outside its assistant turn"
+            )
         if data.get("success") is not True:
             raise core.ContractError(
                 f"{role} tool receipt call {call_id} did not succeed"
@@ -437,12 +504,12 @@ def validate_role_tool_receipt(
             f"reads={sorted(reads)}, writes={sorted(writes)}"
         )
 
-    turn_zero_operations = {
+    first_turn_operations = {
         call["operation"]
         for call in successful_calls
-        if call["turnId"] == "0"
+        if call["turnId"] == first_turn_id
     }
-    if not contract["first_turn"].issubset(turn_zero_operations):
+    if not contract["first_turn"].issubset(first_turn_operations):
         raise core.ContractError(
             f"{role} tool receipt does not prove required first-turn tool use"
         )
@@ -461,14 +528,6 @@ def validate_role_tool_receipt(
         if not read_completions or not write_starts or max(read_completions) >= min(write_starts):
             raise core.ContractError(
                 "builder tool receipt does not prove all required reads completed before writing"
-            )
-        if any(
-            call["turnId"] != "0"
-            for call in successful_calls
-            if call["operation"] == "read"
-        ):
-            raise core.ContractError(
-                "builder tool receipt does not prove all required reads happened on turn 0"
             )
 
     return {
