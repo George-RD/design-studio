@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import re
 import unittest
 
 
@@ -94,14 +95,14 @@ class CopilotCliAgentReceiptTests(unittest.TestCase):
         self.assertIn("[ ] current Design Studio", roadmap)
         self.assertIn("[ ] current Design Studio with Impeccable enabled", roadmap)
 
-
     def test_only_hardened_gate_is_an_executable_entrypoint(self):
         core_source = CORE_RUNNER.read_text(encoding="utf-8")
         gate_source = GATE_RUNNER.read_text(encoding="utf-8")
         document = DOCUMENT.read_text(encoding="utf-8")
 
-        self.assertNotIn('if __name__ == "__main__"', core_source)
-        self.assertIn('if __name__ == "__main__"', gate_source)
+        entrypoint = re.compile(r"""if\s+__name__\s*==\s*['"]__main__['"]""")
+        self.assertIsNone(entrypoint.search(core_source))
+        self.assertIsNotNone(entrypoint.search(gate_source))
         self.assertIn(
             "scripts/run_copilot_cli_agent_capability_gate.py",
             document,
@@ -111,11 +112,32 @@ class CopilotCliAgentReceiptTests(unittest.TestCase):
             document,
         )
 
+    def test_contract_job_timeout_covers_browser_regressions(self):
+        workflow = WORKFLOW.read_text(encoding="utf-8")
+        self.assertIn("  capability-contract:", workflow)
+        contract_job = workflow.split("  capability-contract:", 1)[1]
+        self.assertIn("    steps:", contract_job)
+        contract_header = contract_job.split("    steps:", 1)[0]
+        self.assertIn("timeout-minutes: 10", contract_header)
+
     def test_live_job_timeout_covers_all_role_and_browser_timeouts(self):
         workflow = WORKFLOW.read_text(encoding="utf-8")
+        self.assertIn("  live-agent-capability:", workflow)
         live_job = workflow.split("  live-agent-capability:", 1)[1]
+        self.assertIn("    steps:", live_job)
         live_header = live_job.split("    steps:", 1)[0]
         self.assertIn("timeout-minutes: 30", live_header)
+
+    def test_output_bound_regressions_are_enforced_by_ci(self):
+        workflow = WORKFLOW.read_text(encoding="utf-8")
+        self.assertIn(
+            '- "test/test_copilot_cli_output_bounds.py"',
+            workflow,
+        )
+        self.assertIn(
+            "python3 -m unittest discover -s test -p 'test_copilot_cli_output_bounds.py' -v",
+            workflow,
+        )
 
 
 if __name__ == "__main__":
