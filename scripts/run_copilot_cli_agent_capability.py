@@ -11,6 +11,7 @@ import os
 from pathlib import Path
 import re
 import shutil
+import signal
 import stat
 import subprocess
 import tempfile
@@ -169,6 +170,33 @@ def _capture_stream_bounded(
             pass
 
 
+def _terminate_process_tree(process: subprocess.Popen[bytes]) -> None:
+    if process.poll() is not None:
+        return
+
+    if os.name == "posix":
+        try:
+            os.killpg(process.pid, signal.SIGTERM)
+        except ProcessLookupError:
+            return
+    else:
+        process.terminate()
+
+    try:
+        process.wait(timeout=1)
+        return
+    except subprocess.TimeoutExpired:
+        pass
+
+    if os.name == "posix":
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            return
+    else:
+        process.kill()
+
+
 def default_command_runner(
     argv: Sequence[str],
     *,
@@ -182,6 +210,7 @@ def default_command_runner(
             env=env,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            start_new_session=os.name == "posix",
         )
     except OSError as error:
         return CommandOutcome(
@@ -191,7 +220,7 @@ def default_command_runner(
         )
 
     if process.stdout is None or process.stderr is None:
-        process.kill()
+        _terminate_process_tree(process)
         return CommandOutcome(
             exit_code=127,
             stdout="",
@@ -233,18 +262,18 @@ def default_command_runner(
     while process.poll() is None:
         if stdout_exceeded.is_set() or stderr_exceeded.is_set():
             output_exceeded = True
-            process.kill()
+            _terminate_process_tree(process)
             break
         if time.monotonic() >= deadline:
             timed_out = True
-            process.kill()
+            _terminate_process_tree(process)
             break
         time.sleep(0.02)
 
     try:
         exit_code = process.wait(timeout=5)
     except subprocess.TimeoutExpired:
-        process.kill()
+        _terminate_process_tree(process)
         exit_code = process.wait()
     for reader in readers:
         reader.join(timeout=5)
@@ -652,6 +681,7 @@ class CapabilityHtmlParser(HTMLParser):
         self.duplicate_ids: set[str] = set()
         self.has_submit = False
         self.has_viewport = False
+        self.has_meta_refresh = False
         self.content_security_policies: list[str] = []
         self.resource_references: list[tuple[str, str]] = []
         self._style_depth = 0
@@ -689,6 +719,11 @@ class CapabilityHtmlParser(HTMLParser):
             self.has_submit = True
         if tag == "meta" and values.get("name", "").lower() == "viewport":
             self.has_viewport = True
+        if (
+            tag == "meta"
+            and values.get("http-equiv", "").lower() == "refresh"
+        ):
+            self.has_meta_refresh = True
         if (
             tag == "meta"
             and values.get("http-equiv", "").lower()
@@ -795,6 +830,10 @@ def validate_site(path: Path) -> dict[str, Any]:
         raise ContractError("index.html has no submit control")
     if not parser.has_viewport:
         raise ContractError("index.html has no viewport declaration")
+    if parser.has_meta_refresh:
+        raise ContractError(
+            "index.html contains forbidden meta refresh navigation"
+        )
     if len(parser.content_security_policies) != 1 or not _has_durable_no_network_policy(
         parser.content_security_policies[0]
     ):

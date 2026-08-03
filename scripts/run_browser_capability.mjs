@@ -143,6 +143,25 @@ function focusSignatureRenderedChange(before, after) {
   return false;
 }
 
+const ACCESSIBLE_NAME_SOURCE = `(element) => {
+  if (!(element instanceof HTMLElement)) return '';
+  const labelledBy = String(element.getAttribute('aria-labelledby') || '')
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((id) => document.getElementById(id)?.textContent?.trim() || '')
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+  if (labelledBy) return labelledBy;
+  const ariaLabel = String(element.getAttribute('aria-label') || '').trim();
+  if (ariaLabel) return ariaLabel;
+  return [...(element.labels || [])]
+    .map((label) => label.textContent?.trim() || '')
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+}`;
+
 function keyDescriptor(character) {
   const upper = character.toUpperCase();
   const letter = /^[A-Z]$/.test(upper);
@@ -719,9 +738,12 @@ const SUBMISSION_TRACE_SOURCE = `(() => {
     const submissionId = activeSubmissionId;
     return nativeSetTimeout(function tracedTimeoutCallback(...callbackArgs) {
       const beforeCallback = snapshot();
+      const previousSubmissionId = activeSubmissionId;
+      activeSubmissionId = submissionId;
       try {
         return callback.apply(this, callbackArgs);
       } finally {
+        activeSubmissionId = previousSubmissionId;
         nativeQueueMicrotask(() => markSuccessTransition(
           submissionId,
           beforeCallback,
@@ -930,6 +952,7 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height, for
       const label = document.querySelector('label[for="capability-name"]');
       const rendered = ${ELEMENT_RENDERED_SOURCE};
       const focusSignature = ${FOCUS_SIGNATURE_SOURCE};
+      const accessibleName = ${ACCESSIBLE_NAME_SOURCE};
       if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
       const policies = [...document.querySelectorAll('meta[http-equiv]')]
         .filter((meta) => meta.httpEquiv.toLowerCase() === 'content-security-policy')
@@ -937,6 +960,7 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height, for
       return {
         missing: ['form', 'input', 'success', 'submit', 'label'].filter((key) => ({form, input, success, submit, label})[key] == null),
         textInputContract: input instanceof HTMLInputElement && input.type === 'text',
+        inputAccessibleNameBefore: accessibleName(input),
         successVisibleBefore: rendered(success) && success.textContent.trim().length > 0,
         successTextBefore: success?.textContent?.trim() || '',
         formVisibleBefore: [form, label, input, submit].every(rendered),
@@ -1013,6 +1037,7 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height, for
       const submit = form?.querySelector('button[type="submit"], input[type="submit"]');
       const label = document.querySelector('label[for="capability-name"]');
       const rendered = ${ELEMENT_RENDERED_SOURCE};
+      const accessibleName = ${ACCESSIBLE_NAME_SOURCE};
       const forbidden = ${JSON.stringify(forbidden || '')};
       let forbiddenTextVisible = false;
       if (forbidden) {
@@ -1037,6 +1062,7 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height, for
         submittedValue: input?.value || null,
         formVisibleAfter: [form, label, input, submit].every(rendered),
         textInputContract: input instanceof HTMLInputElement && input.type === 'text',
+        inputAccessibleName: accessibleName(input),
         urlAfter: location.href,
         afterSubmission: {
           innerWidth: window.innerWidth,
@@ -1093,6 +1119,7 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height, for
       'formVisibleAfter',
       'urlAfter',
       'forbiddenTextVisible',
+      'inputAccessibleName',
     ].every((key) => JSON.stringify(beforeScreenshot[key]) === JSON.stringify(afterScreenshot[key]));
 
     const interaction = {
@@ -1134,6 +1161,7 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height, for
     const failures = [];
     if (interaction.missing?.length) failures.push(`missing required elements: ${interaction.missing.join(', ')}`);
     if (!interaction.textInputContract) failures.push('capability-name is not a text input');
+    if (!interaction.inputAccessibleNameBefore || !interaction.inputAccessibleName) failures.push('capability-name has no accessible label');
     if (!interaction.formVisibleBefore) failures.push('form controls were not visible before submission');
     if (interaction.successVisibleBefore) failures.push('success state was visible before submission');
     if (interaction.successTextBefore) failures.push('success state contained content before submission');
