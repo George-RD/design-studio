@@ -14,6 +14,7 @@ const DEFAULT_BASE_TIMEOUT_MS = 60_000;
 const TERMINATION_GRACE_MS = 1_000;
 
 class CompletionProbeError extends Error {}
+class CompletionProbeBlockedError extends CompletionProbeError {}
 
 function parseArgs(argv) {
   const args = { outputDir: null };
@@ -126,7 +127,7 @@ async function runBaseProbe(argv) {
     });
     child.once('close', (status, signal) => {
       if (timedOut) {
-        finish(() => rejectPromise(new CompletionProbeError(
+        finish(() => rejectPromise(new CompletionProbeBlockedError(
           `base browser probe timed out after ${timeoutMs} ms`,
         )));
         return;
@@ -178,7 +179,7 @@ async function main() {
     reportPath = join(outputDir, 'browser-report.json');
     report = {
       schemaVersion: 1,
-      status: 'failed',
+      status: error instanceof CompletionProbeBlockedError ? 'blocked' : 'failed',
       error: `${error?.name || 'Error'}: ${error?.message || String(error)}`,
       failures: [],
     };
