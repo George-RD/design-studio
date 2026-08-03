@@ -393,6 +393,13 @@ class CopilotCliAgentCapabilityTests(unittest.TestCase):
             ):
                 self.module.builder_prompt()
 
+    def test_builder_prompt_prevents_hidden_success_specificity_trap(self):
+        prompt = self.module.builder_prompt().lower()
+
+        self.assertIn("must be genuinely rendered after submission", prompt)
+        self.assertIn("id-level display:none", prompt)
+        self.assertIn("lower-specificity reveal class", prompt)
+
     def test_malformed_srcset_empty_candidates_are_ignored(self):
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / "index.html"

@@ -319,6 +319,42 @@ class BrowserCapabilityRegressionTests(unittest.TestCase):
         self.assertFalse(report["interaction"]["successVisibleBefore"])
         self.assertTrue(report["interaction"]["successVisible"])
 
+    def test_pseudo_element_success_content_is_visible_before_submission(self):
+        html = EMPTY_SUCCESS_HTML.replace(
+            "#capability-success{min-height:1.5em;display:flex;align-items:center}",
+            "#capability-success{min-height:1.5em;display:flex;align-items:center}"
+            "#capability-success::before{content:'Capability complete'}",
+        )
+        temporary, completed, report = self.run_browser(html)
+        self.addCleanup(temporary.cleanup)
+
+        self.assertEqual(1, completed.returncode)
+        self.assertIn(
+            "success state was visible before submission",
+            report["failures"],
+        )
+        self.assertTrue(report["interaction"]["successVisibleBefore"])
+        self.assertEqual(
+            "Capability complete",
+            report["interaction"]["successPseudoTextBefore"],
+        )
+
+    def test_quoted_pseudo_keyword_is_visible_content(self):
+        html = EMPTY_SUCCESS_HTML.replace(
+            "#capability-success{min-height:1.5em;display:flex;align-items:center}",
+            "#capability-success{min-height:1.5em;display:flex;align-items:center}"
+            "#capability-success::before{content:'none'}",
+        )
+        temporary, completed, report = self.run_browser(html)
+        self.addCleanup(temporary.cleanup)
+
+        self.assertEqual(1, completed.returncode)
+        self.assertIn(
+            "success state was visible before submission",
+            report["failures"],
+        )
+        self.assertEqual("none", report["interaction"]["successPseudoTextBefore"])
+
     def test_offscreen_success_state_is_not_visible(self):
         html = VALID_HTML.replace(
             '<p id="capability-success" hidden>',
@@ -432,6 +468,17 @@ class BrowserCapabilityRegressionTests(unittest.TestCase):
             report["failures"],
         )
         self.assertFalse(report["interaction"]["focusStyleChanged"])
+
+    def test_rendered_focus_filter_change_is_accepted(self):
+        html = EMPTY_SUCCESS_HTML.replace(
+            "button:focus-visible,input:focus-visible{outline:3px solid #176b5b}",
+            "button:focus-visible,input:focus-visible{outline:none;filter:brightness(70%)}",
+        )
+        temporary, completed, report = self.run_browser(html)
+        self.addCleanup(temporary.cleanup)
+
+        self.assertEqual(0, completed.returncode, completed.stderr + completed.stdout)
+        self.assertTrue(report["interaction"]["focusStyleChanged"])
 
     def test_transparent_ancestor_hides_form_controls(self):
         html = EMPTY_SUCCESS_HTML.replace(
@@ -591,6 +638,57 @@ class BrowserCapabilityRegressionTests(unittest.TestCase):
         self.assertGreater(
             report["interaction"]["motion"]["reducedMaxMs"],
             50,
+        )
+
+    def test_transient_submission_motion_is_replayed_for_reduced_users(self):
+        html = (
+            EMPTY_SUCCESS_HTML.replace(
+                "button{transition:transform .2s}",
+                "button{transition:none}",
+            )
+            .replace(
+                "@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}",
+                "@media(prefers-reduced-motion:reduce){}",
+            )
+            .replace(
+                "success.textContent='Capability complete';",
+                "success.textContent='Capability complete';"
+                "success.animate([{transform:'translateY(12px)'},{transform:'translateY(0)'}],"
+                "{duration:400,iterations:1});",
+            )
+        )
+        temporary, completed, report = self.run_browser(html)
+        self.addCleanup(temporary.cleanup)
+
+        self.assertEqual(1, completed.returncode)
+        self.assertIn(
+            "reduced-motion path did not suppress active motion",
+            report["failures"],
+        )
+        self.assertTrue(
+            report["interaction"]["motion"]["reducedSubmissionReplayPerformed"]
+        )
+        self.assertGreater(
+            report["interaction"]["motion"]["reducedSubmissionMaxMs"],
+            50,
+        )
+
+    def test_reduced_motion_replay_runs_dom_content_loaded_handler(self):
+        html = EMPTY_SUCCESS_HTML.replace(
+            "<script>",
+            "<script>document.addEventListener('DOMContentLoaded',()=>{",
+            1,
+        ).replace(
+            "</script></body>",
+            "});</script></body>",
+            1,
+        )
+        temporary, completed, report = self.run_browser(html)
+        self.addCleanup(temporary.cleanup)
+
+        self.assertEqual(0, completed.returncode, completed.stderr + completed.stdout)
+        self.assertTrue(
+            report["interaction"]["motion"]["reducedSubmissionReplayContractPassed"]
         )
 
     def test_page_request_animation_frame_override_cannot_hang_probe(self):
