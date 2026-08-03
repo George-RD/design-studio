@@ -466,6 +466,24 @@ class BrowserCapabilityRegressionTests(unittest.TestCase):
         )
         self.assertFalse(report["interaction"]["textInputContract"])
 
+    def test_empty_visual_label_does_not_count_as_an_accessible_name(self):
+        html = EMPTY_SUCCESS_HTML.replace(
+            "</style>",
+            "label{display:block;min-width:2rem;min-height:1rem}</style>",
+        ).replace(
+            '<label for="capability-name">Name</label>',
+            '<label for="capability-name"></label>',
+        )
+        temporary, completed, report = self.run_browser(html)
+        self.addCleanup(temporary.cleanup)
+
+        self.assertEqual(1, completed.returncode)
+        self.assertIn(
+            "capability-name has no accessible label",
+            report["failures"],
+        )
+        self.assertEqual("", report["interaction"]["inputAccessibleName"])
+
     def test_timer_success_without_a_trusted_submit_fails(self):
         html = EMPTY_SUCCESS_HTML.replace(
             "document.querySelector('#capability-form').addEventListener('submit',event=>{event.preventDefault();success.textContent='Capability complete';});",

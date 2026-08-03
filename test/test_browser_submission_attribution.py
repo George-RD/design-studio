@@ -18,6 +18,11 @@ DELAYED_SUCCESS_HTML = """<!doctype html>
 <body><main><h1>Capability check</h1><form id="capability-form"><label for="capability-name">Name</label><input id="capability-name" name="name"><button type="submit">Complete</button></form><p id="capability-success" aria-live="polite"></p></main>
 <script>const success=document.querySelector('#capability-success');document.querySelector('#capability-form').addEventListener('submit',event=>{event.preventDefault();setTimeout(()=>{success.textContent='Capability complete';},900);});</script></body></html>"""
 
+NESTED_DELAYED_SUCCESS_HTML = DELAYED_SUCCESS_HTML.replace(
+    "setTimeout(()=>{success.textContent='Capability complete';},900);",
+    "setTimeout(()=>{setTimeout(()=>{success.textContent='Capability complete';},100);},100);",
+)
+
 
 class BrowserSubmissionAttributionTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -47,6 +52,49 @@ class BrowserSubmissionAttributionTests(unittest.TestCase):
             site.mkdir()
             (site / "index.html").write_text(
                 DELAYED_SUCCESS_HTML,
+                encoding="utf-8",
+            )
+            completed = subprocess.run(
+                [
+                    "node",
+                    str(BROWSER_PATH),
+                    "--root",
+                    str(site),
+                    "--output-dir",
+                    str(evidence),
+                    "--entrypoint",
+                    "index.html",
+                    "--width",
+                    "390",
+                    "--height",
+                    "844",
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=35,
+            )
+            self.assertTrue(
+                (evidence / "browser-report.json").is_file(),
+                completed.stderr + completed.stdout,
+            )
+            report = json.loads(
+                (evidence / "browser-report.json").read_text(encoding="utf-8")
+            )
+
+        self.assertEqual(0, completed.returncode, completed.stderr + completed.stdout)
+        self.assertTrue(report["interaction"]["submission"]["trustedSubmit"])
+        self.assertTrue(report["interaction"]["submission"]["causedSuccess"])
+        self.assertTrue(report["interaction"]["successVisible"])
+
+    def test_nested_delayed_success_is_attributed_to_the_trusted_submission(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            site = root / "site"
+            evidence = root / "evidence"
+            site.mkdir()
+            (site / "index.html").write_text(
+                NESTED_DELAYED_SUCCESS_HTML,
                 encoding="utf-8",
             )
             completed = subprocess.run(

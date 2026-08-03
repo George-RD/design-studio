@@ -457,6 +457,25 @@ class CopilotCliAgentCapabilityTests(unittest.TestCase):
             ):
                 self.module.core.validate_site(path)
 
+    def test_site_rejects_delayed_meta_refresh_navigation(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "index.html"
+            path.write_text(
+                "<!doctype html><meta name='viewport' content='width=device-width'>"
+                + CSP_META
+                + "<meta http-equiv='refresh' content='30;url=https://example.com'>"
+                + "<form id='capability-form'><label for='capability-name'>Name</label>"
+                "<input id='capability-name'><button type='submit'>Go</button></form>"
+                "<p id='capability-success'></p>",
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(
+                self.module.core.ContractError,
+                "meta refresh|refresh navigation",
+            ):
+                self.module.core.validate_site(path)
+
     def test_relative_resource_reference_is_not_self_contained(self):
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / "index.html"
@@ -534,6 +553,70 @@ class CopilotCliAgentCapabilityTests(unittest.TestCase):
         self.assertIn("partial stderr", outcome.stderr)
         self.assertIn("timed out", outcome.stderr.lower())
         self.assertEqual("blocked", self.module.classify_cli_failure(outcome))
+
+    @unittest.skipUnless(os.name == "posix", "process-group semantics require POSIX")
+    def test_command_timeout_terminates_descendant_processes(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            pid_path = root / "descendant.pid"
+            ready_path = root / "descendant.ready"
+            terminated_path = root / "descendant.terminated"
+            descendant_script = (
+                "import pathlib,signal,sys,time; "
+                f"ready=pathlib.Path({str(ready_path)!r}); "
+                f"terminated=pathlib.Path({str(terminated_path)!r}); "
+                "signal.signal(signal.SIGTERM, lambda *_: (terminated.write_text('terminated'), sys.exit(0))); "
+                "ready.write_text('ready'); "
+                "time.sleep(30)"
+            )
+            parent_script = f"""
+import pathlib
+import subprocess
+import sys
+import time
+
+child = subprocess.Popen(
+    [sys.executable, "-S", "-c", {descendant_script!r}],
+    stdout=subprocess.DEVNULL,
+    stderr=subprocess.DEVNULL,
+)
+ready = pathlib.Path({str(ready_path)!r})
+deadline = time.monotonic() + 5
+while not ready.exists() and time.monotonic() < deadline:
+    time.sleep(0.01)
+pathlib.Path({str(pid_path)!r}).write_text(str(child.pid))
+print('{{"type":"partial"}}', flush=True)
+time.sleep(30)
+"""
+            command = [
+                sys.executable,
+                "-S",
+                "-c",
+                parent_script,
+            ]
+            with mock.patch.object(
+                self.module.core,
+                "COMMAND_TIMEOUT_SECONDS",
+                0.2,
+            ):
+                outcome = self.module.core.default_command_runner(
+                    command,
+                    cwd=root,
+                    env={},
+                )
+
+            self.assertEqual(124, outcome.exit_code)
+            self.assertTrue(pid_path.is_file(), outcome.stderr)
+            deadline = self.module.core.time.monotonic() + 3
+            while (
+                not terminated_path.is_file()
+                and self.module.core.time.monotonic() < deadline
+            ):
+                self.module.core.time.sleep(0.05)
+            self.assertTrue(
+                terminated_path.is_file(),
+                "Copilot descendant did not receive timeout termination",
+            )
 
     def test_browser_timeout_is_blocked_and_writes_partial_logs(self):
         timeout = subprocess.TimeoutExpired(
