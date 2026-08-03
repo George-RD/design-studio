@@ -50,6 +50,19 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
 
+      - name: Package exact source for maintenance
+        run: |
+          set -euo pipefail
+          tar --exclude=.git --exclude=harness-output -czf /tmp/design-studio-source.tgz .
+
+      - name: Upload exact source for maintenance
+        uses: actions/upload-artifact@v4
+        with:
+          name: design-studio-source-${{ github.run_id }}
+          path: /tmp/design-studio-source.tgz
+          if-no-files-found: error
+          retention-days: 1
+
       - name: Use Node.js 24
         uses: actions/setup-node@v4
         with:
