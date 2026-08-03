@@ -14,6 +14,7 @@ on:
       - "test/test_copilot_cli_auto_model.py"
       - "test/test_copilot_cli_trusted_workspace.py"
       - "test/test_copilot_cli_director_retry.py"
+      - "test/test_copilot_cli_output_bounds.py"
       - "test/test_copilot_cli_agent_receipt.py"
       - "test/test_browser_capability_regressions.py"
       - "test/test_browser_completion_contract.py"
@@ -36,7 +37,7 @@ env:
 jobs:
   capability-contract:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - name: Check out exact revision
         uses: actions/checkout@v4
@@ -58,6 +59,7 @@ jobs:
           python3 -m unittest discover -s test -p 'test_copilot_cli_auto_model.py' -v
           python3 -m unittest discover -s test -p 'test_copilot_cli_trusted_workspace.py' -v
           python3 -m unittest discover -s test -p 'test_copilot_cli_director_retry.py' -v
+          python3 -m unittest discover -s test -p 'test_copilot_cli_output_bounds.py' -v
           python3 -m unittest discover -s test -p 'test_copilot_cli_agent_receipt.py' -v
           node --test test/test_browser_profile_cleanup.mjs
           python3 -m py_compile \
