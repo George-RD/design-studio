@@ -7,6 +7,7 @@ import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 import process from 'node:process';
 
 import { removeBrowserProfileBestEffort } from './browser_profile_cleanup.mjs';
+import { waitForWebSocketOpen } from './browser_websocket_ready.mjs';
 
 class BrowserContractError extends Error {}
 class BrowserBlockedError extends Error {}
@@ -277,16 +278,10 @@ class CdpClient {
 
   async connect() {
     this.socket = new WebSocket(this.url);
-    await Promise.race([
-      new Promise((resolvePromise, reject) => {
-        this.socket.addEventListener('open', resolvePromise, { once: true });
-        this.socket.addEventListener('error', () => reject(new BrowserBlockedError('DevTools websocket failed to open')), { once: true });
-      }),
-      new Promise((_, reject) => setTimeout(
-        () => reject(new BrowserBlockedError('DevTools websocket timed out while opening')),
-        10000,
-      )),
-    ]);
+    await waitForWebSocketOpen(this.socket, {
+      timeoutMs: 10_000,
+      errorFactory: (message) => new BrowserBlockedError(message),
+    });
     this.socket.addEventListener('message', (event) => {
       const message = JSON.parse(String(event.data));
       if (message.method) {
