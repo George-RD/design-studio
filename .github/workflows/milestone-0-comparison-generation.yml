@@ -25,10 +25,9 @@ on:
           - design-studio-impeccable
           - all
       model:
-        description: Copilot model; explicit models are verified against resolved evidence
+        description: Exact Copilot model ID; auto is not admissible for comparison
         required: true
         type: string
-        default: auto
       continue_on_error:
         description: Continue selected runs after the first blocked or failed run
         required: true
