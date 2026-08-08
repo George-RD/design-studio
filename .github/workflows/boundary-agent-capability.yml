@@ -177,18 +177,26 @@ jobs:
         run: |
           set -euo pipefail
           cat .github/patches/pr33-impl.b64.* | tr -d '\n' | base64 --decode > /tmp/pr33-followup-implementation.patch
-          git apply --check /tmp/pr33-followup-implementation.patch
-          git apply /tmp/pr33-followup-implementation.patch
+          git apply --check --exclude=scripts/browser_profile_cleanup.mjs /tmp/pr33-followup-implementation.patch
+          git apply --exclude=scripts/browser_profile_cleanup.mjs /tmp/pr33-followup-implementation.patch
           python3 - <<'PY'
           from pathlib import Path
 
-          path = Path('.github/workflows/boundary-agent-capability.yml')
-          text = path.read_text(encoding='utf-8')
+          cleanup = Path('scripts/browser_profile_cleanup.mjs')
+          cleanup_text = cleanup.read_text(encoding='utf-8')
+          for dead_line in ('  let lastError;\n', '      lastError = error;\n'):
+              if dead_line not in cleanup_text:
+                  raise SystemExit(f'missing expected cleanup line: {dead_line!r}')
+              cleanup_text = cleanup_text.replace(dead_line, '', 1)
+          cleanup.write_text(cleanup_text, encoding='utf-8')
+
+          workflow = Path('.github/workflows/boundary-agent-capability.yml')
+          workflow_text = workflow.read_text(encoding='utf-8')
           start_marker = '\n  # PR33_APPLIER_START\n'
           end_marker = '\n  # PR33_APPLIER_END\n'
-          start = text.index(start_marker)
-          end = text.index(end_marker, start) + len(end_marker)
-          path.write_text(text[:start] + text[end:], encoding='utf-8')
+          start = workflow_text.index(start_marker)
+          end = workflow_text.index(end_marker, start) + len(end_marker)
+          workflow.write_text(workflow_text[:start] + workflow_text[end:], encoding='utf-8')
           PY
           rm -f \
             .github/patches/pr33-followup-tests.patch \
@@ -200,5 +208,5 @@ jobs:
 
       - name: Push ordered commits
         run: git push origin HEAD:agent/m0-agent-runner-capability
-  # PR33_APPLIER_ENCODED_RETRY
+  # PR33_APPLIER_FINAL_RETRY
   # PR33_APPLIER_END
