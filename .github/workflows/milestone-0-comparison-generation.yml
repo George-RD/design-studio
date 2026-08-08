@@ -67,6 +67,12 @@ jobs:
         with:
           node-version: 24
 
+      - name: Install pinned Impeccable dependencies
+        working-directory: vendor/impeccable
+        run: |
+          set -euo pipefail
+          npm ci --ignore-scripts --no-audit --no-fund
+
       - name: Install pinned Copilot CLI
         run: |
           set -euo pipefail
