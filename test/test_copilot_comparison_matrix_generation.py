@@ -14,12 +14,14 @@ from unittest import mock
 REPO_ROOT = Path(__file__).resolve().parents[1]
 MODULE_PATH = REPO_ROOT / "scripts" / "run_copilot_comparison_matrix_generation.py"
 WORKFLOW_PATH = REPO_ROOT / ".github" / "workflows" / "milestone-0-comparison-generation.yml"
+DESIGN_REVISION = "d" * 40
+IMPECCABLE_REVISION = "e" * 40
+MISMATCH_REVISION = "c" * 40
 
 
 def load_generation_runner():
     spec = importlib.util.spec_from_file_location(
-        "run_copilot_comparison_matrix_generation_test",
-        MODULE_PATH,
+        "run_copilot_comparison_matrix_generation_test", MODULE_PATH
     )
     if spec is None or spec.loader is None:
         raise RuntimeError(f"cannot load matrix generation runner from {MODULE_PATH}")
@@ -72,7 +74,7 @@ class CopilotComparisonMatrixGenerationTests(unittest.TestCase):
 
     @staticmethod
     def revision_resolver(path: Path) -> str:
-        return "impeccable-sha" if path.name == "impeccable" else "design-sha"
+        return IMPECCABLE_REVISION if path.name == "impeccable" else DESIGN_REVISION
 
     def fake_subprocess(self, calls, *, status="generated", missing_report=False):
         def run(argv, *, cwd, env, stdout, stderr, check):
@@ -119,7 +121,13 @@ class CopilotComparisonMatrixGenerationTests(unittest.TestCase):
 
         return run
 
-    def generate(self, *, fixture="marketing-surface", lane="design-studio-current", **kwargs):
+    def generate(
+        self,
+        *,
+        fixture="marketing-surface",
+        lane="design-studio-current",
+        **kwargs,
+    ):
         temporary, root, impeccable, output_root = self.make_repo()
         self.addCleanup(temporary.cleanup)
         result = self.generation.generate_matrix(
@@ -127,8 +135,8 @@ class CopilotComparisonMatrixGenerationTests(unittest.TestCase):
             output_root=output_root,
             matrix_id="m0-live-001",
             impeccable_root=impeccable,
-            design_revision="design-sha",
-            impeccable_revision="impeccable-sha",
+            design_revision=DESIGN_REVISION,
+            impeccable_revision=IMPECCABLE_REVISION,
             fixture_id=fixture,
             lane_id=lane,
             copilot_bin="copilot",
@@ -147,26 +155,25 @@ class CopilotComparisonMatrixGenerationTests(unittest.TestCase):
         tools = self.generation.build_lane_tools(
             repo_root=root,
             impeccable_root=impeccable,
-            design_revision="design-sha",
-            impeccable_revision="impeccable-sha",
+            design_revision=DESIGN_REVISION,
+            impeccable_revision=IMPECCABLE_REVISION,
             revision_resolver=self.revision_resolver,
         )
         self.assertEqual(
             {
                 "name": "design-studio",
                 "version": "1.5.0",
-                "source": "George-RD/design-studio@design-sha",
+                "source": f"George-RD/design-studio@{DESIGN_REVISION}",
             },
             tools["design-studio-current"],
         )
-        self.assertEqual(
-            "3.5.0", tools["impeccable-alone"]["version"]
-        )
+        self.assertEqual("3.5.0", tools["impeccable-alone"]["version"])
         self.assertEqual(
             "1.5.0+3.5.0", tools["design-studio-impeccable"]["version"]
         )
         self.assertEqual(
-            "George-RD/design-studio@design-sha + pbakaus/impeccable@impeccable-sha",
+            f"George-RD/design-studio@{DESIGN_REVISION} + "
+            f"pbakaus/impeccable@{IMPECCABLE_REVISION}",
             tools["design-studio-impeccable"]["source"],
         )
 
@@ -179,8 +186,8 @@ class CopilotComparisonMatrixGenerationTests(unittest.TestCase):
                 output_root=output_root,
                 matrix_id="m0-bad-revision",
                 impeccable_root=impeccable,
-                design_revision="claimed-design-sha",
-                impeccable_revision="impeccable-sha",
+                design_revision=MISMATCH_REVISION,
+                impeccable_revision=IMPECCABLE_REVISION,
                 fixture_id="marketing-surface",
                 lane_id="design-studio-current",
                 revision_resolver=self.revision_resolver,
@@ -196,8 +203,8 @@ class CopilotComparisonMatrixGenerationTests(unittest.TestCase):
                 output_root=output_root,
                 matrix_id="m0-bad-selection",
                 impeccable_root=impeccable,
-                design_revision="design-sha",
-                impeccable_revision="impeccable-sha",
+                design_revision=DESIGN_REVISION,
+                impeccable_revision=IMPECCABLE_REVISION,
                 fixture_id="unknown-fixture",
                 lane_id="design-studio-current",
                 revision_resolver=self.revision_resolver,
@@ -222,15 +229,14 @@ class CopilotComparisonMatrixGenerationTests(unittest.TestCase):
         command = calls[0]["argv"]
         self.assertEqual(sys.executable, command[0])
         self.assertIn("run_copilot_comparison_lane.py", command[1])
-        self.assertIn("--design-revision", command)
-        self.assertIn("design-sha", command)
-        self.assertIn("--impeccable-revision", command)
-        self.assertIn("impeccable-sha", command)
+        self.assertIn(DESIGN_REVISION, command)
+        self.assertIn(IMPECCABLE_REVISION, command)
         self.assertNotIn("GITHUB_TOKEN", " ".join(command))
 
         matrix_path = output_root / "matrices" / "m0-live-001" / "matrix.json"
-        receipt = json.loads(matrix_path.read_text(encoding="utf-8"))
-        self.assertEqual(12, len(receipt["runs"]))
+        self.assertEqual(
+            12, len(json.loads(matrix_path.read_text(encoding="utf-8"))["runs"])
+        )
         matrix_summary = self.generation.matrix.validate_matrix(
             matrix_path, repo_root=root
         )
@@ -300,9 +306,9 @@ class CopilotComparisonMatrixGenerationTests(unittest.TestCase):
         workflow = WORKFLOW_PATH.read_text(encoding="utf-8")
         self.assertIn("workflow_dispatch:", workflow)
         self.assertNotIn("pull_request:", workflow)
-        self.assertIn("COPILOT_CLI_VERSION: \"1.0.74\"", workflow)
+        self.assertIn('COPILOT_CLI_VERSION: "1.0.74"', workflow)
         self.assertIn(
-            "IMPECCABLE_REVISION: \"aee6ce9352b842217b3f57c78296a7a4fa35a7f3\"",
+            'IMPECCABLE_REVISION: "aee6ce9352b842217b3f57c78296a7a4fa35a7f3"',
             workflow,
         )
         self.assertIn("copilot-requests: write", workflow)
