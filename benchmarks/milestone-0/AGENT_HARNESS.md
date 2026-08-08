@@ -1,7 +1,7 @@
 # Comparison agent capability gate
 
 - **Status:** Verified
-- **Verified:** 2026-07-31
+- **Verified:** 2026-08-08
 - **Execution surface:** GitHub Copilot CLI in GitHub Actions
 - **Scope:** Controlled file tools, browser interaction, screenshot capture and source-blind role isolation
 - **Decision boundary:** This gate makes the twelve Milestone 0 comparison runs executable. It does not count as a benchmark lane or comparative result.
@@ -12,7 +12,7 @@ A fair Design Studio comparison needs more than model access. The execution surf
 
 GitHub Models was the original candidate, but GitHub [fully retired the service on July 30, 2026](https://github.blog/changelog/2026-07-01-github-models-is-being-fully-retired-on-july-30-2026/). The accepted gate therefore uses a pinned GitHub Copilot CLI instead.
 
-The workflow runs three separate Copilot sessions around one isolated browser handoff:
+The workflow runs four ordered stages: three isolated Copilot sessions and one browser handoff:
 
 1. a source-blind Visual Director receives only the public brief and creates `direction.json`;
 2. a Builder receives the brief, direction and a canary-bearing baseline, then creates one self-contained `index.html`;
@@ -38,7 +38,7 @@ A model response, file write or screenshot alone does not satisfy the gate. Ever
 
 ## Verified result
 
-GitHub Actions run [`30643540826`](https://github.com/George-RD/design-studio/actions/runs/30643540826) passed on head `6f21c4ec32ab34a2974db607a3197d5e586a86a7`.
+GitHub Actions run [`31257044809`](https://github.com/George-RD/design-studio/actions/runs/31257044809) passed on head `43c1b6faf136886fa7070e553f420dac0caf1c2b`.
 
 - Copilot CLI version: `1.0.74`
 - Requested model: `auto`
@@ -56,11 +56,13 @@ GitHub Actions run [`30643540826`](https://github.com/George-RD/design-studio/ac
 - Keyboard focus: distinct focused styles for the input and submit control
 - URL: unchanged at `about:blank`
 - Width: `390` CSS pixels for the viewport, document and client
-- Motion: `1000 ms` maximum normally and `0 ms` with reduced motion
+- Motion: `180 ms` maximum normally and `0 ms` with reduced motion across the initial page, post-submit state and replayed submission
+- Reduced-motion submission replay: performed, complete contract passed, no replay error
+- Final screenshot state: stable before and after capture
 - External requests: none
-- Source-isolation checks: all passed
-- Artifact: `copilot-cli-agent-capability-30643540826`
-- Artifact digest: `sha256:685e259ce6478dadd6078297a16ccace7379d4aa9d43167b169ad2be0003af04`
+- Source-isolation checks: all passed, including rendered canary absence
+- Artifact: `copilot-cli-agent-capability-31257044809`
+- Artifact digest: `sha256:1a29d24c934ef325a3515c83e6dd9a9f6e870405cf1b3758f4c97460b6c2fddc`
 
 The permanent sanitized receipt is [`evidence/copilot-cli-agent-capability.json`](evidence/copilot-cli-agent-capability.json). It preserves the exact run, head, artifact digest, execution surface and normalized checks after the raw artifact expires.
 

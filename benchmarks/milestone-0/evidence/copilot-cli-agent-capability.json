@@ -2,13 +2,13 @@
   "receiptSchemaVersion": 1,
   "capabilityReportSchemaVersion": 1,
   "status": "passed",
-  "verifiedAt": "2026-07-31T15:39:07.981568Z",
+  "verifiedAt": "2026-08-08T12:28:33.016007Z",
   "workflow": {
-    "runId": 30643540826,
-    "headSha": "6f21c4ec32ab34a2974db607a3197d5e586a86a7",
-    "artifactId": 8798533579,
-    "artifactName": "copilot-cli-agent-capability-30643540826",
-    "artifactDigest": "sha256:685e259ce6478dadd6078297a16ccace7379d4aa9d43167b169ad2be0003af04",
+    "runId": 31257044809,
+    "headSha": "43c1b6faf136886fa7070e553f420dac0caf1c2b",
+    "artifactId": 9021760833,
+    "artifactName": "copilot-cli-agent-capability-31257044809",
+    "artifactDigest": "sha256:1a29d24c934ef325a3515c83e6dd9a9f6e870405cf1b3758f4c97460b6c2fddc",
     "retentionDays": 14
   },
   "executionSurface": {
@@ -20,8 +20,8 @@
     "requestedModel": "auto",
     "modelPolicy": "auto-per-role",
     "resolvedModels": {
-      "director": "claude-haiku-4.5",
       "builder": "gpt-5-mini",
+      "director": "claude-haiku-4.5",
       "evaluator": "gpt-5-mini"
     },
     "maxAiCreditsPerRole": 30
@@ -59,8 +59,11 @@
       ],
       "readBaselineCss": true,
       "entrypoint": "index.html",
-      "outputBytes": 5880,
+      "outputBytes": 5175,
       "singleFile": true,
+      "textInputContract": true,
+      "durableNetworkPolicy": true,
+      "networkApisAbsent": true,
       "resourceReferencesAbsent": true,
       "sourceCanaryAbsent": true,
       "resolvedModel": "gpt-5-mini"
@@ -68,8 +71,8 @@
     "browser": {
       "status": "passed",
       "viewport": {
-        "width": 390,
-        "height": 844
+        "height": 844,
+        "width": 390
       },
       "submittedValue": "Ada",
       "successTextBefore": "",
@@ -81,17 +84,27 @@
       "focusStyleChanged": true,
       "urlUnchanged": true,
       "horizontalOverflow": false,
-      "normalMotionMaxMs": 1000,
+      "finalStateStable": true,
+      "normalMotionMaxMs": 180,
       "reducedMotionMaxMs": 0,
+      "normalPostSubmitMaxMs": 180,
+      "reducedPostSubmitMaxMs": 0,
+      "normalSubmissionMaxMs": 180,
+      "reducedSubmissionMaxMs": 0,
+      "reducedSubmissionReplayPerformed": true,
+      "reducedSubmissionReplayContractPassed": true,
+      "reducedSubmissionReplayError": null,
+      "durableNetworkPolicy": true,
       "externalRequests": []
     },
     "sourceIsolation": {
-      "status": "passed",
-      "directorHasNoSource": true,
       "builderReadCanarySource": true,
-      "outputCanaryAbsent": true,
+      "directorHasNoSource": true,
       "evaluatorHasNoSource": true,
-      "evaluatorRequestCanaryAbsent": true
+      "evaluatorRequestCanaryAbsent": true,
+      "outputCanaryAbsent": true,
+      "renderedCanaryAbsent": true,
+      "status": "passed"
     },
     "evaluator": {
       "status": "passed",
@@ -103,11 +116,12 @@
         "evaluation.json"
       ],
       "readFiles": [],
-      "titleVisible": true,
       "formVisible": true,
-      "successVisible": true,
       "layoutUsable": true,
       "sourceCanaryVisible": false,
+      "successVisible": true,
+      "summary": "A centered card titled 'Capability check' shows a labeled text input containing 'Ada', a visible 'Submit' button, and a green 'Capability complete' success message beneath. The mobile card fits without horizontal overflow.",
+      "titleVisible": true,
       "resolvedModel": "gpt-5-mini"
     }
   },
@@ -117,7 +131,7 @@
       "Director, Builder and Evaluator can run in separate trusted workspaces with explicit tool sets",
       "auto model selection can resolve independently per role while preserving each concrete model in the receipt",
       "the Builder can create a self-contained interface without leaking the source canary",
-      "Chromium can verify interaction, URL stability, network isolation, overflow and reduced-motion behavior and capture a screenshot",
+      "Chromium can verify trusted keyboard interaction, URL stability, network isolation, overflow, final-state stability and reduced-motion replay and capture a screenshot",
       "a source-blind Evaluator can inspect the screenshot and return a durable visual receipt"
     ],
     "doesNotProve": [

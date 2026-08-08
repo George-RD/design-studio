@@ -32,14 +32,14 @@ class CopilotCliAgentReceiptTests(unittest.TestCase):
         self.assertEqual(1, receipt["capabilityReportSchemaVersion"])
         self.assertEqual("passed", receipt["status"])
         workflow = receipt["workflow"]
-        self.assertEqual(30643540826, workflow["runId"])
+        self.assertEqual(31257044809, workflow["runId"])
         self.assertEqual(
-            "6f21c4ec32ab34a2974db607a3197d5e586a86a7",
+            "43c1b6faf136886fa7070e553f420dac0caf1c2b",
             workflow["headSha"],
         )
-        self.assertEqual(8798533579, workflow["artifactId"])
+        self.assertEqual(9021760833, workflow["artifactId"])
         self.assertEqual(
-            "sha256:685e259ce6478dadd6078297a16ccace7379d4aa9d43167b169ad2be0003af04",
+            "sha256:1a29d24c934ef325a3515c83e6dd9a9f6e870405cf1b3758f4c97460b6c2fddc",
             workflow["artifactDigest"],
         )
         execution_surface = receipt["executionSurface"]
@@ -70,13 +70,19 @@ class CopilotCliAgentReceiptTests(unittest.TestCase):
         self.assertEqual("passed", checks["sourceIsolation"]["status"])
         self.assertEqual([], checks["browser"]["externalRequests"])
         self.assertEqual(0, checks["browser"]["reducedMotionMaxMs"])
+        self.assertEqual(180, checks["browser"]["normalMotionMaxMs"])
+        self.assertTrue(checks["browser"]["reducedSubmissionReplayPerformed"])
+        self.assertTrue(checks["browser"]["reducedSubmissionReplayContractPassed"])
+        self.assertIsNone(checks["browser"]["reducedSubmissionReplayError"])
+        self.assertTrue(checks["browser"]["finalStateStable"])
+        self.assertTrue(checks["sourceIsolation"]["renderedCanaryAbsent"])
 
     def test_documentation_and_roadmap_cite_the_receipt_without_completing_lanes(self):
         document = DOCUMENT.read_text(encoding="utf-8")
         roadmap = ROADMAP.read_text(encoding="utf-8")
         for marker in (
             "Status:** Verified",
-            "30643540826",
+            "31257044809",
             "copilot-cli-agent-capability.json",
             "claude-haiku-4.5",
             "gpt-5-mini",
@@ -90,7 +96,7 @@ class CopilotCliAgentReceiptTests(unittest.TestCase):
             "[sanitized receipt](benchmarks/milestone-0/evidence/copilot-cli-agent-capability.json)",
             roadmap,
         )
-        self.assertIn("30643540826", roadmap)
+        self.assertIn("31257044809", roadmap)
         self.assertIn("[ ] Impeccable alone", roadmap)
         self.assertIn("[ ] current Design Studio", roadmap)
         self.assertIn("[ ] current Design Studio with Impeccable enabled", roadmap)
