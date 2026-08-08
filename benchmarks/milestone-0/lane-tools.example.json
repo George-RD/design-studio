@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "lanes": {
+    "impeccable-alone": {
+      "name": "impeccable",
+      "version": "<resolved-version>",
+      "source": "pbakaus/impeccable@<exact-revision>"
+    },
+    "design-studio-current": {
+      "name": "design-studio",
+      "version": "<resolved-version>",
+      "source": "George-RD/design-studio@<exact-revision>"
+    },
+    "design-studio-impeccable": {
+      "name": "design-studio+impeccable",
+      "version": "<design-studio-version>+<impeccable-version>",
+      "source": "George-RD/design-studio@<exact-revision> + pbakaus/impeccable@<exact-revision>"
+    }
+  }
+}
