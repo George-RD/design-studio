@@ -92,6 +92,60 @@ class CopilotComparisonRunnerContractTests(unittest.TestCase):
         self.assertNotIn("BUILDER_GUIDANCE", serialized)
         self.assertNotIn("IMPECCABLE_CORE", serialized)
 
+    def test_fixture_paths_cannot_escape_the_immutable_input_tree(self) -> None:
+        temporary, repo, impeccable, run = self.make_run()
+        self.addCleanup(temporary.cleanup)
+        fixture_path = run / "input" / "fixture.json"
+        fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
+        fixture["brief"] = "../work/index.html"
+        fixture_path.write_text(json.dumps(fixture), encoding="utf-8")
+        with self.assertRaises(self.runner.ContractError):
+            self.runner.build_director_packet(repo, run, "design-sha")
+
+    def test_run_and_fixture_identity_must_match(self) -> None:
+        temporary, repo, impeccable, run = self.make_run()
+        self.addCleanup(temporary.cleanup)
+        fixture_path = run / "input" / "fixture.json"
+        fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
+        fixture["version"] = 2
+        fixture_path.write_text(json.dumps(fixture), encoding="utf-8")
+        with self.assertRaises(self.runner.ContractError):
+            self.runner.build_director_packet(repo, run, "design-sha")
+
+    def test_lane_contract_binds_workflow_and_mechanical_provider(self) -> None:
+        cases = {
+            "design-studio-current": ("design-studio", "fallback"),
+            "design-studio-impeccable": ("design-studio", "impeccable"),
+            "impeccable-alone": ("impeccable", "impeccable"),
+        }
+        for lane, expected in cases.items():
+            with self.subTest(lane=lane):
+                temporary, repo, impeccable, run = self.make_run(lane)
+                self.addCleanup(temporary.cleanup)
+                contract = self.runner.resolve_lane_contract(run)
+                self.assertEqual(lane, contract["id"])
+                self.assertEqual(expected[0], contract["workflow"])
+                self.assertEqual(expected[1], contract["mechanicalProvider"])
+
+    def test_packet_builders_reject_the_wrong_lane(self) -> None:
+        temporary, repo, impeccable, run = self.make_run("impeccable-alone")
+        self.addCleanup(temporary.cleanup)
+        with self.assertRaises(self.runner.ContractError):
+            self.runner.build_director_packet(repo, run, "design-sha")
+        with self.assertRaises(self.runner.ContractError):
+            self.runner.build_builder_packet(
+                repo,
+                run,
+                {"concept": "Assigned", "palette": "Stone", "layout": "Editorial", "interaction": "Quiet"},
+                "design-sha",
+                "impeccable",
+            )
+
+        temporary_two, repo_two, impeccable_two, run_two = self.make_run("design-studio-current")
+        self.addCleanup(temporary_two.cleanup)
+        with self.assertRaises(self.runner.ContractError):
+            self.runner.build_impeccable_packet(impeccable_two, run_two, "impeccable-sha")
+
     def test_builder_packet_receives_selected_direction_and_source(self) -> None:
         temporary, repo, impeccable, run = self.make_run()
         self.addCleanup(temporary.cleanup)
@@ -109,6 +163,19 @@ class CopilotComparisonRunnerContractTests(unittest.TestCase):
         self.assertNotIn("DIRECTOR_GUIDANCE", serialized)
         self.assertNotIn("IMPECCABLE_CORE", serialized)
         self.assertEqual("fallback", packet["mechanicalProvider"])
+        self.assertEqual("design-studio-current", packet["lane"]["id"])
+
+    def test_builder_rejects_a_provider_that_disagrees_with_the_lane(self) -> None:
+        temporary, repo, impeccable, run = self.make_run("design-studio-current")
+        self.addCleanup(temporary.cleanup)
+        with self.assertRaises(self.runner.ContractError):
+            self.runner.build_builder_packet(
+                repo,
+                run,
+                {"concept": "Assigned", "palette": "Stone", "layout": "Editorial", "interaction": "Quiet"},
+                "design-sha",
+                "impeccable",
+            )
 
     def test_enabled_design_studio_lane_does_not_receive_impeccable_guidance(self) -> None:
         temporary, repo, impeccable, run = self.make_run("design-studio-impeccable")
@@ -122,6 +189,7 @@ class CopilotComparisonRunnerContractTests(unittest.TestCase):
         )
         self.assertNotIn("IMPECCABLE_CORE", json.dumps(packet))
         self.assertEqual("impeccable", packet["mechanicalProvider"])
+        self.assertEqual("design-studio-impeccable", packet["lane"]["id"])
 
     def test_impeccable_lane_uses_pinned_upstream_guidance(self) -> None:
         temporary, repo, impeccable, run = self.make_run("impeccable-alone")
@@ -133,6 +201,7 @@ class CopilotComparisonRunnerContractTests(unittest.TestCase):
         self.assertIn("PRIVATE_SOURCE", serialized)
         self.assertNotIn("DIRECTOR_GUIDANCE", serialized)
         self.assertEqual("3.5.0", packet["guidance"]["packageVersion"])
+        self.assertEqual("impeccable-alone", packet["lane"]["id"])
 
     def test_direction_selection_is_deterministic(self) -> None:
         directions = [
