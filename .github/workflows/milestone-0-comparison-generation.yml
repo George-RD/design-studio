@@ -67,11 +67,18 @@ jobs:
         with:
           node-version: 24
 
+      - name: Setup pinned Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
       - name: Install pinned Impeccable dependencies
         working-directory: vendor/impeccable
         run: |
           set -euo pipefail
-          npm ci --ignore-scripts --no-audit --no-fund
+          bun --version | tee ../../bun-version.txt
+          grep -Fx "1.3.14" ../../bun-version.txt
+          bun install --frozen-lockfile --ignore-scripts
 
       - name: Install pinned Copilot CLI
         run: |
@@ -136,6 +143,7 @@ jobs:
           name: milestone-0-comparison-generation-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             ${{ env.OUTPUT_ROOT }}
+            bun-version.txt
             copilot-version.txt
           if-no-files-found: error
           retention-days: 30
