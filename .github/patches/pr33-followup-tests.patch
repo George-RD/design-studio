@@ -1,5 +1,5 @@
 diff --git a/test/test_browser_capability_regressions.py b/test/test_browser_capability_regressions.py
-index 639e090..e283fd0 100644
+index 639e09064c117626600f29d76a6fe2374c41a38f..e283fd037c181e999a9b1b51c8fb1388eaa4a478 100644
 --- a/test/test_browser_capability_regressions.py
 +++ b/test/test_browser_capability_regressions.py
 @@ -691,6 +691,51 @@ class BrowserCapabilityRegressionTests(unittest.TestCase):
@@ -56,7 +56,7 @@ index 639e090..e283fd0 100644
              "<script>",
 diff --git a/test/test_browser_motion_evidence.mjs b/test/test_browser_motion_evidence.mjs
 new file mode 100644
-index 0000000..ed8fc9e
+index 0000000000000000000000000000000000000000..ed8fc9e2a08288efb314f1371d225d5a6425b2fa
 --- /dev/null
 +++ b/test/test_browser_motion_evidence.mjs
 @@ -0,0 +1,40 @@
@@ -101,7 +101,7 @@ index 0000000..ed8fc9e
 +  );
 +});
 diff --git a/test/test_copilot_cli_agent_capability.py b/test/test_copilot_cli_agent_capability.py
-index 6297ae4..9bf0916 100644
+index 6297ae4c00e3aae425cfabc0592ad5c93a8d3945..9bf091634fd44b58d4418cf3d3124036d129335f 100644
 --- a/test/test_copilot_cli_agent_capability.py
 +++ b/test/test_copilot_cli_agent_capability.py
 @@ -399,6 +399,19 @@ class CopilotCliAgentCapabilityTests(unittest.TestCase):
