@@ -81,7 +81,63 @@ class CopilotComparisonRunnerContractTests(unittest.TestCase):
         )
         return temporary, repo, impeccable, run
 
-    def test_director_packet_is_source_blind(self) -> None:
+    def directions(self):
+        return [
+            {
+                "id": "direction-1",
+                "name": "A",
+                "concept": "A",
+                "palette": "A",
+                "layout": "A",
+                "interaction": "A",
+            },
+            {
+                "id": "direction-2",
+                "name": "B",
+                "concept": "B",
+                "palette": "B",
+                "layout": "B",
+                "interaction": "B",
+            },
+            {
+                "id": "direction-3",
+                "name": "C",
+                "concept": "C",
+                "palette": "C",
+                "layout": "C",
+                "interaction": "C",
+            },
+        ]
+
+    def design_description(self) -> str:
+        headings = (
+            "THESIS",
+            "FIRST VIEWPORT",
+            "VISITOR PATH",
+            "VISUAL WORLD",
+            "TYPOGRAPHY",
+            "COLOUR",
+            "SPATIAL RHYTHM",
+            "MOTION",
+            "INTERACTION STATES",
+            "RESPONSIVE BEHAVIOUR",
+            "SIGNATURE MOMENT",
+            "ANTI-GOALS",
+        )
+        return "\n\n".join(f"## {heading}\nSpecific {heading.lower()} contract." for heading in headings)
+
+    def local_index(self, body: str = "<main>ok</main>") -> str:
+        return (
+            "<!doctype html><html><head>"
+            '<meta http-equiv="Content-Security-Policy" '
+            'content="default-src \'none\'; base-uri \'none\'; connect-src \'none\'; '
+            'form-action \'none\'; frame-src \'none\'; object-src \'none\'; '
+            "script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data:; font-src 'self' data:; media-src 'self' data:">"
+            f"</head><body>{body}</body></html>"
+        )
+
+    def test_director_packet_is_source_blind_and_precommits_assignment(self) -> None:
         temporary, repo, impeccable, run = self.make_run()
         self.addCleanup(temporary.cleanup)
         packet = self.runner.build_director_packet(repo, run, "design-sha")
@@ -91,6 +147,40 @@ class CopilotComparisonRunnerContractTests(unittest.TestCase):
         self.assertNotIn("PRIVATE_SOURCE", serialized)
         self.assertNotIn("BUILDER_GUIDANCE", serialized)
         self.assertNotIn("IMPECCABLE_CORE", serialized)
+        self.assertNotIn("assignedIndex", serialized)
+        self.assertNotIn("seedDigest", serialized)
+
+        assignment_path = run / "evidence" / "direction-assignment.json"
+        self.assertTrue(assignment_path.is_file())
+        assignment = json.loads(assignment_path.read_text(encoding="utf-8"))
+        self.assertIn(assignment["assignedIndex"], (1, 2, 3))
+        self.assertEqual("m0-fixture-a-current", assignment["runId"])
+        self.assertEqual(1, assignment["iteration"])
+
+    def test_direction_selection_uses_only_the_precommitted_assignment(self) -> None:
+        temporary, repo, impeccable, run = self.make_run()
+        self.addCleanup(temporary.cleanup)
+        self.runner.build_director_packet(repo, run, "design-sha")
+        first = self.runner.select_direction(self.directions(), run)
+        second = self.runner.select_direction(self.directions(), run)
+        self.assertEqual(first, second)
+        self.assertEqual(
+            f"direction-{first['assignedIndex']}",
+            first["direction"]["id"],
+        )
+        with self.assertRaises(TypeError):
+            self.runner.select_direction(self.directions(), "caller-controlled-seed")
+
+    def test_tampered_direction_assignment_is_rejected(self) -> None:
+        temporary, repo, impeccable, run = self.make_run()
+        self.addCleanup(temporary.cleanup)
+        self.runner.build_director_packet(repo, run, "design-sha")
+        assignment_path = run / "evidence" / "direction-assignment.json"
+        assignment = json.loads(assignment_path.read_text(encoding="utf-8"))
+        assignment["assignedIndex"] = 1 if assignment["assignedIndex"] != 1 else 2
+        assignment_path.write_text(json.dumps(assignment), encoding="utf-8")
+        with self.assertRaises(self.runner.ContractError):
+            self.runner.select_direction(self.directions(), run)
 
     def test_fixture_paths_cannot_escape_the_immutable_input_tree(self) -> None:
         temporary, repo, impeccable, run = self.make_run()
@@ -133,10 +223,12 @@ class CopilotComparisonRunnerContractTests(unittest.TestCase):
         with self.assertRaises(self.runner.ContractError):
             self.runner.build_director_packet(repo, run, "design-sha")
         with self.assertRaises(self.runner.ContractError):
+            self.runner.build_direct_packet(repo, run, self.directions()[0], "design-sha")
+        with self.assertRaises(self.runner.ContractError):
             self.runner.build_builder_packet(
                 repo,
                 run,
-                {"concept": "Assigned", "palette": "Stone", "layout": "Editorial", "interaction": "Quiet"},
+                self.design_description(),
                 "design-sha",
                 "impeccable",
             )
@@ -146,24 +238,60 @@ class CopilotComparisonRunnerContractTests(unittest.TestCase):
         with self.assertRaises(self.runner.ContractError):
             self.runner.build_impeccable_packet(impeccable_two, run_two, "impeccable-sha")
 
-    def test_builder_packet_receives_selected_direction_and_source(self) -> None:
+    def test_direct_packet_expands_selection_without_source_or_assignment(self) -> None:
         temporary, repo, impeccable, run = self.make_run()
         self.addCleanup(temporary.cleanup)
+        self.runner.build_director_packet(repo, run, "design-sha")
+        selection = self.runner.select_direction(self.directions(), run)
+        packet = self.runner.build_direct_packet(
+            repo,
+            run,
+            selection["direction"],
+            "design-sha",
+        )
+        serialized = json.dumps(packet)
+        self.assertIn(selection["direction"]["name"], serialized)
+        self.assertIn("DIRECTOR_GUIDANCE", serialized)
+        self.assertNotIn("PRIVATE_SOURCE", serialized)
+        self.assertNotIn("assignedIndex", serialized)
+        self.assertNotIn("seedDigest", serialized)
+        self.assertIn("design-description.md", packet["instructions"])
+
+    def test_builder_packet_receives_expanded_design_contract_and_source(self) -> None:
+        temporary, repo, impeccable, run = self.make_run()
+        self.addCleanup(temporary.cleanup)
+        description = self.design_description()
         packet = self.runner.build_builder_packet(
             repo,
             run,
-            {"concept": "Assigned", "palette": "Stone", "layout": "Editorial", "interaction": "Quiet"},
+            description,
             "design-sha",
             "fallback",
         )
         serialized = json.dumps(packet)
         self.assertIn("PRIVATE_SOURCE", serialized)
         self.assertIn("BUILDER_GUIDANCE", serialized)
-        self.assertIn("Assigned", serialized)
+        self.assertIn("THESIS", serialized)
+        self.assertNotIn("selectedDirection", packet)
         self.assertNotIn("DIRECTOR_GUIDANCE", serialized)
         self.assertNotIn("IMPECCABLE_CORE", serialized)
+        self.assertEqual(description, packet["designDescription"])
         self.assertEqual("fallback", packet["mechanicalProvider"])
         self.assertEqual("design-studio-current", packet["lane"]["id"])
+
+    def test_builder_rejects_raw_candidate_or_incomplete_direct_contract(self) -> None:
+        temporary, repo, impeccable, run = self.make_run()
+        self.addCleanup(temporary.cleanup)
+        for invalid in (self.directions()[0], "## THESIS\nOnly a mood"):
+            with self.subTest(invalid=type(invalid).__name__):
+                with self.assertRaises(self.runner.ContractError):
+                    self.runner.build_builder_packet(
+                        repo,
+                        run,
+                        invalid,
+                        "design-sha",
+                        "fallback",
+                    )
 
     def test_builder_rejects_a_provider_that_disagrees_with_the_lane(self) -> None:
         temporary, repo, impeccable, run = self.make_run("design-studio-current")
@@ -172,7 +300,7 @@ class CopilotComparisonRunnerContractTests(unittest.TestCase):
             self.runner.build_builder_packet(
                 repo,
                 run,
-                {"concept": "Assigned", "palette": "Stone", "layout": "Editorial", "interaction": "Quiet"},
+                self.design_description(),
                 "design-sha",
                 "impeccable",
             )
@@ -183,7 +311,7 @@ class CopilotComparisonRunnerContractTests(unittest.TestCase):
         packet = self.runner.build_builder_packet(
             repo,
             run,
-            {"concept": "Assigned", "palette": "Stone", "layout": "Editorial", "interaction": "Quiet"},
+            self.design_description(),
             "design-sha",
             "impeccable",
         )
@@ -203,30 +331,37 @@ class CopilotComparisonRunnerContractTests(unittest.TestCase):
         self.assertEqual("3.5.0", packet["guidance"]["packageVersion"])
         self.assertEqual("impeccable-alone", packet["lane"]["id"])
 
-    def test_direction_selection_is_deterministic(self) -> None:
-        directions = [
-            {"concept": "A", "palette": "A", "layout": "A", "interaction": "A"},
-            {"concept": "B", "palette": "B", "layout": "B", "interaction": "B"},
-            {"concept": "C", "palette": "C", "layout": "C", "interaction": "C"},
-        ]
-        first = self.runner.select_direction(directions, "fixture-a:run-1")
-        second = self.runner.select_direction(directions, "fixture-a:run-1")
-        self.assertEqual(first, second)
-        self.assertIn(first["selectedIndex"], (0, 1, 2))
-
-    def test_output_bundle_rejects_escape_and_external_network(self) -> None:
+    def test_output_bundle_rejects_escape_and_static_external_references(self) -> None:
         with self.assertRaises(self.runner.ContractError):
             self.runner.validate_bundle({"files": [{"path": "../escape.html", "content": "x"}]})
+        encoded_external = self.local_index(
+            '<script src="https:&#x2f;&#x2f;example.com/x.js"></script>'
+        )
         with self.assertRaises(self.runner.ContractError):
             self.runner.validate_bundle(
-                {"files": [{"path": "index.html", "content": "<script src='https://example.com/x.js'></script>"}]}
+                {"files": [{"path": "index.html", "content": encoded_external}]}
+            )
+
+    def test_output_bundle_rejects_network_apis_even_with_dynamic_urls(self) -> None:
+        dynamic_fetch = self.local_index(
+            '<script>fetch("https:" + "/" + "/example.com/data")</script>'
+        )
+        with self.assertRaises(self.runner.ContractError):
+            self.runner.validate_bundle(
+                {"files": [{"path": "index.html", "content": dynamic_fetch}]}
+            )
+
+    def test_output_bundle_requires_a_durable_no_network_policy(self) -> None:
+        with self.assertRaises(self.runner.ContractError):
+            self.runner.validate_bundle(
+                {"files": [{"path": "index.html", "content": "<!doctype html><main>ok</main>"}]}
             )
 
     def test_output_bundle_requires_index_and_is_bounded(self) -> None:
         with self.assertRaises(self.runner.ContractError):
             self.runner.validate_bundle({"files": [{"path": "styles.css", "content": "body{}"}]})
         valid = self.runner.validate_bundle(
-            {"files": [{"path": "index.html", "content": "<!doctype html><title>ok</title>"}]}
+            {"files": [{"path": "index.html", "content": self.local_index()}]}
         )
         self.assertEqual(["index.html"], [item["path"] for item in valid])
 
