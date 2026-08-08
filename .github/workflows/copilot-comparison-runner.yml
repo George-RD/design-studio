@@ -5,7 +5,9 @@ on:
     branches: [main]
     paths:
       - "scripts/run_copilot_comparison.py"
+      - "scripts/run_copilot_comparison_lane.py"
       - "test/test_copilot_comparison_runner.py"
+      - "test/test_copilot_comparison_lane.py"
       - ".github/workflows/copilot-comparison-runner.yml"
   workflow_dispatch:
 
@@ -27,5 +29,7 @@ jobs:
       - name: Validate comparison runner contract
         run: |
           set -euo pipefail
-          python3 -m unittest discover -s test -p 'test_copilot_comparison_runner.py' -v
-          python3 -m py_compile scripts/run_copilot_comparison.py
+          python3 -m unittest discover -s test -p 'test_copilot_comparison*.py' -v
+          python3 -m py_compile \
+            scripts/run_copilot_comparison.py \
+            scripts/run_copilot_comparison_lane.py
