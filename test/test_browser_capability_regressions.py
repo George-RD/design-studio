@@ -691,6 +691,51 @@ class BrowserCapabilityRegressionTests(unittest.TestCase):
             report["interaction"]["motion"]["reducedSubmissionReplayContractPassed"]
         )
 
+    def test_reduced_motion_replay_executes_application_scripts_once(self):
+        html = EMPTY_SUCCESS_HTML.replace(
+            "<script>",
+            "<script>"
+            "window.__capabilityInitCount=(window.__capabilityInitCount||0)+1;"
+            "if(window.__capabilityInitCount>1){"
+            "document.querySelector('#capability-form')?.remove();"
+            "}",
+            1,
+        )
+        temporary, completed, report = self.run_browser(html)
+        self.addCleanup(temporary.cleanup)
+
+        self.assertEqual(0, completed.returncode, completed.stderr + completed.stdout)
+        self.assertTrue(
+            report["interaction"]["motion"]["reducedSubmissionReplayContractPassed"]
+        )
+        self.assertIsNone(
+            report["interaction"]["motion"]["reducedSubmissionReplayError"]
+        )
+
+    def test_reduced_motion_replay_error_is_reported_distinctly(self):
+        html = EMPTY_SUCCESS_HTML.replace(
+            "<script>",
+            "<script>"
+            "if(matchMedia('(prefers-reduced-motion: reduce)').matches){"
+            "document.querySelector('#capability-form')?.remove();"
+            "}",
+            1,
+        )
+        temporary, completed, report = self.run_browser(html)
+        self.addCleanup(temporary.cleanup)
+
+        self.assertEqual(1, completed.returncode, completed.stderr + completed.stdout)
+        replay_failures = [
+            failure
+            for failure in report["failures"]
+            if failure.startswith("reduced-motion submission replay did not run:")
+        ]
+        self.assertEqual(1, len(replay_failures), report["failures"])
+        self.assertNotIn(
+            "reduced-motion path did not suppress active motion",
+            report["failures"],
+        )
+
     def test_page_request_animation_frame_override_cannot_hang_probe(self):
         html = EMPTY_SUCCESS_HTML.replace(
             "<script>",

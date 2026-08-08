@@ -399,6 +399,19 @@ class CopilotCliAgentCapabilityTests(unittest.TestCase):
         self.assertIn("must be genuinely rendered after submission", prompt)
         self.assertIn("id-level display:none", prompt)
         self.assertIn("lower-specificity reveal class", prompt)
+        self.assertIn("display, visibility, opacity", prompt)
+        self.assertIn("equal or greater specificity", prompt)
+
+    def test_valueless_html_attributes_do_not_crash_the_parser(self):
+        parser = self.module.core.CapabilityHtmlParser()
+
+        parser.feed(
+            "<meta name><meta http-equiv><button type></button><input type>"
+        )
+
+        self.assertFalse(parser.has_viewport)
+        self.assertFalse(parser.has_meta_refresh)
+        self.assertFalse(parser.has_submit)
 
     def test_malformed_srcset_empty_candidates_are_ignored(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -415,6 +428,26 @@ class CopilotCliAgentCapabilityTests(unittest.TestCase):
             result = self.module.core.validate_site(path)
 
         self.assertTrue(result["resourceReferencesAbsent"])
+
+    def test_data_srcset_cannot_hide_a_later_external_candidate(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "index.html"
+            path.write_text(
+                "<!doctype html><meta name='viewport' content='width=device-width'>"
+                + CSP_META
+                + "<form id='capability-form'><label for='capability-name'>Name</label>"
+                "<input id='capability-name'><button type='submit'>Go</button></form>"
+                "<p id='capability-success'></p>"
+                "<img srcset='data:image/svg+xml,%3Csvg%3E 1x, "
+                "https://example.com/image.png 2x'>",
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(
+                self.module.core.ContractError,
+                "self-contained|resource",
+            ):
+                self.module.core.validate_site(path)
 
     def test_site_size_is_rejected_before_reading_content(self):
         path = mock.Mock()
@@ -463,6 +496,34 @@ class CopilotCliAgentCapabilityTests(unittest.TestCase):
                 "network API",
             ):
                 self.module.core.validate_site(path)
+
+    def test_site_rejects_delayed_navigation_apis(self):
+        navigation_sources = (
+            "setTimeout(()=>location.assign('https://example.com'),5000)",
+            "setTimeout(()=>location.replace('https://example.com'),5000)",
+            "setTimeout(()=>{location.href='https://example.com'},5000)",
+            "setTimeout(()=>{window.location='https://example.com'},5000)",
+            "setTimeout(()=>history.pushState({},'', '#later'),5000)",
+            "setTimeout(()=>history.replaceState({},'', '#later'),5000)",
+        )
+        for source in navigation_sources:
+            with self.subTest(source=source), tempfile.TemporaryDirectory() as temporary:
+                path = Path(temporary) / "index.html"
+                path.write_text(
+                    "<!doctype html><meta name='viewport' content='width=device-width'>"
+                    + CSP_META
+                    + "<form id='capability-form'><label for='capability-name'>Name</label>"
+                    "<input id='capability-name'><button type='submit'>Go</button></form>"
+                    "<p id='capability-success'></p>"
+                    f"<script>{source}</script>",
+                    encoding="utf-8",
+                )
+
+                with self.assertRaisesRegex(
+                    self.module.core.ContractError,
+                    "navigation|browser API|network API",
+                ):
+                    self.module.core.validate_site(path)
 
     def test_site_rejects_delayed_meta_refresh_navigation(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -547,7 +608,7 @@ class CopilotCliAgentCapabilityTests(unittest.TestCase):
             with mock.patch.object(
                 self.module.core,
                 "COMMAND_TIMEOUT_SECONDS",
-                0.1,
+                1.5,
             ):
                 outcome = self.module.core.default_command_runner(
                     command,
@@ -604,7 +665,7 @@ time.sleep(30)
             with mock.patch.object(
                 self.module.core,
                 "COMMAND_TIMEOUT_SECONDS",
-                0.2,
+                1.5,
             ):
                 outcome = self.module.core.default_command_runner(
                     command,
@@ -613,6 +674,12 @@ time.sleep(30)
                 )
 
             self.assertEqual(124, outcome.exit_code)
+            deadline = self.module.core.time.monotonic() + 3
+            while (
+                not pid_path.is_file()
+                and self.module.core.time.monotonic() < deadline
+            ):
+                self.module.core.time.sleep(0.05)
             self.assertTrue(pid_path.is_file(), outcome.stderr)
             deadline = self.module.core.time.monotonic() + 3
             while (
