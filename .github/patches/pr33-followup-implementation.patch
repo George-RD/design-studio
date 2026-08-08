@@ -1,6 +1,6 @@
 diff --git a/.github/workflows/agent-source-snapshot.yml b/.github/workflows/agent-source-snapshot.yml
 deleted file mode 100644
-index ddce0b2..0000000
+index ddce0b2444bf94ca446b4ed00adad8b53e4f6815..0000000000000000000000000000000000000000
 --- a/.github/workflows/agent-source-snapshot.yml
 +++ /dev/null
 @@ -1,38 +0,0 @@
@@ -43,7 +43,7 @@ index ddce0b2..0000000
 -          if-no-files-found: error
 -          retention-days: 1
 diff --git a/.github/workflows/boundary-agent-capability.yml b/.github/workflows/boundary-agent-capability.yml
-index ff258c3..c53ca46 100644
+index ff258c34666697b15735b6704516e436e845a75d..c53ca460640283fdabb5eb0b43a8b1fc5bc3eb01 100644
 --- a/.github/workflows/boundary-agent-capability.yml
 +++ b/.github/workflows/boundary-agent-capability.yml
 @@ -8,6 +8,7 @@ on:
@@ -78,7 +78,7 @@ index ff258c3..c53ca46 100644
            node --check scripts/run_browser_capability_completion.mjs
 diff --git a/scripts/browser_motion_evidence.mjs b/scripts/browser_motion_evidence.mjs
 new file mode 100644
-index 0000000..6d476a9
+index 0000000000000000000000000000000000000000..6d476a9b879a3dc9179d5ce76b9cc255384d3b27
 --- /dev/null
 +++ b/scripts/browser_motion_evidence.mjs
 @@ -0,0 +1,24 @@
@@ -107,7 +107,7 @@ index 0000000..6d476a9
 +  };
 +}
 diff --git a/scripts/browser_profile_cleanup.mjs b/scripts/browser_profile_cleanup.mjs
-index d9173b3..c7eb539 100644
+index d9173b3758e2dd4db2a901f5ad37e68c0435286b..c7eb5398b04bab37277238dc913e74401967e86e 100644
 --- a/scripts/browser_profile_cleanup.mjs
 +++ b/scripts/browser_profile_cleanup.mjs
 @@ -28,7 +28,6 @@ export async function removeBrowserProfile(
@@ -127,7 +127,7 @@ index d9173b3..c7eb539 100644
          !RETRYABLE_REMOVAL_ERRORS.has(error?.code)
          || attempt === attempts
 diff --git a/scripts/run_browser_capability.mjs b/scripts/run_browser_capability.mjs
-index 636fabe..04be92c 100644
+index 636fabe92038772019a31548cc7f68d67d6ef909..04be92c089f5bfa67e86310a4e9ec3d08db1ee76 100644
 --- a/scripts/run_browser_capability.mjs
 +++ b/scripts/run_browser_capability.mjs
 @@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
@@ -245,7 +245,7 @@ index 636fabe..04be92c 100644
      if (externalRequests.length) failures.push('external network request attempted');
      if (externalRequests.some((url) => !blockedRequestUrls.has(url))) failures.push('external network request was not blocked before transport');
 diff --git a/scripts/run_copilot_cli_agent_capability.py b/scripts/run_copilot_cli_agent_capability.py
-index 16551ff..90857b3 100644
+index 16551ff2183e85f365a7289ca32c2bec9c3a9687..90857b31dfc5bfcbbadab0b7b258aeacf8f4ff47 100644
 --- a/scripts/run_copilot_cli_agent_capability.py
 +++ b/scripts/run_copilot_cli_agent_capability.py
 @@ -618,6 +618,30 @@ _NETWORK_API_PATTERNS = {
@@ -408,7 +408,7 @@ index 16551ff..90857b3 100644
          )
      if parser.resource_references:
 diff --git a/scripts/run_copilot_cli_agent_capability_gate.py b/scripts/run_copilot_cli_agent_capability_gate.py
-index c675d9d..0217ee9 100644
+index c675d9de10cbc8392d8d21987f6877aab73512d6..0217ee972a4655597b8b70503923ac8f4173d4e9 100644
 --- a/scripts/run_copilot_cli_agent_capability_gate.py
 +++ b/scripts/run_copilot_cli_agent_capability_gate.py
 @@ -96,7 +96,11 @@ def builder_prompt() -> str:
