@@ -51,7 +51,32 @@ For Design Studio lanes, preserve the project’s existing source-isolation rule
 
 ## Run lifecycle
 
-### 1. Prepare
+### 0. Prepare the complete comparison matrix
+
+Before launching a lane, resolve the exact tool provenance for all three lanes in one configuration file. Copy [`lane-tools.example.json`](lane-tools.example.json), replace every placeholder with the version and immutable revision that will actually run, then prepare the complete fixture-by-lane matrix:
+
+```bash
+python3 scripts/run_boundary_benchmark_matrix.py prepare \
+  --matrix-id m0-001 \
+  --lane-tools /path/to/resolved-lane-tools.json
+```
+
+The matrix command validates the frozen suite and tool map before writing anything. It preflights all twelve target run IDs, prepares every fixture×lane combination with one shared protocol and lane-harness provenance, and rolls back every run it created if a later preparation fails. Its durable receipt is written to:
+
+```text
+harness-output/benchmarks/milestone-0/matrices/m0-001/matrix.json
+```
+
+Validate matrix coverage and every underlying run receipt at any point:
+
+```bash
+python3 scripts/run_boundary_benchmark_matrix.py validate \
+  --matrix harness-output/benchmarks/milestone-0/matrices/m0-001/matrix.json
+```
+
+A prepared matrix is not a completed comparison. Every lane still requires execution, observer evidence and individual validation, and the later blind preference bundle remains separate. Failed attempts use a new matrix or individual run ID rather than mutating the original receipt.
+
+### 1. Prepare an individual recovery run
 
 Run from the repository root:
 
