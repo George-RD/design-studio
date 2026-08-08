@@ -253,7 +253,6 @@ class CopilotComparisonLaneTests(unittest.TestCase):
         workspace = run / "evidence" / "adapter-workspace"
         evidence = run / "evidence" / "adapter-evidence"
         workspace.mkdir()
-        evidence.mkdir()
         (workspace / "packet.json").write_text("{}", encoding="utf-8")
         observed = {}
 
