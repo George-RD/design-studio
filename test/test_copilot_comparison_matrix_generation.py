@@ -17,6 +17,7 @@ WORKFLOW_PATH = REPO_ROOT / ".github" / "workflows" / "milestone-0-comparison-ge
 DESIGN_REVISION = "d" * 40
 IMPECCABLE_REVISION = "e" * 40
 MISMATCH_REVISION = "c" * 40
+MODEL = "test-model"
 
 
 def load_generation_runner():
@@ -76,17 +77,26 @@ class CopilotComparisonMatrixGenerationTests(unittest.TestCase):
     def revision_resolver(path: Path) -> str:
         return IMPECCABLE_REVISION if path.name == "impeccable" else DESIGN_REVISION
 
-    def fake_subprocess(self, calls, *, status="generated", missing_report=False):
+    def fake_subprocess(
+        self,
+        calls,
+        *,
+        status="generated",
+        missing_report=False,
+        requested_model=MODEL,
+        resolved_model=MODEL,
+    ):
         def run(argv, *, cwd, env, stdout, stderr, check):
             del stdout, stderr, check
             run_dir = Path(env["DESIGN_BENCHMARK_RUN_DIR"])
+            lane = env["DESIGN_BENCHMARK_LANE"]
             calls.append(
                 {
                     "argv": list(argv),
                     "cwd": cwd,
                     "runDir": run_dir,
                     "fixture": env["DESIGN_BENCHMARK_FIXTURE"],
-                    "lane": env["DESIGN_BENCHMARK_LANE"],
+                    "lane": lane,
                 }
             )
             if status == "generated":
@@ -94,13 +104,27 @@ class CopilotComparisonMatrixGenerationTests(unittest.TestCase):
                     "<!doctype html><title>generated</title>", encoding="utf-8"
                 )
                 if not missing_report:
+                    role_names = (
+                        ("impeccable",)
+                        if lane == "impeccable-alone"
+                        else ("explore", "direct", "builder")
+                    )
+                    roles = {
+                        role: {
+                            "status": "passed",
+                            "requestedModel": requested_model,
+                            "resolvedModel": resolved_model,
+                        }
+                        for role in role_names
+                    }
                     (run_dir / "evidence" / "generation-report.json").write_text(
                         json.dumps(
                             {
                                 "schemaVersion": 1,
                                 "runId": env["DESIGN_BENCHMARK_RUN_ID"],
                                 "status": "generated",
-                                "lane": {"id": env["DESIGN_BENCHMARK_LANE"]},
+                                "lane": {"id": lane},
+                                "roles": roles,
                             }
                         ),
                         encoding="utf-8",
@@ -141,7 +165,7 @@ class CopilotComparisonMatrixGenerationTests(unittest.TestCase):
             lane_id=lane,
             copilot_bin="copilot",
             copilot_version="1.0.74",
-            model="auto",
+            model=kwargs.pop("model", MODEL),
             node_bin="node",
             continue_on_error=kwargs.pop("continue_on_error", False),
             revision_resolver=self.revision_resolver,
@@ -190,26 +214,34 @@ class CopilotComparisonMatrixGenerationTests(unittest.TestCase):
                 impeccable_revision=IMPECCABLE_REVISION,
                 fixture_id="marketing-surface",
                 lane_id="design-studio-current",
+                model=MODEL,
                 revision_resolver=self.revision_resolver,
             )
         self.assertFalse(output_root.exists())
 
-    def test_invalid_selection_fails_before_matrix_creation(self) -> None:
-        temporary, root, impeccable, output_root = self.make_repo()
-        self.addCleanup(temporary.cleanup)
-        with self.assertRaisesRegex(self.generation.ContractError, "selection"):
-            self.generation.generate_matrix(
-                repo_root=root,
-                output_root=output_root,
-                matrix_id="m0-bad-selection",
-                impeccable_root=impeccable,
-                design_revision=DESIGN_REVISION,
-                impeccable_revision=IMPECCABLE_REVISION,
-                fixture_id="unknown-fixture",
-                lane_id="design-studio-current",
-                revision_resolver=self.revision_resolver,
-            )
-        self.assertFalse(output_root.exists())
+    def test_invalid_selection_or_auto_model_fails_before_matrix_creation(self) -> None:
+        cases = (
+            ("unknown-fixture", "design-studio-current", MODEL, "selection"),
+            ("marketing-surface", "design-studio-current", "auto", "explicit model"),
+        )
+        for fixture, lane, model, message in cases:
+            with self.subTest(fixture=fixture, model=model):
+                temporary, root, impeccable, output_root = self.make_repo()
+                self.addCleanup(temporary.cleanup)
+                with self.assertRaisesRegex(self.generation.ContractError, message):
+                    self.generation.generate_matrix(
+                        repo_root=root,
+                        output_root=output_root,
+                        matrix_id="m0-bad-input",
+                        impeccable_root=impeccable,
+                        design_revision=DESIGN_REVISION,
+                        impeccable_revision=IMPECCABLE_REVISION,
+                        fixture_id=fixture,
+                        lane_id=lane,
+                        model=model,
+                        revision_resolver=self.revision_resolver,
+                    )
+                self.assertFalse(output_root.exists())
 
     def test_single_selection_prepares_full_matrix_and_generates_only_one_run(self) -> None:
         calls = []
@@ -221,7 +253,9 @@ class CopilotComparisonMatrixGenerationTests(unittest.TestCase):
             summary, root, _, output_root = self.generate()
 
         self.assertEqual("generated", summary["status"])
+        self.assertEqual(MODEL, summary["model"])
         self.assertEqual({"generated": 1}, summary["runStatuses"])
+        self.assertEqual(MODEL, summary["runs"][0]["resolvedModel"])
         self.assertEqual(1, len(calls))
         self.assertEqual("marketing-surface", calls[0]["fixture"])
         self.assertEqual("design-studio-current", calls[0]["lane"])
@@ -231,6 +265,7 @@ class CopilotComparisonMatrixGenerationTests(unittest.TestCase):
         self.assertIn("run_copilot_comparison_lane.py", command[1])
         self.assertIn(DESIGN_REVISION, command)
         self.assertIn(IMPECCABLE_REVISION, command)
+        self.assertIn(MODEL, command)
         self.assertNotIn("GITHUB_TOKEN", " ".join(command))
 
         matrix_path = output_root / "matrices" / "m0-live-001" / "matrix.json"
@@ -268,6 +303,7 @@ class CopilotComparisonMatrixGenerationTests(unittest.TestCase):
         self.assertEqual(12, len(calls))
         observed = [(call["fixture"], call["lane"]) for call in calls]
         self.assertEqual(summary["selectedPairs"], [list(pair) for pair in observed])
+        self.assertEqual({MODEL}, {entry["resolvedModel"] for entry in summary["runs"]})
 
     def test_blocked_run_is_preserved_and_stops_unrequested_spend(self) -> None:
         calls = []
@@ -290,19 +326,25 @@ class CopilotComparisonMatrixGenerationTests(unittest.TestCase):
             (output_root / "matrices" / "m0-live-001" / "generation.json").is_file()
         )
 
-    def test_success_exit_without_generation_receipt_is_failed(self) -> None:
-        calls = []
-        with mock.patch.object(
-            self.generation.benchmark.subprocess,
-            "run",
-            side_effect=self.fake_subprocess(calls, missing_report=True),
-        ):
-            summary, _, _, _ = self.generate()
-        self.assertEqual("failed", summary["status"])
-        self.assertEqual({"failed": 1}, summary["runStatuses"])
-        self.assertIn("generation report", summary["runs"][0]["error"])
+    def test_missing_receipt_or_model_mismatch_invalidates_success(self) -> None:
+        cases = (
+            ({"missing_report": True}, "generation report"),
+            ({"resolved_model": "different-model"}, "resolved"),
+        )
+        for fake_options, expected_error in cases:
+            with self.subTest(fake_options=fake_options):
+                calls = []
+                with mock.patch.object(
+                    self.generation.benchmark.subprocess,
+                    "run",
+                    side_effect=self.fake_subprocess(calls, **fake_options),
+                ):
+                    summary, _, _, _ = self.generate()
+                self.assertEqual("failed", summary["status"])
+                self.assertEqual({"failed": 1}, summary["runStatuses"])
+                self.assertIn(expected_error, summary["runs"][0]["error"])
 
-    def test_dispatch_workflow_is_manual_pinned_and_preserves_evidence(self) -> None:
+    def test_dispatch_workflow_is_manual_pinned_and_requires_exact_model(self) -> None:
         workflow = WORKFLOW_PATH.read_text(encoding="utf-8")
         self.assertIn("workflow_dispatch:", workflow)
         self.assertNotIn("pull_request:", workflow)
@@ -317,6 +359,8 @@ class CopilotComparisonMatrixGenerationTests(unittest.TestCase):
         self.assertIn("--fixture", workflow)
         self.assertIn("--lane", workflow)
         self.assertIn("--continue-on-error", workflow)
+        self.assertIn("Exact Copilot model", workflow)
+        self.assertNotIn("default: auto", workflow)
 
 
 if __name__ == "__main__":
