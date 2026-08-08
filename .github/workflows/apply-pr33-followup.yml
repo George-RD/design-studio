@@ -48,3 +48,5 @@ jobs:
 
       - name: Push ordered commits
         run: git push origin HEAD:agent/m0-agent-runner-capability
+
+# Triggered after registration so the branch-local workflow is active.
