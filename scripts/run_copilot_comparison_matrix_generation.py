@@ -17,8 +17,15 @@ SCRIPT_PATH = Path(__file__).resolve()
 REPO_ROOT = SCRIPT_PATH.parents[1]
 BENCHMARK_PATH = SCRIPT_PATH.with_name("run_boundary_benchmark.py")
 MATRIX_PATH = SCRIPT_PATH.with_name("run_boundary_benchmark_matrix.py")
+AUTO_CAPABILITY_PATH = (
+    Path("benchmarks")
+    / "milestone-0"
+    / "evidence"
+    / "copilot-cli-agent-capability.json"
+)
 SUMMARY_SCHEMA_VERSION = 1
 ALL = "all"
+AUTO = "auto"
 
 
 def _load_module(name: str, path: Path):
@@ -62,13 +69,14 @@ def _require_revision(value: Any, label: str) -> str:
 
 def _require_model(value: Any) -> str:
     if not isinstance(value, str) or not value.strip():
-        raise ContractError("comparison generation requires an explicit model")
-    model = value.strip()
-    if model.lower() == "auto":
-        raise ContractError(
-            "comparison generation requires an explicit model; auto is only admissible for capability probing"
-        )
-    return model
+        raise ContractError("comparison generation requires a non-empty model policy")
+    return value.strip()
+
+
+def _require_text(value: Any, label: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ContractError(f"{label} must be a non-empty string")
+    return value.strip()
 
 
 def git_revision(root: Path) -> str:
@@ -108,10 +116,7 @@ def _impeccable_version(root: Path) -> str:
     package = benchmark.load_json(root / "package.json", "Impeccable package")
     if package.get("name") != "impeccable":
         raise ContractError("Impeccable package name is invalid")
-    version = package.get("version")
-    if not isinstance(version, str) or not version.strip():
-        raise ContractError("Impeccable package version is missing")
-    return version.strip()
+    return _require_text(package.get("version"), "Impeccable package version")
 
 
 def _verify_revision(
@@ -174,6 +179,71 @@ def build_lane_tools(
             "version": f"{design_version}+{impeccable_version}",
             "source": f"{design_source} + {impeccable_source}",
         },
+    }
+
+
+def _verified_model_policy(
+    *,
+    repo_root: Path,
+    requested_model: str,
+    copilot_version: str,
+) -> dict[str, Any]:
+    requested_model = _require_model(requested_model)
+    copilot_version = _require_text(copilot_version, "Copilot CLI version")
+    if requested_model.lower() != AUTO:
+        return {
+            "requestedModel": requested_model,
+            "mode": "fixed",
+            "capabilityReceipt": None,
+            "capabilityHeadSha": None,
+            "verifiedRoleModels": None,
+        }
+
+    receipt_path = repo_root / AUTO_CAPABILITY_PATH
+    if receipt_path.is_symlink() or not receipt_path.is_file():
+        raise ContractError(
+            f"verified auto capability receipt is missing or unsafe: {receipt_path}"
+        )
+    receipt = benchmark.load_json(receipt_path, "Copilot CLI agent capability")
+    surface = receipt.get("executionSurface")
+    if (
+        receipt.get("status") != "passed"
+        or receipt.get("requestedModel") != AUTO
+        or receipt.get("modelPolicy") != "auto-per-role"
+        or not isinstance(surface, dict)
+        or surface.get("name") != "github-copilot-cli"
+        or surface.get("version") != copilot_version
+    ):
+        raise ContractError(
+            "verified auto capability receipt does not match the requested Copilot execution surface"
+        )
+    versions = receipt.get("versions")
+    if not isinstance(versions, dict) or versions.get("copilot") != copilot_version:
+        raise ContractError(
+            "verified auto capability receipt has no matching Copilot version receipt"
+        )
+    roles = receipt.get("roles")
+    if not isinstance(roles, list) or not roles:
+        raise ContractError("verified auto capability receipt has no role evidence")
+    verified_models: dict[str, str] = {}
+    for role in roles:
+        if not isinstance(role, dict) or role.get("status") != "passed":
+            raise ContractError("verified auto capability receipt contains a failed role")
+        name = _require_text(role.get("role"), "capability role name")
+        resolved = _require_text(
+            role.get("resolvedModel"), f"capability role {name} resolved model"
+        )
+        if resolved.lower() == AUTO:
+            raise ContractError(
+                f"verified auto capability role {name!r} has no concrete resolved model"
+            )
+        verified_models[name] = resolved
+    return {
+        "requestedModel": AUTO,
+        "mode": "auto-per-role",
+        "capabilityReceipt": AUTO_CAPABILITY_PATH.as_posix(),
+        "capabilityHeadSha": receipt.get("headSha"),
+        "verifiedRoleModels": dict(sorted(verified_models.items())),
     }
 
 
@@ -267,8 +337,7 @@ def build_lane_command(
         "node_bin": node_bin,
     }
     for label, value in values.items():
-        if not isinstance(value, str) or not value.strip():
-            raise ContractError(f"{label} must be a non-empty string")
+        _require_text(value, label)
     lane_script = repo_root / "scripts" / "run_copilot_comparison_lane.py"
     if lane_script.is_symlink() or not lane_script.is_file():
         raise ContractError(f"Copilot lane runner is missing or unsafe: {lane_script}")
@@ -313,8 +382,8 @@ def _generation_report(run_dir: Path) -> tuple[Path, dict[str, Any]]:
 def _validate_role_models(
     run: dict[str, Any],
     report: dict[str, Any],
-    expected_model: str,
-) -> str:
+    model_policy: dict[str, Any],
+) -> dict[str, str]:
     lane = run.get("lane")
     lane_id = lane.get("id") if isinstance(lane, dict) else None
     expected_roles = (
@@ -324,29 +393,42 @@ def _validate_role_models(
     )
     roles = report.get("roles")
     if not isinstance(roles, dict) or set(roles) != expected_roles:
+        got = sorted(roles) if isinstance(roles, dict) else None
         raise ContractError(
             "generation report does not contain the exact expected role model receipts: "
-            f"expected={sorted(expected_roles)}, got={sorted(roles) if isinstance(roles, dict) else None}"
+            f"expected={sorted(expected_roles)}, got={got}"
         )
+    requested_model = model_policy["requestedModel"]
+    resolved_models: dict[str, str] = {}
     for role in sorted(expected_roles):
         receipt = roles.get(role)
         if not isinstance(receipt, dict) or receipt.get("status") != "passed":
             raise ContractError(f"generation role {role!r} has no passed receipt")
         requested = receipt.get("requestedModel")
         resolved = receipt.get("resolvedModel")
-        if requested != expected_model or resolved != expected_model:
+        if requested != requested_model:
             raise ContractError(
-                f"generation role {role!r} requested {requested!r} and resolved {resolved!r}; "
-                f"the frozen comparison requires {expected_model!r}"
+                f"generation role {role!r} requested {requested!r}; expected {requested_model!r}"
             )
-    return expected_model
+        if not isinstance(resolved, str) or not resolved.strip() or resolved.lower() == AUTO:
+            raise ContractError(
+                f"generation role {role!r} has no concrete resolved model"
+            )
+        resolved = resolved.strip()
+        if model_policy["mode"] == "fixed" and resolved != requested_model:
+            raise ContractError(
+                f"generation role {role!r} requested {requested_model!r} "
+                f"but resolved {resolved!r}"
+            )
+        resolved_models[role] = resolved
+    return resolved_models
 
 
 def _validate_generated_run(
     run_dir: Path,
     expected_run_id: str,
-    expected_model: str,
-) -> tuple[Path, dict[str, Any], list[str], str]:
+    model_policy: dict[str, Any],
+) -> tuple[Path, dict[str, Any], list[str], dict[str, str]]:
     run = benchmark.load_json(run_dir / "run.json", "generated run manifest")
     if run.get("runId") != expected_run_id:
         raise ContractError("generated run manifest does not match the selected run ID")
@@ -358,7 +440,7 @@ def _validate_generated_run(
     report_path, report = _generation_report(run_dir)
     if report.get("runId") != expected_run_id or report.get("status") != "generated":
         raise ContractError("generation report does not prove a generated selected run")
-    resolved_model = _validate_role_models(run, report, expected_model)
+    resolved_models = _validate_role_models(run, report, model_policy)
     fixture = benchmark.load_json(
         run_dir / "input" / "fixture.json", "generated run fixture"
     )
@@ -380,7 +462,7 @@ def _validate_generated_run(
     if not files:
         raise ContractError("generated output tree is empty")
     benchmark.validate_run(run_dir)
-    return report_path, report, files, resolved_model
+    return report_path, report, files, resolved_models
 
 
 def _classify_nonzero(run_dir: Path) -> tuple[str, Path | None, str]:
@@ -438,7 +520,11 @@ def generate_matrix(
     repo_root = _require_directory(repo_root, "repository root")
     impeccable_root = _require_directory(impeccable_root, "Impeccable root")
     output_root = output_root.resolve()
-    model = _require_model(model)
+    model_policy = _verified_model_policy(
+        repo_root=repo_root,
+        requested_model=model,
+        copilot_version=copilot_version,
+    )
     fixture_id, lane_id = validate_selection(repo_root, fixture_id, lane_id)
     tools = build_lane_tools(
         repo_root=repo_root,
@@ -468,7 +554,7 @@ def generate_matrix(
         "updatedAt": None,
         "finishedAt": None,
         "matrix": _relative(output_root, matrix_path),
-        "model": model,
+        "modelPolicy": model_policy,
         "selection": {
             "fixture": fixture_id,
             "lane": lane_id,
@@ -493,7 +579,7 @@ def generate_matrix(
                 "exitCode": None,
                 "execution": None,
                 "generationReport": None,
-                "resolvedModel": None,
+                "resolvedModels": {},
                 "outputFiles": [],
                 "error": None,
             }
@@ -518,7 +604,7 @@ def generate_matrix(
             impeccable_revision=impeccable_revision,
             copilot_bin=copilot_bin,
             copilot_version=copilot_version,
-            model=model,
+            model=model_policy["requestedModel"],
             node_bin=node_bin,
         )
         result["status"] = "running"
@@ -532,12 +618,16 @@ def generate_matrix(
             if execution_path.is_file() and not execution_path.is_symlink():
                 result["execution"] = _relative(output_root, execution_path)
             if exit_code == 0:
-                report_path, _report, output_files, resolved_model = (
-                    _validate_generated_run(run_dir, planned["runId"], model)
+                report_path, _report, output_files, resolved_models = (
+                    _validate_generated_run(
+                        run_dir,
+                        planned["runId"],
+                        model_policy,
+                    )
                 )
                 result["status"] = "generated"
                 result["generationReport"] = _relative(output_root, report_path)
-                result["resolvedModel"] = resolved_model
+                result["resolvedModels"] = resolved_models
                 result["outputFiles"] = output_files
             else:
                 status, report_path, message = _classify_nonzero(run_dir)
@@ -591,11 +681,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--impeccable-root", type=Path, required=True)
     parser.add_argument("--design-revision", required=True)
     parser.add_argument("--impeccable-revision", required=True)
-    parser.add_argument("--fixture", default="marketing-surface")
-    parser.add_argument("--lane", default="design-studio-current")
+    parser.add_argument("--fixture", default=ALL)
+    parser.add_argument("--lane", default=ALL)
     parser.add_argument("--copilot-bin", default="copilot")
     parser.add_argument("--copilot-version", default="1.0.74")
-    parser.add_argument("--model", required=True)
+    parser.add_argument("--model", default=AUTO)
     parser.add_argument("--node-bin", default="node")
     parser.add_argument("--continue-on-error", action="store_true")
     return parser
