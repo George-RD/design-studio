@@ -1,1 +1,2 @@
 Temporary exact-head CI trigger for PR #33. Remove when the permanent capability receipt is refreshed.
+Retry staged follow-up after repairing generated patches.
