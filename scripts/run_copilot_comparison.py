@@ -14,6 +14,20 @@ class ContractError(RuntimeError):
 
 DIRECTOR_GUIDANCE = "skills/design-studio/agents/design-agent.md"
 BUILDER_GUIDANCE = "skills/design-studio/references/generation.md"
+LANE_CONTRACTS = {
+    "impeccable-alone": {
+        "workflow": "impeccable",
+        "mechanicalProvider": "impeccable",
+    },
+    "design-studio-current": {
+        "workflow": "design-studio",
+        "mechanicalProvider": "fallback",
+    },
+    "design-studio-impeccable": {
+        "workflow": "design-studio",
+        "mechanicalProvider": "impeccable",
+    },
+}
 IMPECCABLE_GUIDANCE_BY_KIND = {
     "new-marketing-surface": (
         "skill/SKILL.src.md",
@@ -58,6 +72,61 @@ def _load_json(path: Path, label: str) -> dict[str, Any]:
     return value
 
 
+def _safe_input_file(run_dir: Path, value: Any, label: str) -> Path:
+    if not isinstance(value, str) or not value or "\\" in value:
+        raise ContractError(f"{label} must be a non-empty POSIX path")
+    relative = PurePosixPath(value)
+    if (
+        relative.is_absolute()
+        or not relative.parts
+        or ".." in relative.parts
+        or any(part.startswith(".") for part in relative.parts)
+    ):
+        raise ContractError(f"{label} path is unsafe: {value}")
+
+    input_root = run_dir / "input"
+    if input_root.is_symlink() or not input_root.is_dir():
+        raise ContractError(f"immutable input tree is missing or unsafe: {input_root}")
+    candidate = input_root
+    for part in relative.parts:
+        candidate = candidate / part
+        if candidate.is_symlink():
+            raise ContractError(f"{label} path contains a symlink: {value}")
+    if not candidate.is_file():
+        raise ContractError(f"{label} is missing or unsafe: {value}")
+    try:
+        candidate.resolve().relative_to(input_root.resolve())
+    except (OSError, ValueError) as exc:
+        raise ContractError(f"{label} escapes the immutable input tree: {value}") from exc
+    return candidate
+
+
+def resolve_lane_contract(run_dir: Path) -> dict[str, str]:
+    run_path = run_dir / "run.json"
+    if run_path.is_symlink() or not run_path.is_file():
+        raise ContractError(f"run receipt is missing or unsafe: {run_path}")
+    run = _load_json(run_path, "run receipt")
+    fixture = _load_json(_safe_input_file(run_dir, "fixture.json", "fixture"), "fixture")
+
+    lane_value = run.get("lane")
+    lane_id = lane_value.get("id") if isinstance(lane_value, dict) else None
+    if not isinstance(lane_id, str) or lane_id not in LANE_CONTRACTS:
+        raise ContractError(f"unsupported comparison lane: {lane_id!r}")
+
+    run_fixture = run.get("fixture")
+    if not isinstance(run_fixture, dict):
+        raise ContractError("run receipt fixture identity is missing")
+    expected_identity = (fixture.get("id"), fixture.get("version"))
+    recorded_identity = (run_fixture.get("id"), run_fixture.get("version"))
+    if recorded_identity != expected_identity:
+        raise ContractError(
+            "run receipt fixture identity does not match immutable input: "
+            f"recorded={recorded_identity!r} input={expected_identity!r}"
+        )
+
+    return {"id": lane_id, **LANE_CONTRACTS[lane_id]}
+
+
 def _guidance(root: Path, paths: Sequence[str], source: str, revision: str) -> dict[str, Any]:
     files: list[dict[str, Any]] = []
     sections: list[str] = []
@@ -78,11 +147,14 @@ def _guidance(root: Path, paths: Sequence[str], source: str, revision: str) -> d
 
 
 def _fixture_context(run_dir: Path) -> dict[str, Any]:
-    fixture = _load_json(run_dir / "input" / "fixture.json", "fixture")
+    fixture = _load_json(_safe_input_file(run_dir, "fixture.json", "fixture"), "fixture")
     brief_name = fixture.get("brief", "brief.md")
     acceptance_name = fixture.get("acceptance", "acceptance.json")
-    brief = (run_dir / "input" / str(brief_name)).read_text(encoding="utf-8")
-    acceptance = _load_json(run_dir / "input" / str(acceptance_name), "acceptance")
+    brief = _safe_input_file(run_dir, brief_name, "brief").read_text(encoding="utf-8")
+    acceptance = _load_json(
+        _safe_input_file(run_dir, acceptance_name, "acceptance"),
+        "acceptance",
+    )
     return {"fixture": fixture, "brief": brief, "acceptance": acceptance}
 
 
@@ -104,9 +176,13 @@ def _source_tree(run_dir: Path) -> dict[str, Any]:
 
 
 def build_director_packet(repo_root: Path, run_dir: Path, design_revision: str) -> dict[str, Any]:
+    lane = resolve_lane_contract(run_dir)
+    if lane["workflow"] != "design-studio":
+        raise ContractError(f"lane {lane['id']} does not use the Design Studio Director")
     context = _fixture_context(run_dir)
     return {
         "role": "source-blind-visual-director",
+        "lane": lane,
         "brief": context["brief"],
         "acceptance": context["acceptance"],
         "guidance": _guidance(repo_root, (DIRECTOR_GUIDANCE,), "George-RD/design-studio", design_revision),
@@ -121,9 +197,18 @@ def build_builder_packet(
     design_revision: str,
     mechanical_provider: str,
 ) -> dict[str, Any]:
+    lane = resolve_lane_contract(run_dir)
+    if lane["workflow"] != "design-studio":
+        raise ContractError(f"lane {lane['id']} does not use the Design Studio Builder")
+    if mechanical_provider != lane["mechanicalProvider"]:
+        raise ContractError(
+            f"lane {lane['id']} requires mechanical provider "
+            f"{lane['mechanicalProvider']!r}, not {mechanical_provider!r}"
+        )
     context = _fixture_context(run_dir)
     return {
         "role": "source-aware-builder",
+        "lane": lane,
         "brief": context["brief"],
         "acceptance": context["acceptance"],
         "guidance": _guidance(repo_root, (BUILDER_GUIDANCE,), "George-RD/design-studio", design_revision),
@@ -136,6 +221,9 @@ def build_builder_packet(
 
 
 def build_impeccable_packet(impeccable_root: Path, run_dir: Path, impeccable_revision: str) -> dict[str, Any]:
+    lane = resolve_lane_contract(run_dir)
+    if lane["workflow"] != "impeccable":
+        raise ContractError(f"lane {lane['id']} does not use the standalone Impeccable workflow")
     context = _fixture_context(run_dir)
     kind = str(context["fixture"].get("kind"))
     if kind not in IMPECCABLE_GUIDANCE_BY_KIND:
@@ -152,6 +240,7 @@ def build_impeccable_packet(impeccable_root: Path, run_dir: Path, impeccable_rev
     guidance["packageVersion"] = package["version"]
     return {
         "role": "impeccable-builder",
+        "lane": lane,
         "brief": context["brief"],
         "acceptance": context["acceptance"],
         "guidance": guidance,
