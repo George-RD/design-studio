@@ -618,6 +618,30 @@ _NETWORK_API_PATTERNS = {
     "EventSource": re.compile(r"\bEventSource\s*\(", re.IGNORECASE),
     "sendBeacon": re.compile(r"\bsendBeacon\s*\(", re.IGNORECASE),
     "window.open": re.compile(r"\bwindow\s*\.\s*open\s*\(", re.IGNORECASE),
+    "location.assign": re.compile(
+        r"\b(?:window\s*\.\s*)?location\s*\.\s*assign\s*\(",
+        re.IGNORECASE,
+    ),
+    "location.replace": re.compile(
+        r"\b(?:window\s*\.\s*)?location\s*\.\s*replace\s*\(",
+        re.IGNORECASE,
+    ),
+    "location.href assignment": re.compile(
+        r"\b(?:window\s*\.\s*)?location\s*\.\s*href\s*=(?!=)",
+        re.IGNORECASE,
+    ),
+    "location assignment": re.compile(
+        r"\b(?:window\s*\.\s*)?location\s*=(?!=)",
+        re.IGNORECASE,
+    ),
+    "history.pushState": re.compile(
+        r"\bhistory\s*\.\s*pushState\s*\(",
+        re.IGNORECASE,
+    ),
+    "history.replaceState": re.compile(
+        r"\bhistory\s*\.\s*replaceState\s*\(",
+        re.IGNORECASE,
+    ),
 }
 
 
@@ -673,6 +697,48 @@ def _css_references(text: str) -> list[str]:
     return values
 
 
+def _srcset_candidates(value: str) -> list[str]:
+    candidates: list[str] = []
+    position = 0
+    length = len(value)
+    while position < length:
+        while position < length and (
+            value[position].isspace() or value[position] == ","
+        ):
+            position += 1
+        if position >= length:
+            break
+
+        start = position
+        is_data = value[position : position + 5].lower() == "data:"
+        if is_data:
+            while position < length and not value[position].isspace():
+                position += 1
+            candidate = value[start:position]
+            separator_attached = candidate.endswith(",")
+            candidate = candidate.rstrip(",")
+        else:
+            while (
+                position < length
+                and not value[position].isspace()
+                and value[position] != ","
+            ):
+                position += 1
+            candidate = value[start:position]
+            separator_attached = False
+
+        if candidate:
+            candidates.append(candidate)
+        if separator_attached:
+            continue
+
+        while position < length and value[position] != ",":
+            position += 1
+        if position < length:
+            position += 1
+    return candidates
+
+
 class CapabilityHtmlParser(HTMLParser):
     def __init__(self) -> None:
         super().__init__()
@@ -694,6 +760,15 @@ class CapabilityHtmlParser(HTMLParser):
         if candidate and not _inline_reference(candidate):
             self.resource_references.append((context, candidate))
 
+    @staticmethod
+    def _attribute_text(
+        values: dict[str, str | None],
+        name: str,
+        default: str = "",
+    ) -> str:
+        value = values.get(name, default)
+        return value if isinstance(value, str) else ""
+
     def handle_starttag(
         self,
         tag: str,
@@ -709,24 +784,30 @@ class CapabilityHtmlParser(HTMLParser):
             self.elements_by_id[element_id] = (tag, values)
         if (
             tag == "button"
-            and values.get("type", "submit").lower() == "submit"
+            and self._attribute_text(values, "type", "submit").lower()
+            == "submit"
         ):
             self.has_submit = True
         if (
             tag == "input"
-            and values.get("type", "text").lower() == "submit"
+            and self._attribute_text(values, "type", "text").lower()
+            == "submit"
         ):
             self.has_submit = True
-        if tag == "meta" and values.get("name", "").lower() == "viewport":
+        if (
+            tag == "meta"
+            and self._attribute_text(values, "name").lower() == "viewport"
+        ):
             self.has_viewport = True
         if (
             tag == "meta"
-            and values.get("http-equiv", "").lower() == "refresh"
+            and self._attribute_text(values, "http-equiv").lower()
+            == "refresh"
         ):
             self.has_meta_refresh = True
         if (
             tag == "meta"
-            and values.get("http-equiv", "").lower()
+            and self._attribute_text(values, "http-equiv").lower()
             == "content-security-policy"
             and values.get("content")
         ):
@@ -748,16 +829,7 @@ class CapabilityHtmlParser(HTMLParser):
         if "href" in values:
             self._record_reference(f"{tag}[href]", values.get("href"))
         if "srcset" in values and values["srcset"]:
-            srcset = values["srcset"].strip()
-            if srcset.lower().startswith("data:"):
-                candidates = [srcset]
-            else:
-                candidates = []
-                for part in srcset.split(","):
-                    fields = part.strip().split()
-                    if fields:
-                        candidates.append(fields[0])
-            for candidate in candidates:
+            for candidate in _srcset_candidates(values["srcset"]):
                 self._record_reference(f"{tag}[srcset]", candidate)
         if "style" in values and values["style"]:
             for reference in _css_references(values["style"]):
@@ -847,7 +919,7 @@ def validate_site(path: Path) -> dict[str, Any]:
     ]
     if network_apis:
         raise ContractError(
-            "index.html contains forbidden network API use: "
+            "index.html contains forbidden network API or navigation API use: "
             + ", ".join(network_apis)
         )
     if parser.resource_references:

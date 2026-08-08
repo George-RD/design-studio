@@ -96,7 +96,11 @@ def builder_prompt() -> str:
         "- on submit, set its textContent to exactly Capability complete, with no icon or additional text inside that region\n"
         "- capability-success must be genuinely rendered after submission; do not leave an "
         "ID-level display:none rule active or rely on a lower-specificity reveal class "
-        "to override it. Remove hidden or set an explicit visible display value",
+        "to override it. Remove hidden or set an explicit visible display value\n"
+        "- Any post-submit reveal selector must have equal or greater specificity than "
+        "every initial hiding selector for display, visibility, opacity, transform, "
+        "clipping, size and positioning. Safest: set the visible values inline during "
+        "the submit handler instead of relying on a lower-specificity class",
         1,
     )
 

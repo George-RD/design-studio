@@ -8,6 +8,7 @@ on:
       - "scripts/run_copilot_cli_agent_capability_gate.py"
       - "scripts/run_browser_capability.mjs"
       - "scripts/run_browser_capability_completion.mjs"
+      - "scripts/browser_motion_evidence.mjs"
       - "scripts/browser_profile_cleanup.mjs"
       - "scripts/browser_websocket_ready.mjs"
       - "test/test_copilot_cli_agent_capability.py"
@@ -22,6 +23,7 @@ on:
       - "test/test_browser_completion_contract.py"
       - "test/test_browser_submission_attribution.py"
       - "test/test_browser_profile_cleanup.mjs"
+      - "test/test_browser_motion_evidence.mjs"
       - "test/test_browser_websocket_ready.mjs"
       - "benchmarks/milestone-0/AGENT_HARNESS.md"
       - "benchmarks/milestone-0/MODEL_HARNESS.md"
@@ -67,11 +69,13 @@ jobs:
           python3 -m unittest discover -s test -p 'test_copilot_cli_tool_receipt_turns.py' -v
           python3 -m unittest discover -s test -p 'test_copilot_cli_agent_receipt.py' -v
           node --test test/test_browser_profile_cleanup.mjs
+          node --test test/test_browser_motion_evidence.mjs
           node --test test/test_browser_websocket_ready.mjs
           python3 -m py_compile \
             scripts/run_copilot_cli_agent_capability.py \
             scripts/run_copilot_cli_agent_capability_gate.py
           node --check scripts/browser_profile_cleanup.mjs
+          node --check scripts/browser_motion_evidence.mjs
           node --check scripts/browser_websocket_ready.mjs
           node --check scripts/run_browser_capability.mjs
           node --check scripts/run_browser_capability_completion.mjs
@@ -141,72 +145,3 @@ jobs:
           path: ${{ env.CAPABILITY_OUTPUT }}
           if-no-files-found: error
           retention-days: 14
-
-  # PR33_APPLIER_START
-  apply-pr33-followup:
-    if: >-
-      github.event_name == 'pull_request' &&
-      github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      contents: write
-    steps:
-      - name: Check out staged patch revision
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
-          ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 0
-          persist-credentials: true
-
-      - name: Apply regression tests first
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git apply --check .github/patches/pr33-followup-tests.patch
-          git apply .github/patches/pr33-followup-tests.patch
-          git add \
-            test/test_browser_capability_regressions.py \
-            test/test_browser_motion_evidence.mjs \
-            test/test_copilot_cli_agent_capability.py
-          git commit -m "test: cover capability gate follow-up regressions"
-
-      - name: Apply implementation and remove staging machinery
-        run: |
-          set -euo pipefail
-          cat .github/patches/pr33-impl.b64.* | tr -d '\n' | base64 --decode > /tmp/pr33-followup-implementation.patch
-          git apply --check --exclude=scripts/browser_profile_cleanup.mjs /tmp/pr33-followup-implementation.patch
-          git apply --exclude=scripts/browser_profile_cleanup.mjs /tmp/pr33-followup-implementation.patch
-          python3 - <<'PY'
-          from pathlib import Path
-
-          cleanup = Path('scripts/browser_profile_cleanup.mjs')
-          cleanup_text = cleanup.read_text(encoding='utf-8')
-          for dead_line in ('  let lastError;\n', '      lastError = error;\n'):
-              if dead_line not in cleanup_text:
-                  raise SystemExit(f'missing expected cleanup line: {dead_line!r}')
-              cleanup_text = cleanup_text.replace(dead_line, '', 1)
-          cleanup.write_text(cleanup_text, encoding='utf-8')
-
-          workflow = Path('.github/workflows/boundary-agent-capability.yml')
-          workflow_text = workflow.read_text(encoding='utf-8')
-          start_marker = '\n  # PR33_APPLIER_START\n'
-          end_marker = '\n  # PR33_APPLIER_END\n'
-          start = workflow_text.index(start_marker)
-          end = workflow_text.index(end_marker, start) + len(end_marker)
-          workflow.write_text(workflow_text[:start] + workflow_text[end:], encoding='utf-8')
-          PY
-          rm -f \
-            .github/patches/pr33-followup-tests.patch \
-            .github/patches/pr33-followup-implementation.patch \
-            .github/patches/pr33-impl.b64.* \
-            .github/workflows/apply-pr33-followup.yml
-          git add -A
-          git commit -m "fix: harden the comparison capability gate"
-
-      - name: Push ordered commits
-        run: git push origin HEAD:agent/m0-agent-runner-capability
-  # PR33_APPLIER_FINAL_RETRY
-  # PR33_APPLIER_END

@@ -28,7 +28,6 @@ export async function removeBrowserProfile(
     throw new TypeError('cleanup retry delay must be non-negative');
   }
 
-  let lastError;
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     try {
       await remove(profilePath, {
@@ -39,7 +38,6 @@ export async function removeBrowserProfile(
       });
       return;
     } catch (error) {
-      lastError = error;
       if (
         !RETRYABLE_REMOVAL_ERRORS.has(error?.code)
         || attempt === attempts

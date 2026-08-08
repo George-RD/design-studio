@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 import process from 'node:process';
 
+import { mergeMotionEvidence } from './browser_motion_evidence.mjs';
 import { removeBrowserProfileBestEffort } from './browser_profile_cleanup.mjs';
 import { waitForWebSocketOpen } from './browser_websocket_ready.mjs';
 
@@ -70,20 +71,6 @@ function hasDurableNoNetworkPolicy(content) {
     if (expected && !sameDirectiveValues(values, expected)) return false;
   }
   return true;
-}
-
-function inlineClassicScriptSources(html) {
-  const sources = [];
-  const scriptPattern = /<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi;
-  for (const match of String(html || '').matchAll(scriptPattern)) {
-    const attributes = match[1] || '';
-    if (/\bsrc\s*=/i.test(attributes)) continue;
-    const typeMatch = attributes.match(/\btype\s*=\s*(["'])(.*?)\1/i);
-    const type = String(typeMatch?.[2] || '').trim().toLowerCase();
-    if (type && !['text/javascript', 'application/javascript'].includes(type)) continue;
-    sources.push(match[2] || '');
-  }
-  return sources;
 }
 
 function pixels(value) {
@@ -503,36 +490,16 @@ async function measureMotion(client) {
   })()`);
 }
 
-function mergeMotionEvidence(samples) {
-  const evidence = (samples || []).filter(Boolean);
-  if (!evidence.length) {
-    return {
-      prefersReducedMotion: false,
-      maxMs: 0,
-      activeElementCount: 0,
-      samples: [],
-    };
-  }
-  return {
-    prefersReducedMotion: evidence.every((sample) => sample.prefersReducedMotion),
-    maxMs: Math.max(...evidence.map((sample) => Number(sample.maxMs) || 0)),
-    activeElementCount: Math.max(
-      ...evidence.map((sample) => Number(sample.activeElementCount) || 0),
-    ),
-    samples: evidence.flatMap((sample, index) => (sample.samples || []).map((entry) => ({
-      ...entry,
-      observedAtMs: MOTION_OBSERVATION_POINTS_MS[index] ?? null,
-    }))).slice(0, 8),
-  };
-}
-
 async function sampleMotionWindow(client) {
   const evidence = [];
   let elapsedMs = 0;
   for (const pointMs of MOTION_OBSERVATION_POINTS_MS) {
     const delayMs = Math.max(0, pointMs - elapsedMs);
     if (delayMs) await new Promise((resolvePromise) => setTimeout(resolvePromise, delayMs));
-    evidence.push(await measureMotion(client));
+    evidence.push({
+      ...(await measureMotion(client)),
+      observedAtMs: pointMs,
+    });
     elapsedMs = pointMs;
   }
   return {
@@ -925,13 +892,14 @@ async function replaySubmissionWithReducedMotion(client, frameId, html) {
       features: [{ name: 'prefers-reduced-motion', value: 'reduce' }],
     });
     await evaluate(client, `document.documentElement?.setAttribute('data-design-studio-replay-stale', 'true')`);
+    await client.send('Page.navigate', { url: 'about:blank' });
     await client.send('Page.setDocumentContent', { frameId, html });
     const replayReadyDeadline = Date.now() + 5000;
     let replayReady = false;
     while (Date.now() < replayReadyDeadline) {
       try {
         replayReady = Boolean(await evaluate(client, `Boolean(
-          document.readyState !== 'loading'
+          document.readyState === 'complete'
           && !document.documentElement?.hasAttribute('data-design-studio-replay-stale')
           && document.querySelector('#capability-form')
           && document.querySelector('#capability-name')
@@ -944,14 +912,6 @@ async function replaySubmissionWithReducedMotion(client, frameId, html) {
     }
     if (!replayReady) throw new BrowserContractError('reduced-motion replay document did not become ready');
     await evaluate(client, POPUP_GUARD_SOURCE);
-    for (const source of inlineClassicScriptSources(html)) {
-      await evaluate(client, `(() => {\n${source}\n})()`);
-    }
-    await evaluate(client, `(() => {
-      document.dispatchEvent(new Event('DOMContentLoaded', { bubbles: true }));
-      window.dispatchEvent(new Event('load'));
-      return true;
-    })()`);
     if (await evaluate(client, `Boolean(document.activeElement instanceof HTMLElement)`)) {
       await evaluate(client, `document.activeElement.blur()`);
     }
@@ -1451,7 +1411,11 @@ async function runBrowserProbe({ root, outputDir, entrypoint, width, height, for
       failures.push('keyboard focus produced no rendered visual change');
     }
     if (!interaction.reducedMotion) failures.push('reduced-motion emulation was not visible to the page');
-    if (!motionSupported) failures.push('reduced-motion path did not suppress active motion');
+    if (reducedSubmissionMotion.error) {
+      failures.push(`reduced-motion submission replay did not run: ${reducedSubmissionMotion.error}`);
+    } else if (!motionSupported) {
+      failures.push('reduced-motion path did not suppress active motion');
+    }
     if (!durableNetworkPolicy) failures.push('document lacks a durable no-network content security policy');
     if (externalRequests.length) failures.push('external network request attempted');
     if (externalRequests.some((url) => !blockedRequestUrls.has(url))) failures.push('external network request was not blocked before transport');
