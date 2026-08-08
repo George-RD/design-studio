@@ -1,0 +1,147 @@
+name: Probe comparison agent capabilities
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/run_copilot_cli_agent_capability.py"
+      - "scripts/run_copilot_cli_agent_capability_gate.py"
+      - "scripts/run_browser_capability.mjs"
+      - "scripts/run_browser_capability_completion.mjs"
+      - "scripts/browser_motion_evidence.mjs"
+      - "scripts/browser_profile_cleanup.mjs"
+      - "scripts/browser_websocket_ready.mjs"
+      - "test/test_copilot_cli_agent_capability.py"
+      - "test/test_copilot_cli_model_compatibility.py"
+      - "test/test_copilot_cli_auto_model.py"
+      - "test/test_copilot_cli_trusted_workspace.py"
+      - "test/test_copilot_cli_director_retry.py"
+      - "test/test_copilot_cli_output_bounds.py"
+      - "test/test_copilot_cli_tool_receipt_turns.py"
+      - "test/test_copilot_cli_agent_receipt.py"
+      - "test/test_browser_capability_regressions.py"
+      - "test/test_browser_completion_contract.py"
+      - "test/test_browser_submission_attribution.py"
+      - "test/test_browser_profile_cleanup.mjs"
+      - "test/test_browser_motion_evidence.mjs"
+      - "test/test_browser_websocket_ready.mjs"
+      - "benchmarks/milestone-0/AGENT_HARNESS.md"
+      - "benchmarks/milestone-0/MODEL_HARNESS.md"
+      - "benchmarks/milestone-0/evidence/**"
+      - "ROADMAP.md"
+      - ".github/workflows/boundary-agent-capability.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  COPILOT_CLI_VERSION: "1.0.74"
+  COPILOT_MODEL: "auto"
+  CAPABILITY_OUTPUT: harness-output/benchmarks/milestone-0/agent-capability
+
+jobs:
+  capability-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out exact revision
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Validate Copilot agent contract
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s test -p 'test_copilot_cli_agent_capability.py' -v
+          python3 -m unittest discover -s test -p 'test_copilot_cli_model_compatibility.py' -v
+          python3 -m unittest discover -s test -p 'test_copilot_cli_auto_model.py' -v
+          python3 -m unittest discover -s test -p 'test_copilot_cli_trusted_workspace.py' -v
+          python3 -m unittest discover -s test -p 'test_copilot_cli_director_retry.py' -v
+          python3 -m unittest discover -s test -p 'test_copilot_cli_output_bounds.py' -v
+          python3 -m unittest discover -s test -p 'test_copilot_cli_tool_receipt_turns.py' -v
+          python3 -m unittest discover -s test -p 'test_copilot_cli_agent_receipt.py' -v
+          node --test test/test_browser_profile_cleanup.mjs
+          node --test test/test_browser_motion_evidence.mjs
+          node --test test/test_browser_websocket_ready.mjs
+          python3 -m py_compile \
+            scripts/run_copilot_cli_agent_capability.py \
+            scripts/run_copilot_cli_agent_capability_gate.py
+          node --check scripts/browser_profile_cleanup.mjs
+          node --check scripts/browser_motion_evidence.mjs
+          node --check scripts/browser_websocket_ready.mjs
+          node --check scripts/run_browser_capability.mjs
+          node --check scripts/run_browser_capability_completion.mjs
+
+      - name: Preserve browser security regressions
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s test -p 'test_browser_capability_regressions.py' -v
+          python3 -m unittest discover -s test -p 'test_browser_completion_contract.py' -v
+          python3 -m unittest discover -s test -p 'test_browser_submission_attribution.py' -v
+
+  live-agent-capability:
+    needs: capability-contract
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      copilot-requests: write
+    steps:
+      - name: Check out exact revision
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install pinned Copilot CLI
+        run: |
+          set -euo pipefail
+          npm install --global --no-audit --no-fund "@github/copilot@${COPILOT_CLI_VERSION}"
+          mkdir -p "${CAPABILITY_OUTPUT}/evidence"
+          copilot --version | tee "${CAPABILITY_OUTPUT}/evidence/copilot-version.txt"
+          grep -F "${COPILOT_CLI_VERSION}" "${CAPABILITY_OUTPUT}/evidence/copilot-version.txt"
+
+      - name: Probe controlled tools, browser and role isolation
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >-
+          python3 scripts/run_copilot_cli_agent_capability_gate.py
+          --output-dir "${CAPABILITY_OUTPUT}"
+          --copilot-version "${COPILOT_CLI_VERSION}"
+          --model "${COPILOT_MODEL}"
+
+      - name: Print sanitized capability report
+        if: always()
+        run: |
+          if test -f "${CAPABILITY_OUTPUT}/capability-report.json"; then
+            cat "${CAPABILITY_OUTPUT}/capability-report.json"
+          else
+            echo "Capability report was not created."
+            exit 1
+          fi
+
+      - name: Upload capability evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: copilot-cli-agent-capability-${{ github.run_id }}
+          path: ${{ env.CAPABILITY_OUTPUT }}
+          if-no-files-found: error
+          retention-days: 14

@@ -1,0 +1,145 @@
+{
+  "receiptSchemaVersion": 1,
+  "capabilityReportSchemaVersion": 1,
+  "status": "passed",
+  "verifiedAt": "2026-08-08T12:28:33.016007Z",
+  "workflow": {
+    "runId": 31257044809,
+    "headSha": "43c1b6faf136886fa7070e553f420dac0caf1c2b",
+    "artifactId": 9021760833,
+    "artifactName": "copilot-cli-agent-capability-31257044809",
+    "artifactDigest": "sha256:1a29d24c934ef325a3515c83e6dd9a9f6e870405cf1b3758f4c97460b6c2fddc",
+    "retentionDays": 14
+  },
+  "executionSurface": {
+    "name": "github-copilot-cli",
+    "version": "1.0.74",
+    "authentication": "github-actions-token",
+    "permission": "copilot-requests: write",
+    "environmentPolicy": "explicit-allowlist",
+    "requestedModel": "auto",
+    "modelPolicy": "auto-per-role",
+    "resolvedModels": {
+      "builder": "gpt-5-mini",
+      "director": "claude-haiku-4.5",
+      "evaluator": "gpt-5-mini"
+    },
+    "maxAiCreditsPerRole": 30
+  },
+  "checks": {
+    "director": {
+      "status": "passed",
+      "availableTools": [
+        "create"
+      ],
+      "files": [
+        "direction.json"
+      ],
+      "readFiles": [],
+      "resolvedModel": "claude-haiku-4.5"
+    },
+    "builder": {
+      "status": "passed",
+      "availableTools": [
+        "view",
+        "create",
+        "edit",
+        "apply_patch"
+      ],
+      "files": [
+        "baseline.css",
+        "brief.md",
+        "direction.json",
+        "index.html"
+      ],
+      "readFiles": [
+        "baseline.css",
+        "brief.md",
+        "direction.json"
+      ],
+      "readBaselineCss": true,
+      "entrypoint": "index.html",
+      "outputBytes": 5175,
+      "singleFile": true,
+      "textInputContract": true,
+      "durableNetworkPolicy": true,
+      "networkApisAbsent": true,
+      "resourceReferencesAbsent": true,
+      "sourceCanaryAbsent": true,
+      "resolvedModel": "gpt-5-mini"
+    },
+    "browser": {
+      "status": "passed",
+      "viewport": {
+        "height": 844,
+        "width": 390
+      },
+      "submittedValue": "Ada",
+      "successTextBefore": "",
+      "successVisibleBefore": false,
+      "successVisible": true,
+      "successText": "Capability complete",
+      "formVisibleBefore": true,
+      "formVisibleAfter": true,
+      "focusStyleChanged": true,
+      "urlUnchanged": true,
+      "horizontalOverflow": false,
+      "finalStateStable": true,
+      "normalMotionMaxMs": 180,
+      "reducedMotionMaxMs": 0,
+      "normalPostSubmitMaxMs": 180,
+      "reducedPostSubmitMaxMs": 0,
+      "normalSubmissionMaxMs": 180,
+      "reducedSubmissionMaxMs": 0,
+      "reducedSubmissionReplayPerformed": true,
+      "reducedSubmissionReplayContractPassed": true,
+      "reducedSubmissionReplayError": null,
+      "durableNetworkPolicy": true,
+      "externalRequests": []
+    },
+    "sourceIsolation": {
+      "builderReadCanarySource": true,
+      "directorHasNoSource": true,
+      "evaluatorHasNoSource": true,
+      "evaluatorRequestCanaryAbsent": true,
+      "outputCanaryAbsent": true,
+      "renderedCanaryAbsent": true,
+      "status": "passed"
+    },
+    "evaluator": {
+      "status": "passed",
+      "availableTools": [
+        "create"
+      ],
+      "files": [
+        "browser-after-submit.png",
+        "evaluation.json"
+      ],
+      "readFiles": [],
+      "formVisible": true,
+      "layoutUsable": true,
+      "sourceCanaryVisible": false,
+      "successVisible": true,
+      "summary": "A centered card titled 'Capability check' shows a labeled text input containing 'Ada', a visible 'Submit' button, and a green 'Capability complete' success message beneath. The mobile card fits without horizontal overflow.",
+      "titleVisible": true,
+      "resolvedModel": "gpt-5-mini"
+    }
+  },
+  "scope": {
+    "proves": [
+      "a same-repository GitHub Actions job can run the pinned Copilot CLI with a job-scoped token",
+      "Director, Builder and Evaluator can run in separate trusted workspaces with explicit tool sets",
+      "auto model selection can resolve independently per role while preserving each concrete model in the receipt",
+      "the Builder can create a self-contained interface without leaking the source canary",
+      "Chromium can verify trusted keyboard interaction, URL stability, network isolation, overflow, final-state stability and reduced-motion replay and capture a screenshot",
+      "a source-blind Evaluator can inspect the screenshot and return a durable visual receipt"
+    ],
+    "doesNotProve": [
+      "a complete Impeccable or Design Studio comparison lane",
+      "blind preference between competing lane outputs",
+      "the quality advantage of Design Studio over Impeccable alone",
+      "that model auto-selection will always resolve to the same role-model mapping",
+      "that all roles use one shared model when auto selection is enabled"
+    ]
+  }
+}
