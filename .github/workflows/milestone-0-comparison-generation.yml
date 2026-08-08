@@ -1,0 +1,136 @@
+name: Generate Milestone 0 comparison runs
+
+on:
+  workflow_dispatch:
+    inputs:
+      fixture:
+        description: Frozen fixture to generate
+        required: true
+        type: choice
+        default: marketing-surface
+        options:
+          - marketing-surface
+          - product-overhaul
+          - review-polish
+          - cinematic-experience
+          - all
+      lane:
+        description: Frozen comparison lane to generate
+        required: true
+        type: choice
+        default: design-studio-current
+        options:
+          - impeccable-alone
+          - design-studio-current
+          - design-studio-impeccable
+          - all
+      model:
+        description: Copilot model; explicit models are verified against resolved evidence
+        required: true
+        type: string
+        default: auto
+      continue_on_error:
+        description: Continue selected runs after the first blocked or failed run
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  copilot-requests: write
+
+env:
+  COPILOT_CLI_VERSION: "1.0.74"
+  IMPECCABLE_REVISION: "aee6ce9352b842217b3f57c78296a7a4fa35a7f3"
+  OUTPUT_ROOT: harness-output/benchmarks/milestone-0
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - name: Check out exact Design Studio revision
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Check out pinned Impeccable revision
+        uses: actions/checkout@v4
+        with:
+          repository: pbakaus/impeccable
+          ref: ${{ env.IMPECCABLE_REVISION }}
+          path: vendor/impeccable
+          persist-credentials: false
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install pinned Copilot CLI
+        run: |
+          set -euo pipefail
+          npm install --global --no-audit --no-fund "@github/copilot@${COPILOT_CLI_VERSION}"
+          copilot --version | tee copilot-version.txt
+          grep -F "${COPILOT_CLI_VERSION}" copilot-version.txt
+
+      - name: Verify exact source revisions
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          test "$(git -C vendor/impeccable rev-parse HEAD)" = "${IMPECCABLE_REVISION}"
+          test "$(node -p "require('./vendor/impeccable/package.json').name")" = "impeccable"
+
+      - name: Generate selected frozen runs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SELECTED_FIXTURE: ${{ inputs.fixture }}
+          SELECTED_LANE: ${{ inputs.lane }}
+          SELECTED_MODEL: ${{ inputs.model }}
+          CONTINUE_ON_ERROR: ${{ inputs.continue_on_error }}
+        run: |
+          set -euo pipefail
+          matrix_id="m0-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          args=(
+            python3 scripts/run_copilot_comparison_matrix_generation.py
+            --root "${GITHUB_WORKSPACE}"
+            --output-root "${OUTPUT_ROOT}"
+            --matrix-id "${matrix_id}"
+            --impeccable-root "${GITHUB_WORKSPACE}/vendor/impeccable"
+            --design-revision "${GITHUB_SHA}"
+            --impeccable-revision "${IMPECCABLE_REVISION}"
+            --fixture "${SELECTED_FIXTURE}"
+            --lane "${SELECTED_LANE}"
+            --copilot-version "${COPILOT_CLI_VERSION}"
+            --model "${SELECTED_MODEL}"
+          )
+          if [[ "${CONTINUE_ON_ERROR}" == "true" ]]; then
+            args+=(--continue-on-error)
+          fi
+          "${args[@]}"
+
+      - name: Print durable generation summary
+        if: always()
+        run: |
+          set -euo pipefail
+          summaries="$(find "${OUTPUT_ROOT}" -path '*/matrices/*/generation.json' -type f -print)"
+          if [[ -z "${summaries}" ]]; then
+            echo "Generation summary was not created."
+            exit 1
+          fi
+          while IFS= read -r summary; do
+            echo "--- ${summary}"
+            cat "${summary}"
+          done <<< "${summaries}"
+
+      - name: Upload frozen matrix and generation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: milestone-0-comparison-generation-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ env.OUTPUT_ROOT }}
+            copilot-version.txt
+          if-no-files-found: error
+          retention-days: 30
