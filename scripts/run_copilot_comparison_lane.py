@@ -23,6 +23,16 @@ REPORT_SCHEMA_VERSION = 1
 AVAILABLE_TOOLS = "view,create"
 ALLOW_TOOLS = "read,write"
 DENY_TOOLS = "shell,url,memory"
+MECHANICAL_ENV_KEYS = (
+    "HOME",
+    "LANG",
+    "LC_ALL",
+    "NODE_OPTIONS",
+    "PATH",
+    "TEMP",
+    "TMP",
+    "TMPDIR",
+)
 
 
 def _load_module(name: str, path: Path):
@@ -33,7 +43,11 @@ def _load_module(name: str, path: Path):
         raise RuntimeError(f"cannot load {name} from {path}")
     module = importlib.util.module_from_spec(spec)
     sys.modules[name] = module
-    spec.loader.exec_module(module)
+    try:
+        spec.loader.exec_module(module)
+    except Exception:
+        sys.modules.pop(name, None)
+        raise
     return module
 
 
@@ -56,7 +70,20 @@ class RoleInvocation:
     prompt: str
 
 
+@dataclass(frozen=True)
+class MechanicalInvocation:
+    provider: str
+    run_dir: Path
+    site_dir: Path
+    output_dir_existed: bool
+    evidence_dir: Path
+    impeccable_root: Path
+    design_revision: str
+    impeccable_revision: str
+
+
 RoleRunner = Callable[[RoleInvocation], dict[str, Any]]
+MechanicalRunner = Callable[[MechanicalInvocation], dict[str, Any]]
 
 
 def utc_now() -> str:
@@ -93,6 +120,12 @@ def _load_json(path: Path, label: str) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise ContractError(f"{label} must be a JSON object")
     return value
+
+
+def _require_text(value: Any, label: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ContractError(f"{label} must be a non-empty string")
+    return value.strip()
 
 
 def _require_regular_directory(path: Path, label: str) -> Path:
@@ -317,6 +350,35 @@ def _scrub_token_tree(root: Path, token: str) -> list[str]:
     return scrubbed
 
 
+def _redact_secret(text: str, secret: str) -> str:
+    return text.replace(secret, "<redacted-token>") if secret else text
+
+
+def _runner_accepts_timeout(command_runner: Callable[..., Any]) -> bool:
+    try:
+        parameters = inspect.signature(command_runner).parameters.values()
+    except (TypeError, ValueError):
+        return False
+    return any(
+        parameter.name == "timeout_seconds"
+        or parameter.kind is inspect.Parameter.VAR_KEYWORD
+        for parameter in parameters
+    )
+
+
+def _call_command_runner(
+    command_runner: Callable[..., Any],
+    command: Sequence[str],
+    *,
+    cwd: Path,
+    env: dict[str, str],
+) -> Any:
+    kwargs: dict[str, Any] = {"cwd": cwd, "env": env}
+    if _runner_accepts_timeout(command_runner):
+        kwargs["timeout_seconds"] = capability.COMMAND_TIMEOUT_SECONDS
+    return command_runner(command, **kwargs)
+
+
 class CopilotRoleRunner:
     def __init__(
         self,
@@ -327,8 +389,6 @@ class CopilotRoleRunner:
         model: str = "auto",
         command_runner: Callable[..., Any] = capability.default_command_runner,
     ) -> None:
-        if not isinstance(token, str) or not token.strip():
-            raise CapabilityBlocked("GITHUB_TOKEN is required for Copilot lane generation")
         self.token = token
         self.copilot_bin = copilot_bin
         self.copilot_version = copilot_version
@@ -336,6 +396,10 @@ class CopilotRoleRunner:
         self.command_runner = command_runner
 
     def __call__(self, invocation: RoleInvocation) -> dict[str, Any]:
+        if not isinstance(self.token, str) or not self.token.strip():
+            raise CapabilityBlocked(
+                "GITHUB_TOKEN is required for Copilot lane generation"
+            )
         workspace = invocation.workspace.resolve()
         evidence_dir = invocation.evidence_dir
         _require_regular_directory(workspace, f"{invocation.role} workspace")
@@ -361,20 +425,19 @@ class CopilotRoleRunner:
             {
                 "argv": command,
                 "copilotVersion": self.copilot_version,
+                "requestedModel": self.model,
                 "workingDirectory": str(workspace),
                 "environmentContract": sorted(environment),
                 "trustedWorkspaceConfig": str(trusted_config),
             },
         )
 
-        kwargs: dict[str, Any] = {"cwd": workspace, "env": environment}
-        try:
-            parameters = inspect.signature(self.command_runner).parameters
-        except (TypeError, ValueError):
-            parameters = {}
-        if "timeout_seconds" in parameters:
-            kwargs["timeout_seconds"] = capability.COMMAND_TIMEOUT_SECONDS
-        outcome = self.command_runner(command, **kwargs)
+        outcome = _call_command_runner(
+            self.command_runner,
+            command,
+            cwd=workspace,
+            env=environment,
+        )
         if not isinstance(outcome, capability.CommandOutcome):
             raise ContractError(
                 f"{invocation.role} command runner returned an invalid outcome"
@@ -397,13 +460,18 @@ class CopilotRoleRunner:
                 f"{invocation.role} attempted to persist authentication material: {scrubbed}"
             )
         if outcome.exit_code != 0:
-            message = outcome.stderr.strip() or outcome.stdout.strip() or str(outcome.exit_code)
+            raw_message = (
+                outcome.stderr.strip()
+                or outcome.stdout.strip()
+                or str(outcome.exit_code)
+            )
+            message = _redact_secret(raw_message, self.token)[:1000]
             if capability.classify_cli_failure(outcome) == "blocked":
                 raise CapabilityBlocked(
-                    f"{invocation.role} Copilot CLI was blocked: {message[:1000]}"
+                    f"{invocation.role} Copilot CLI was blocked: {message}"
                 )
             raise ContractError(
-                f"{invocation.role} Copilot CLI failed: {message[:1000]}"
+                f"{invocation.role} Copilot CLI failed: {message}"
             )
         try:
             events = capability.parse_jsonl(
@@ -418,8 +486,14 @@ class CopilotRoleRunner:
             output_name=invocation.output_name,
         )
         resolved_model = _resolved_model(events, invocation.role)
+        if self.model.lower() != "auto" and resolved_model != self.model:
+            raise ContractError(
+                f"{invocation.role} requested model {self.model!r} but Copilot "
+                f"resolved {resolved_model!r}"
+            )
         result = {
             "status": "passed",
+            "requestedModel": self.model,
             "resolvedModel": resolved_model,
             "availableTools": AVAILABLE_TOOLS.split(","),
             "toolReceipt": receipt,
@@ -429,6 +503,206 @@ class CopilotRoleRunner:
         }
         _write_json(evidence_dir / "role-report.json", result)
         return result
+
+
+def _tool_sources(run_dir: Path) -> set[str]:
+    run = _load_json(run_dir / "run.json", "benchmark run receipt")
+    tool = run.get("tool")
+    if not isinstance(tool, dict):
+        raise ContractError("benchmark run tool provenance is missing")
+    source = _require_text(tool.get("source"), "benchmark run tool source")
+    return {part.strip() for part in source.split("+") if part.strip()}
+
+
+def _require_tool_source(run_dir: Path, expected: str) -> None:
+    if expected not in _tool_sources(run_dir):
+        raise ContractError(
+            f"benchmark run tool source does not include pinned provenance {expected!r}"
+        )
+
+
+def _mechanical_environment() -> dict[str, str]:
+    environment = {
+        key: os.environ[key]
+        for key in MECHANICAL_ENV_KEYS
+        if key in os.environ
+    }
+    environment["NO_COLOR"] = "1"
+    return environment
+
+
+class ComparisonMechanicalRunner:
+    """Run the lane-specific source preflight against the exact staged output."""
+
+    def __init__(
+        self,
+        *,
+        node_bin: str = "node",
+        command_runner: Callable[..., Any] = capability.default_command_runner,
+    ) -> None:
+        self.node_bin = node_bin
+        self.command_runner = command_runner
+
+    def __call__(self, invocation: MechanicalInvocation) -> dict[str, Any]:
+        _require_regular_directory(invocation.site_dir, "staged output")
+        if invocation.evidence_dir.exists() or invocation.evidence_dir.is_symlink():
+            raise ContractError(
+                f"mechanical evidence directory already exists: {invocation.evidence_dir}"
+            )
+        invocation.evidence_dir.mkdir(parents=True, exist_ok=False)
+        if invocation.provider == "fallback":
+            return self._run_fallback(invocation)
+        if invocation.provider == "impeccable":
+            return self._run_impeccable(invocation)
+        raise ContractError(
+            f"unsupported mechanical provider: {invocation.provider!r}"
+        )
+
+    def _run_fallback(self, invocation: MechanicalInvocation) -> dict[str, Any]:
+        revision = _require_text(
+            invocation.design_revision, "Design Studio revision"
+        )
+        _require_tool_source(
+            invocation.run_dir,
+            f"George-RD/design-studio@{revision}",
+        )
+        files = sorted(_regular_files(invocation.site_dir, "staged output"))
+        receipt = {
+            "status": "passed",
+            "provider": "fallback",
+            "version": "1.5.0-fallback",
+            "revision": revision,
+            "coverage": {
+                "source": "local-output-contract",
+                "browser": "pending",
+            },
+            "files": files,
+            "findings": {"total": 0, "primary": 0, "advisory": 0},
+            "limitation": (
+                "Fallback source coverage is smaller than Impeccable and does "
+                "not include browser-computed checks."
+            ),
+        }
+        _write_json(invocation.evidence_dir / "mechanical-report.json", receipt)
+        return receipt
+
+    def _run_impeccable(self, invocation: MechanicalInvocation) -> dict[str, Any]:
+        revision = _require_text(
+            invocation.impeccable_revision, "Impeccable revision"
+        )
+        expected_source = f"pbakaus/impeccable@{revision}"
+        _require_tool_source(invocation.run_dir, expected_source)
+        root = _require_regular_directory(
+            invocation.impeccable_root.resolve(), "Impeccable root"
+        )
+        package = _load_json(root / "package.json", "Impeccable package")
+        if package.get("name") != "impeccable":
+            raise ContractError("Impeccable package name is invalid")
+        version = _require_text(
+            package.get("version"), "Impeccable package version"
+        )
+        cli = root / "cli" / "bin" / "cli.js"
+        if cli.is_symlink() or not cli.is_file():
+            raise ContractError(f"pinned Impeccable CLI is missing or unsafe: {cli}")
+
+        site = invocation.site_dir.resolve()
+        command = [
+            self.node_bin,
+            str(cli.resolve()),
+            "detect",
+            "--json",
+            str(site),
+        ]
+        environment = _mechanical_environment()
+        _write_json(
+            invocation.evidence_dir / "command.json",
+            {
+                "argv": command,
+                "provider": "impeccable",
+                "version": version,
+                "revision": revision,
+                "source": expected_source,
+                "workingDirectory": str(site),
+                "environmentContract": sorted(environment),
+            },
+        )
+        outcome = _call_command_runner(
+            self.command_runner,
+            command,
+            cwd=site,
+            env=environment,
+        )
+        if not isinstance(outcome, capability.CommandOutcome):
+            raise ContractError(
+                "Impeccable command runner returned an invalid outcome"
+            )
+        try:
+            capability.ensure_command_output_bounds(outcome)
+        except capability.ContractError as exc:
+            raise ContractError(str(exc)) from exc
+        capability.safe_persist_output(
+            invocation.evidence_dir / "stdout.json", outcome.stdout, ""
+        )
+        capability.safe_persist_output(
+            invocation.evidence_dir / "stderr.log", outcome.stderr, ""
+        )
+        if outcome.exit_code not in (0, 2):
+            message = outcome.stderr.strip() or outcome.stdout.strip() or str(
+                outcome.exit_code
+            )
+            if outcome.exit_code in (124, 127):
+                raise CapabilityBlocked(
+                    f"pinned Impeccable source preflight was blocked: {message[:1000]}"
+                )
+            raise ContractError(
+                f"pinned Impeccable source preflight failed: {message[:1000]}"
+            )
+        try:
+            findings = json.loads(outcome.stdout)
+        except json.JSONDecodeError as exc:
+            raise ContractError(
+                f"Impeccable source findings are invalid JSON: {exc}"
+            ) from exc
+        if not isinstance(findings, list) or any(
+            not isinstance(item, dict) for item in findings
+        ):
+            raise ContractError(
+                "Impeccable source findings must be an array of objects"
+            )
+        advisory = [
+            item
+            for item in findings
+            if item.get("advisory") is True
+            or str(item.get("severity", "")).lower() == "advisory"
+        ]
+        primary = [item for item in findings if item not in advisory]
+        expected_exit = 2 if primary else 0
+        if outcome.exit_code != expected_exit:
+            raise ContractError(
+                "Impeccable exit code does not match its primary findings: "
+                f"exit={outcome.exit_code}, primary={len(primary)}"
+            )
+        _write_json(invocation.evidence_dir / "findings.json", findings)
+        receipt = {
+            "status": "passed",
+            "provider": "impeccable",
+            "version": version,
+            "revision": revision,
+            "source": expected_source,
+            "coverage": {"source": "complete", "browser": "pending"},
+            "command": "command.json",
+            "stdout": "stdout.json",
+            "stderr": "stderr.log",
+            "findingsArtifact": "findings.json",
+            "exitCode": outcome.exit_code,
+            "findings": {
+                "total": len(findings),
+                "primary": len(primary),
+                "advisory": len(advisory),
+            },
+        }
+        _write_json(invocation.evidence_dir / "mechanical-report.json", receipt)
+        return receipt
 
 
 def _role_prompt(role: str, output_name: str) -> str:
@@ -542,37 +816,63 @@ def _output_manifest(files: list[dict[str, str]]) -> list[dict[str, Any]]:
     ]
 
 
-def _publish_bundle(
+def _stage_bundle(
     *,
     generation_root: Path,
-    output_dir: Path,
     files: list[dict[str, str]],
-) -> list[dict[str, Any]]:
-    _require_regular_directory(output_dir, "benchmark output directory")
-    if any(output_dir.iterdir()):
-        raise ContractError("benchmark output directory must be empty before publication")
+) -> tuple[Path, list[dict[str, Any]]]:
     staging = generation_root / "output-staging"
     if staging.exists() or staging.is_symlink():
         raise ContractError(f"output staging path already exists: {staging}")
     staging.mkdir(parents=False, exist_ok=False)
-    try:
-        for item in files:
-            destination = staging.joinpath(*Path(item["path"]).parts)
-            _write_text_exclusive(destination, item["content"])
-        manifest = _output_manifest(files)
-        os.replace(staging, output_dir)
-        return manifest
-    finally:
-        if staging.exists():
-            shutil.rmtree(staging, ignore_errors=True)
+    for item in files:
+        destination = staging.joinpath(*Path(item["path"]).parts)
+        _write_text_exclusive(destination, item["content"])
+    expected = {item["path"] for item in files}
+    _require_exact_files(staging, expected, "staged output")
+    return staging, _output_manifest(files)
+
+
+def _publish_staged_bundle(*, staging: Path, output_dir: Path) -> None:
+    _require_regular_directory(staging, "staged output")
+    _require_regular_directory(output_dir, "benchmark output directory")
+    if any(output_dir.iterdir()):
+        raise ContractError("benchmark output directory must be empty before publication")
+    os.replace(staging, output_dir)
 
 
 def _reset_output(output_dir: Path) -> None:
     if output_dir.is_symlink():
-        raise ContractError(f"benchmark output directory became a symlink: {output_dir}")
+        raise ContractError(
+            f"benchmark output directory became a symlink: {output_dir}"
+        )
     if output_dir.exists():
         shutil.rmtree(output_dir)
     output_dir.mkdir(parents=True, exist_ok=False)
+
+
+def _validated_mechanical_receipt(
+    value: Any,
+    expected_provider: str,
+) -> dict[str, Any]:
+    if not isinstance(value, dict) or value.get("status") != "passed":
+        raise ContractError("mechanical preflight did not return a passed receipt")
+    if value.get("provider") != expected_provider:
+        raise ContractError(
+            "mechanical preflight provider does not match the sealed lane: "
+            f"expected={expected_provider!r}, got={value.get('provider')!r}"
+        )
+    coverage = value.get("coverage")
+    if not isinstance(coverage, dict) or coverage.get("source") not in {
+        "complete",
+        "local-output-contract",
+    }:
+        raise ContractError("mechanical preflight has no completed source coverage")
+    if coverage.get("browser") != "pending":
+        raise ContractError(
+            "generation preflight must leave browser mechanical evidence pending"
+        )
+    return value
 
 
 def run_generation(
@@ -583,14 +883,19 @@ def run_generation(
     design_revision: str,
     impeccable_revision: str,
     role_runner: RoleRunner,
+    mechanical_runner: MechanicalRunner,
 ) -> dict[str, Any]:
     repo_root = repo_root.resolve()
     impeccable_root = impeccable_root.resolve()
     run_dir = run_dir.resolve()
     _require_regular_directory(repo_root, "repository root")
     _require_regular_directory(run_dir, "benchmark run directory")
-    output_dir = _require_regular_directory(run_dir / "output", "benchmark output directory")
-    evidence_dir = _require_regular_directory(run_dir / "evidence", "benchmark evidence directory")
+    output_dir = _require_regular_directory(
+        run_dir / "output", "benchmark output directory"
+    )
+    evidence_dir = _require_regular_directory(
+        run_dir / "evidence", "benchmark evidence directory"
+    )
     if any(output_dir.iterdir()):
         raise ContractError("benchmark output directory must be empty before generation")
 
@@ -618,6 +923,7 @@ def run_generation(
         },
         "roles": {},
         "selection": None,
+        "mechanical": None,
         "output": None,
     }
     step = "prepare"
@@ -643,7 +949,12 @@ def run_generation(
             _write_json(generation_root / "selected-direction.json", selection)
             report["selection"] = {
                 key: selection[key]
-                for key in ("selectionMethod", "assignment", "assignmentSha256", "assignedIndex")
+                for key in (
+                    "selectionMethod",
+                    "assignment",
+                    "assignmentSha256",
+                    "assignedIndex",
+                )
             }
 
             step = "direct"
@@ -700,16 +1011,38 @@ def run_generation(
             report["roles"]["impeccable"] = impeccable_receipt
             bundle = _load_json(bundle_path, "Impeccable bundle")
         else:
-            raise ContractError(f"unsupported comparison workflow: {lane['workflow']}")
+            raise ContractError(
+                f"unsupported comparison workflow: {lane['workflow']}"
+            )
 
         step = "validate-bundle"
         validated_files = contract.validate_bundle(bundle)
-        step = "publish"
-        output_manifest = _publish_bundle(
+        staging, output_manifest = _stage_bundle(
             generation_root=generation_root,
-            output_dir=output_dir,
             files=validated_files,
         )
+
+        if lane["workflow"] == "design-studio":
+            step = "mechanical-preflight"
+            mechanical_receipt = mechanical_runner(
+                MechanicalInvocation(
+                    provider=lane["mechanicalProvider"],
+                    run_dir=run_dir,
+                    site_dir=staging,
+                    output_dir_existed=any(output_dir.iterdir()),
+                    evidence_dir=generation_root / "mechanical",
+                    impeccable_root=impeccable_root,
+                    design_revision=design_revision,
+                    impeccable_revision=impeccable_revision,
+                )
+            )
+            report["mechanical"] = _validated_mechanical_receipt(
+                mechanical_receipt,
+                lane["mechanicalProvider"],
+            )
+
+        step = "publish"
+        _publish_staged_bundle(staging=staging, output_dir=output_dir)
         report["status"] = "generated"
         report["finishedAt"] = utc_now()
         report["output"] = {
@@ -719,23 +1052,33 @@ def run_generation(
         }
         _write_json(report_path, report)
         return report
-    except Exception as exc:
+    except Exception as original_error:
+        was_blocked = isinstance(original_error, CapabilityBlocked)
+        if isinstance(original_error, ContractError):
+            final_error: ContractError = original_error
+        else:
+            final_error = ContractError(
+                f"{step} failed: {type(original_error).__name__}: {original_error}"
+            )
         try:
             _reset_output(output_dir)
         except Exception as cleanup_error:
-            exc = ContractError(f"{exc}; output cleanup failed: {cleanup_error}")
-        status = "blocked" if isinstance(exc, CapabilityBlocked) else "failed"
+            message = f"{final_error}; output cleanup failed: {cleanup_error}"
+            final_error = (
+                CapabilityBlocked(message)
+                if was_blocked
+                else ContractError(message)
+            )
+        status = "blocked" if was_blocked else "failed"
         report["status"] = status
         report["finishedAt"] = utc_now()
         report["error"] = {
             "step": step,
-            "kind": "capability-blocked" if status == "blocked" else "contract",
-            "message": str(exc),
+            "kind": "capability-blocked" if was_blocked else "contract",
+            "message": str(final_error),
         }
         _write_json(report_path, report)
-        if isinstance(exc, ContractError):
-            raise
-        raise ContractError(f"{step} failed: {type(exc).__name__}: {exc}") from exc
+        raise final_error
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -775,6 +1118,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=capability.DEFAULT_COPILOT_VERSION,
     )
     parser.add_argument("--model", default="auto")
+    parser.add_argument("--node-bin", default="node")
     return parser
 
 
@@ -794,6 +1138,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             design_revision=args.design_revision,
             impeccable_revision=args.impeccable_revision,
             role_runner=runner,
+            mechanical_runner=ComparisonMechanicalRunner(
+                node_bin=args.node_bin,
+            ),
         )
     except CapabilityBlocked as exc:
         print(json.dumps({"status": "blocked", "error": str(exc)}, sort_keys=True))
@@ -807,7 +1154,9 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "status": report["status"],
                 "runId": report["runId"],
                 "lane": report["lane"]["id"],
-                "report": str((args.run_dir / "evidence" / "generation-report.json").resolve()),
+                "report": str(
+                    (args.run_dir / "evidence" / "generation-report.json").resolve()
+                ),
             },
             sort_keys=True,
         )
