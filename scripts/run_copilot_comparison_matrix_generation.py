@@ -17,15 +17,10 @@ SCRIPT_PATH = Path(__file__).resolve()
 REPO_ROOT = SCRIPT_PATH.parents[1]
 BENCHMARK_PATH = SCRIPT_PATH.with_name("run_boundary_benchmark.py")
 MATRIX_PATH = SCRIPT_PATH.with_name("run_boundary_benchmark_matrix.py")
-AUTO_CAPABILITY_PATH = (
-    Path("benchmarks")
-    / "milestone-0"
-    / "evidence"
-    / "copilot-cli-agent-capability.json"
-)
 SUMMARY_SCHEMA_VERSION = 1
 ALL = "all"
-AUTO = "auto"
+DEFAULT_RUN_TIMEOUT_SECONDS = 360
+TIMEOUT_EXIT_CODE = 124
 
 
 def _load_module(name: str, path: Path):
@@ -69,8 +64,19 @@ def _require_revision(value: Any, label: str) -> str:
 
 def _require_model(value: Any) -> str:
     if not isinstance(value, str) or not value.strip():
-        raise ContractError("comparison generation requires a non-empty model policy")
-    return value.strip()
+        raise ContractError("comparison generation requires an explicit model")
+    model = value.strip()
+    if model.lower() == "auto":
+        raise ContractError(
+            "comparison generation requires an explicit model; auto is only admissible for capability probing"
+        )
+    return model
+
+
+def _require_run_timeout(value: Any) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+        raise ContractError("run timeout must be a positive integer number of seconds")
+    return value
 
 
 def _require_text(value: Any, label: str) -> str:
@@ -92,8 +98,9 @@ def git_revision(root: Path) -> str:
     if completed.returncode != 0:
         message = completed.stderr.strip() or completed.stdout.strip()
         raise ContractError(f"cannot resolve git revision for {root}: {message}")
-    revision = completed.stdout.strip()
-    return _require_revision(revision, f"resolved revision for {root}")
+    return _require_revision(
+        completed.stdout.strip(), f"resolved revision for {root}"
+    )
 
 
 def _frontmatter_version(path: Path) -> str:
@@ -182,71 +189,6 @@ def build_lane_tools(
     }
 
 
-def _verified_model_policy(
-    *,
-    repo_root: Path,
-    requested_model: str,
-    copilot_version: str,
-) -> dict[str, Any]:
-    requested_model = _require_model(requested_model)
-    copilot_version = _require_text(copilot_version, "Copilot CLI version")
-    if requested_model.lower() != AUTO:
-        return {
-            "requestedModel": requested_model,
-            "mode": "fixed",
-            "capabilityReceipt": None,
-            "capabilityHeadSha": None,
-            "verifiedRoleModels": None,
-        }
-
-    receipt_path = repo_root / AUTO_CAPABILITY_PATH
-    if receipt_path.is_symlink() or not receipt_path.is_file():
-        raise ContractError(
-            f"verified auto capability receipt is missing or unsafe: {receipt_path}"
-        )
-    receipt = benchmark.load_json(receipt_path, "Copilot CLI agent capability")
-    surface = receipt.get("executionSurface")
-    if (
-        receipt.get("status") != "passed"
-        or receipt.get("requestedModel") != AUTO
-        or receipt.get("modelPolicy") != "auto-per-role"
-        or not isinstance(surface, dict)
-        or surface.get("name") != "github-copilot-cli"
-        or surface.get("version") != copilot_version
-    ):
-        raise ContractError(
-            "verified auto capability receipt does not match the requested Copilot execution surface"
-        )
-    versions = receipt.get("versions")
-    if not isinstance(versions, dict) or versions.get("copilot") != copilot_version:
-        raise ContractError(
-            "verified auto capability receipt has no matching Copilot version receipt"
-        )
-    roles = receipt.get("roles")
-    if not isinstance(roles, list) or not roles:
-        raise ContractError("verified auto capability receipt has no role evidence")
-    verified_models: dict[str, str] = {}
-    for role in roles:
-        if not isinstance(role, dict) or role.get("status") != "passed":
-            raise ContractError("verified auto capability receipt contains a failed role")
-        name = _require_text(role.get("role"), "capability role name")
-        resolved = _require_text(
-            role.get("resolvedModel"), f"capability role {name} resolved model"
-        )
-        if resolved.lower() == AUTO:
-            raise ContractError(
-                f"verified auto capability role {name!r} has no concrete resolved model"
-            )
-        verified_models[name] = resolved
-    return {
-        "requestedModel": AUTO,
-        "mode": "auto-per-role",
-        "capabilityReceipt": AUTO_CAPABILITY_PATH.as_posix(),
-        "capabilityHeadSha": receipt.get("headSha"),
-        "verifiedRoleModels": dict(sorted(verified_models.items())),
-    }
-
-
 def _manifest(repo_root: Path) -> dict[str, Any]:
     return benchmark.load_json(
         repo_root / benchmark.SUITE_ROOT / "manifest.json",
@@ -329,8 +271,10 @@ def build_lane_command(
     copilot_version: str,
     model: str,
     node_bin: str,
+    run_timeout_seconds: int = DEFAULT_RUN_TIMEOUT_SECONDS,
 ) -> list[str]:
     model = _require_model(model)
+    run_timeout_seconds = _require_run_timeout(run_timeout_seconds)
     values = {
         "copilot_bin": copilot_bin,
         "copilot_version": copilot_version,
@@ -338,10 +282,17 @@ def build_lane_command(
     }
     for label, value in values.items():
         _require_text(value, label)
+
     lane_script = repo_root / "scripts" / "run_copilot_comparison_lane.py"
     if lane_script.is_symlink() or not lane_script.is_file():
         raise ContractError(f"Copilot lane runner is missing or unsafe: {lane_script}")
-    return [
+    deadline_script = repo_root / "scripts" / "run_with_deadline.py"
+    if deadline_script.is_symlink() or not deadline_script.is_file():
+        raise ContractError(
+            f"comparison deadline runner is missing or unsafe: {deadline_script}"
+        )
+
+    lane_command = [
         sys.executable,
         str(lane_script.resolve()),
         "--repo-root",
@@ -363,6 +314,14 @@ def build_lane_command(
         "--node-bin",
         node_bin,
     ]
+    return [
+        sys.executable,
+        str(deadline_script.resolve()),
+        "--timeout-seconds",
+        str(run_timeout_seconds),
+        "--",
+        *lane_command,
+    ]
 
 
 def _relative(output_root: Path, path: Path) -> str:
@@ -382,8 +341,8 @@ def _generation_report(run_dir: Path) -> tuple[Path, dict[str, Any]]:
 def _validate_role_models(
     run: dict[str, Any],
     report: dict[str, Any],
-    model_policy: dict[str, Any],
-) -> dict[str, str]:
+    expected_model: str,
+) -> str:
     lane = run.get("lane")
     lane_id = lane.get("id") if isinstance(lane, dict) else None
     expected_roles = (
@@ -398,37 +357,25 @@ def _validate_role_models(
             "generation report does not contain the exact expected role model receipts: "
             f"expected={sorted(expected_roles)}, got={got}"
         )
-    requested_model = model_policy["requestedModel"]
-    resolved_models: dict[str, str] = {}
     for role in sorted(expected_roles):
         receipt = roles.get(role)
         if not isinstance(receipt, dict) or receipt.get("status") != "passed":
             raise ContractError(f"generation role {role!r} has no passed receipt")
         requested = receipt.get("requestedModel")
         resolved = receipt.get("resolvedModel")
-        if requested != requested_model:
+        if requested != expected_model or resolved != expected_model:
             raise ContractError(
-                f"generation role {role!r} requested {requested!r}; expected {requested_model!r}"
+                f"generation role {role!r} requested {requested!r} and resolved {resolved!r}; "
+                f"the frozen comparison requires {expected_model!r}"
             )
-        if not isinstance(resolved, str) or not resolved.strip() or resolved.lower() == AUTO:
-            raise ContractError(
-                f"generation role {role!r} has no concrete resolved model"
-            )
-        resolved = resolved.strip()
-        if model_policy["mode"] == "fixed" and resolved != requested_model:
-            raise ContractError(
-                f"generation role {role!r} requested {requested_model!r} "
-                f"but resolved {resolved!r}"
-            )
-        resolved_models[role] = resolved
-    return resolved_models
+    return expected_model
 
 
 def _validate_generated_run(
     run_dir: Path,
     expected_run_id: str,
-    model_policy: dict[str, Any],
-) -> tuple[Path, dict[str, Any], list[str], dict[str, str]]:
+    expected_model: str,
+) -> tuple[Path, dict[str, Any], list[str], str]:
     run = benchmark.load_json(run_dir / "run.json", "generated run manifest")
     if run.get("runId") != expected_run_id:
         raise ContractError("generated run manifest does not match the selected run ID")
@@ -440,7 +387,7 @@ def _validate_generated_run(
     report_path, report = _generation_report(run_dir)
     if report.get("runId") != expected_run_id or report.get("status") != "generated":
         raise ContractError("generation report does not prove a generated selected run")
-    resolved_models = _validate_role_models(run, report, model_policy)
+    resolved_model = _validate_role_models(run, report, expected_model)
     fixture = benchmark.load_json(
         run_dir / "input" / "fixture.json", "generated run fixture"
     )
@@ -462,10 +409,45 @@ def _validate_generated_run(
     if not files:
         raise ContractError("generated output tree is empty")
     benchmark.validate_run(run_dir)
-    return report_path, report, files, resolved_models
+    return report_path, report, files, resolved_model
 
 
-def _classify_nonzero(run_dir: Path) -> tuple[str, Path | None, str]:
+def _terminalize_validation_failure(run_dir: Path, message: str) -> None:
+    run = benchmark.load_run(run_dir)
+    status = run.get("status")
+    if status == "failed":
+        benchmark.validate_run(run_dir)
+        return
+    if status != "awaiting-evidence":
+        raise ContractError(
+            "cannot terminalize generation validation from run state "
+            f"{status!r}"
+        )
+
+    failed_at = utc_now()
+    run["status"] = "failed"
+    run["generationValidationFailedAt"] = failed_at
+    benchmark.save_run(run_dir, run)
+    artifact_paths = ["evidence/execution.json", "output"]
+    report_path = run_dir / "evidence" / "generation-report.json"
+    if report_path.is_file() and not report_path.is_symlink():
+        artifact_paths.append("evidence/generation-report.json")
+    benchmark.append_event(
+        run_dir,
+        step="generation-validation",
+        status="failed",
+        message=message,
+        artifact_paths=artifact_paths,
+    )
+    benchmark.validate_run(run_dir)
+
+
+def _classify_nonzero(
+    run_dir: Path,
+    *,
+    exit_code: int,
+    run_timeout_seconds: int,
+) -> tuple[str, Path | None, str]:
     report_path = run_dir / "evidence" / "generation-report.json"
     if report_path.is_file() and not report_path.is_symlink():
         report = benchmark.load_json(report_path, "failed generation report")
@@ -475,6 +457,12 @@ def _classify_nonzero(run_dir: Path) -> tuple[str, Path | None, str]:
         if not isinstance(message, str) or not message.strip():
             message = f"lane command reported {report.get('status')!r}"
         return status, report_path, message.strip()
+    if exit_code == TIMEOUT_EXIT_CODE:
+        return (
+            "failed",
+            None,
+            f"lane exceeded the shared {run_timeout_seconds}-second elapsed budget",
+        )
     return "failed", None, "lane command exited without a generation report"
 
 
@@ -499,6 +487,26 @@ def _write_summary(path: Path, summary: dict[str, Any]) -> None:
     benchmark.atomic_write_json(path, summary)
 
 
+def _terminalize_selected_awaiting_runs(
+    *,
+    output_root: Path,
+    summary: dict[str, Any],
+    message: str,
+) -> None:
+    for result in summary["runs"]:
+        run_dir = benchmark.ensure_inside(
+            output_root,
+            output_root / result["runDir"],
+            "selected matrix run",
+        )
+        run = benchmark.load_run(run_dir)
+        if run.get("status") != "awaiting-evidence":
+            continue
+        _terminalize_validation_failure(run_dir, message)
+        result["status"] = "failed"
+        result["error"] = message
+
+
 def generate_matrix(
     *,
     repo_root: Path,
@@ -514,17 +522,15 @@ def generate_matrix(
     copilot_version: str = "1.0.74",
     node_bin: str = "node",
     continue_on_error: bool = False,
+    run_timeout_seconds: int = DEFAULT_RUN_TIMEOUT_SECONDS,
     revision_resolver: RevisionResolver = git_revision,
     run_executor: RunExecutor | None = None,
 ) -> dict[str, Any]:
     repo_root = _require_directory(repo_root, "repository root")
     impeccable_root = _require_directory(impeccable_root, "Impeccable root")
     output_root = output_root.resolve()
-    model_policy = _verified_model_policy(
-        repo_root=repo_root,
-        requested_model=model,
-        copilot_version=copilot_version,
-    )
+    model = _require_model(model)
+    run_timeout_seconds = _require_run_timeout(run_timeout_seconds)
     fixture_id, lane_id = validate_selection(repo_root, fixture_id, lane_id)
     tools = build_lane_tools(
         repo_root=repo_root,
@@ -554,7 +560,12 @@ def generate_matrix(
         "updatedAt": None,
         "finishedAt": None,
         "matrix": _relative(output_root, matrix_path),
-        "modelPolicy": model_policy,
+        "model": model,
+        "executionPolicy": {
+            "maximumElapsedSecondsPerRun": run_timeout_seconds,
+            "timeoutExitCode": TIMEOUT_EXIT_CODE,
+            "deadlineRunner": "scripts/run_with_deadline.py",
+        },
         "selection": {
             "fixture": fixture_id,
             "lane": lane_id,
@@ -575,11 +586,12 @@ def generate_matrix(
                 "fixture": entry["fixture"]["id"],
                 "lane": entry["lane"]["id"],
                 "runDir": entry["runDir"],
+                "maximumElapsedSeconds": run_timeout_seconds,
                 "status": "not-run",
                 "exitCode": None,
                 "execution": None,
                 "generationReport": None,
-                "resolvedModels": {},
+                "resolvedModel": None,
                 "outputFiles": [],
                 "error": None,
             }
@@ -604,8 +616,9 @@ def generate_matrix(
             impeccable_revision=impeccable_revision,
             copilot_bin=copilot_bin,
             copilot_version=copilot_version,
-            model=model_policy["requestedModel"],
+            model=model,
             node_bin=node_bin,
+            run_timeout_seconds=run_timeout_seconds,
         )
         result["status"] = "running"
         _write_summary(summary_path, summary)
@@ -618,27 +631,39 @@ def generate_matrix(
             if execution_path.is_file() and not execution_path.is_symlink():
                 result["execution"] = _relative(output_root, execution_path)
             if exit_code == 0:
-                report_path, _report, output_files, resolved_models = (
-                    _validate_generated_run(
-                        run_dir,
-                        planned["runId"],
-                        model_policy,
-                    )
+                report_path, _report, output_files, resolved_model = (
+                    _validate_generated_run(run_dir, planned["runId"], model)
                 )
                 result["status"] = "generated"
                 result["generationReport"] = _relative(output_root, report_path)
-                result["resolvedModels"] = resolved_models
+                result["resolvedModel"] = resolved_model
                 result["outputFiles"] = output_files
             else:
-                status, report_path, message = _classify_nonzero(run_dir)
+                status, report_path, message = _classify_nonzero(
+                    run_dir,
+                    exit_code=exit_code,
+                    run_timeout_seconds=run_timeout_seconds,
+                )
                 result["status"] = status
                 result["generationReport"] = (
                     _relative(output_root, report_path) if report_path else None
                 )
                 result["error"] = message
         except Exception as exc:
+            error = f"{type(exc).__name__}: {exc}"
+            if result.get("exitCode") == 0:
+                try:
+                    _terminalize_validation_failure(
+                        run_dir,
+                        "Zero-exit generation failed validation: " + error,
+                    )
+                except Exception as terminal_error:
+                    error += (
+                        "; terminalization failed: "
+                        f"{type(terminal_error).__name__}: {terminal_error}"
+                    )
             result["status"] = "failed"
-            result["error"] = f"{type(exc).__name__}: {exc}"
+            result["error"] = error
         _write_summary(summary_path, summary)
         if result["status"] in {"blocked", "failed"} and not continue_on_error:
             for remaining in summary["runs"][index + 1 :]:
@@ -651,16 +676,24 @@ def generate_matrix(
             matrix_path, repo_root=repo_root
         )
     except Exception as exc:
-        summary["matrixValidation"] = {
-            "status": "failed",
-            "error": f"{type(exc).__name__}: {exc}",
-        }
+        error = f"{type(exc).__name__}: {exc}"
+        summary["matrixValidation"] = {"status": "failed", "error": error}
+        terminal_message = "Matrix validation failed after generation: " + error
+        try:
+            _terminalize_selected_awaiting_runs(
+                output_root=output_root,
+                summary=summary,
+                message=terminal_message,
+            )
+        except Exception as terminal_error:
+            terminal_message += (
+                "; terminalization failed: "
+                f"{type(terminal_error).__name__}: {terminal_error}"
+            )
         if not any(entry["status"] == "failed" for entry in summary["runs"]):
             summary["runs"][0]["status"] = "failed"
-            summary["runs"][0]["error"] = (
-                "matrix validation failed after generation: "
-                f"{type(exc).__name__}: {exc}"
-            )
+            summary["runs"][0]["error"] = terminal_message
+
     summary["finishedAt"] = utc_now()
     _write_summary(summary_path, summary)
     return summary
@@ -681,12 +714,17 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--impeccable-root", type=Path, required=True)
     parser.add_argument("--design-revision", required=True)
     parser.add_argument("--impeccable-revision", required=True)
-    parser.add_argument("--fixture", default=ALL)
-    parser.add_argument("--lane", default=ALL)
+    parser.add_argument("--fixture", default="marketing-surface")
+    parser.add_argument("--lane", default="design-studio-current")
     parser.add_argument("--copilot-bin", default="copilot")
     parser.add_argument("--copilot-version", default="1.0.74")
-    parser.add_argument("--model", default=AUTO)
+    parser.add_argument("--model", required=True)
     parser.add_argument("--node-bin", default="node")
+    parser.add_argument(
+        "--run-timeout-seconds",
+        type=int,
+        default=DEFAULT_RUN_TIMEOUT_SECONDS,
+    )
     parser.add_argument("--continue-on-error", action="store_true")
     return parser
 
@@ -711,6 +749,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             copilot_version=args.copilot_version,
             node_bin=args.node_bin,
             continue_on_error=args.continue_on_error,
+            run_timeout_seconds=args.run_timeout_seconds,
         )
     except ContractError as exc:
         print(json.dumps({"status": "failed", "error": str(exc)}, sort_keys=True))
