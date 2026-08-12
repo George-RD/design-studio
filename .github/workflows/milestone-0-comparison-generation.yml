@@ -41,6 +41,7 @@ permissions:
 env:
   COPILOT_CLI_VERSION: "1.0.74"
   IMPECCABLE_REVISION: "aee6ce9352b842217b3f57c78296a7a4fa35a7f3"
+  RUN_TIMEOUT_SECONDS: "360"
   OUTPUT_ROOT: harness-output/benchmarks/milestone-0
 
 jobs:
@@ -49,13 +50,13 @@ jobs:
     timeout-minutes: 180
     steps:
       - name: Check out exact Design Studio revision
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
 
       - name: Check out pinned Impeccable revision
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: pbakaus/impeccable
           ref: ${{ env.IMPECCABLE_REVISION }}
@@ -67,18 +68,14 @@ jobs:
         with:
           node-version: 24
 
-      - name: Setup pinned Bun
+      - name: Use pinned Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.3.14
 
       - name: Install pinned Impeccable dependencies
         working-directory: vendor/impeccable
-        run: |
-          set -euo pipefail
-          bun --version | tee ../../bun-version.txt
-          grep -Fx "1.3.14" ../../bun-version.txt
-          bun install --frozen-lockfile --ignore-scripts
+        run: bun install --frozen-lockfile --ignore-scripts
 
       - name: Install pinned Copilot CLI
         run: |
@@ -116,6 +113,7 @@ jobs:
             --lane "${SELECTED_LANE}"
             --copilot-version "${COPILOT_CLI_VERSION}"
             --model "${SELECTED_MODEL}"
+            --run-timeout-seconds "${RUN_TIMEOUT_SECONDS}"
           )
           if [[ "${CONTINUE_ON_ERROR}" == "true" ]]; then
             args+=(--continue-on-error)
@@ -143,7 +141,6 @@ jobs:
           name: milestone-0-comparison-generation-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             ${{ env.OUTPUT_ROOT }}
-            bun-version.txt
             copilot-version.txt
           if-no-files-found: error
           retention-days: 30
