@@ -45,5 +45,5 @@ jobs:
       - name: Validate ownership boundary
         run: |
           set -euo pipefail
-          python3 -m unittest test.test_milestone_0_ownership_inventory -v
+          python3 -m unittest discover -s test -p 'test_milestone_0_ownership_inventory.py' -v
           python3 -m json.tool benchmarks/milestone-0/ownership-inventory.json > /dev/null
