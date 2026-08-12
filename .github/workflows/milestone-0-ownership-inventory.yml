@@ -1,0 +1,49 @@
+name: Validate Milestone 0 ownership inventory
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "ROADMAP.md"
+      - "agents/**"
+      - "commands/**"
+      - "references/**"
+      - "skills/design-studio/**"
+      - "benchmarks/milestone-0/OWNERSHIP_INVENTORY.md"
+      - "benchmarks/milestone-0/ownership-inventory.json"
+      - "test/test_milestone_0_ownership_inventory.py"
+      - ".github/workflows/milestone-0-ownership-inventory.yml"
+  push:
+    branches: [main]
+    paths:
+      - "ROADMAP.md"
+      - "agents/**"
+      - "commands/**"
+      - "references/**"
+      - "skills/design-studio/**"
+      - "benchmarks/milestone-0/OWNERSHIP_INVENTORY.md"
+      - "benchmarks/milestone-0/ownership-inventory.json"
+      - "test/test_milestone_0_ownership_inventory.py"
+      - ".github/workflows/milestone-0-ownership-inventory.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out exact revision
+        uses: actions/checkout@v5
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Validate ownership boundary
+        run: |
+          set -euo pipefail
+          python3 -m unittest test.test_milestone_0_ownership_inventory -v
+          python3 -m json.tool benchmarks/milestone-0/ownership-inventory.json > /dev/null
