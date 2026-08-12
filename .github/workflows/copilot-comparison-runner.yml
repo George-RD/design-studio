@@ -7,9 +7,12 @@ on:
       - "scripts/run_copilot_comparison.py"
       - "scripts/run_copilot_comparison_lane.py"
       - "scripts/run_copilot_comparison_matrix_generation.py"
+      - "scripts/run_with_deadline.py"
       - "test/test_copilot_comparison_runner.py"
       - "test/test_copilot_comparison_lane.py"
       - "test/test_copilot_comparison_matrix_generation.py"
+      - "test/test_copilot_comparison_generation_safety.py"
+      - "test/test_copilot_comparison_deadline.py"
       - "test/test_copilot_comparison_workflow_dependencies.py"
       - ".github/workflows/copilot-comparison-runner.yml"
       - ".github/workflows/milestone-0-comparison-generation.yml"
@@ -24,7 +27,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Check out exact revision
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -37,4 +40,5 @@ jobs:
           python3 -m py_compile \
             scripts/run_copilot_comparison.py \
             scripts/run_copilot_comparison_lane.py \
-            scripts/run_copilot_comparison_matrix_generation.py
+            scripts/run_copilot_comparison_matrix_generation.py \
+            scripts/run_with_deadline.py
