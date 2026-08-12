@@ -18,6 +18,7 @@ DESIGN_REVISION = "d" * 40
 IMPECCABLE_REVISION = "e" * 40
 MISMATCH_REVISION = "c" * 40
 MODEL = "test-model"
+RUN_TIMEOUT_SECONDS = 360
 
 
 def load_generation_runner():
@@ -53,6 +54,12 @@ class CopilotComparisonMatrixGenerationTests(unittest.TestCase):
             "validate_benchmark_fixtures.py",
         ):
             shutil.copy2(REPO_ROOT / "scripts" / name, scripts / name)
+        deadline_source = REPO_ROOT / "scripts" / "run_with_deadline.py"
+        deadline_target = scripts / "run_with_deadline.py"
+        if deadline_source.is_file():
+            shutil.copy2(deadline_source, deadline_target)
+        else:
+            deadline_target.write_text("", encoding="utf-8")
         impeccable = root / "vendor" / "impeccable"
         for path, text in {
             impeccable / "package.json": json.dumps(
@@ -168,6 +175,9 @@ class CopilotComparisonMatrixGenerationTests(unittest.TestCase):
             model=kwargs.pop("model", MODEL),
             node_bin="node",
             continue_on_error=kwargs.pop("continue_on_error", False),
+            run_timeout_seconds=kwargs.pop(
+                "run_timeout_seconds", RUN_TIMEOUT_SECONDS
+            ),
             revision_resolver=self.revision_resolver,
             **kwargs,
         )
@@ -254,6 +264,10 @@ class CopilotComparisonMatrixGenerationTests(unittest.TestCase):
 
         self.assertEqual("generated", summary["status"])
         self.assertEqual(MODEL, summary["model"])
+        self.assertEqual(
+            RUN_TIMEOUT_SECONDS,
+            summary["executionPolicy"]["maximumElapsedSecondsPerRun"],
+        )
         self.assertEqual({"generated": 1}, summary["runStatuses"])
         self.assertEqual(MODEL, summary["runs"][0]["resolvedModel"])
         self.assertEqual(1, len(calls))
@@ -262,7 +276,12 @@ class CopilotComparisonMatrixGenerationTests(unittest.TestCase):
         self.assertEqual((calls[0]["runDir"] / "work").resolve(), calls[0]["cwd"])
         command = calls[0]["argv"]
         self.assertEqual(sys.executable, command[0])
-        self.assertIn("run_copilot_comparison_lane.py", command[1])
+        self.assertIn("run_with_deadline.py", command[1])
+        timeout_index = command.index("--timeout-seconds")
+        self.assertEqual(str(RUN_TIMEOUT_SECONDS), command[timeout_index + 1])
+        separator = command.index("--")
+        self.assertEqual(sys.executable, command[separator + 1])
+        self.assertIn("run_copilot_comparison_lane.py", command[separator + 2])
         self.assertIn(DESIGN_REVISION, command)
         self.assertIn(IMPECCABLE_REVISION, command)
         self.assertIn(MODEL, command)
@@ -304,6 +323,13 @@ class CopilotComparisonMatrixGenerationTests(unittest.TestCase):
         observed = [(call["fixture"], call["lane"]) for call in calls]
         self.assertEqual(summary["selectedPairs"], [list(pair) for pair in observed])
         self.assertEqual({MODEL}, {entry["resolvedModel"] for entry in summary["runs"]})
+        self.assertEqual(
+            {str(RUN_TIMEOUT_SECONDS)},
+            {
+                call["argv"][call["argv"].index("--timeout-seconds") + 1]
+                for call in calls
+            },
+        )
 
     def test_blocked_run_is_preserved_and_stops_unrequested_spend(self) -> None:
         calls = []
@@ -353,11 +379,13 @@ class CopilotComparisonMatrixGenerationTests(unittest.TestCase):
             'IMPECCABLE_REVISION: "aee6ce9352b842217b3f57c78296a7a4fa35a7f3"',
             workflow,
         )
+        self.assertIn('RUN_TIMEOUT_SECONDS: "360"', workflow)
         self.assertIn("copilot-requests: write", workflow)
         self.assertIn("if: always()", workflow)
         self.assertIn("actions/upload-artifact@v4", workflow)
         self.assertIn("--fixture", workflow)
         self.assertIn("--lane", workflow)
+        self.assertIn("--run-timeout-seconds", workflow)
         self.assertIn("--continue-on-error", workflow)
         self.assertIn("Exact Copilot model", workflow)
         self.assertNotIn("default: auto", workflow)
