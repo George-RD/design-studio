@@ -74,9 +74,9 @@ The architectural change is useful only when all of these are true:
   - [ ] current Design Studio;
   - [ ] current Design Studio with Impeccable enabled.
 - [ ] Record output preference, task clarity, originality, functional defects, elapsed time, token/tool cost, failed steps and recovery effort.
-- [ ] Inventory every Design Studio step, reference, schema and check. Label each item `core`, `impeccable`, `external-workflow`, `compatibility` or `delete`.
-- [ ] Identify workflows that only reproduce an Impeccable command and mark them for delegation or removal.
-- [ ] Confirm the smallest differentiated product: orchestration, source isolation, evidence, resume, selection and composition.
+- [x] Inventory every Design Studio step, reference, schema and check. Label each item `core`, `impeccable`, `external-workflow`, `compatibility` or `delete`. Evidence: [machine-readable ownership inventory](benchmarks/milestone-0/ownership-inventory.json), [decision summary](benchmarks/milestone-0/OWNERSHIP_INVENTORY.md) and [contract test](test/test_milestone_0_ownership_inventory.py).
+- [x] Identify workflows that only reproduce an Impeccable command and mark them for delegation or removal. Evidence: [Review and detector delegation map](benchmarks/milestone-0/OWNERSHIP_INVENTORY.md#delegate-to-impeccable) and the corresponding `impeccable` and `delete` labels in the [machine-readable inventory](benchmarks/milestone-0/ownership-inventory.json).
+- [ ] Confirm the smallest differentiated product: orchestration, source isolation, evidence, resume, selection and composition. Current hypothesis: source-blind direction, immutable source-aware implementation, source-blind browser evaluation, resumable evidence and one final decision. Confirmation waits on fixed-lane comparison evidence. Evidence: [provisional boundary](benchmarks/milestone-0/OWNERSHIP_INVENTORY.md#decision).
 
 **Exit:** there is an evidence-backed keep/delete/delegate map. The roadmap may change if Design Studio does not add enough value over Impeccable alone.
 
