@@ -23,17 +23,17 @@ This remains a **provisional boundary** until the fixed three-lane comparison su
 |---|---:|
 | Workflow steps | 28 |
 | Schemas | 8 |
-| Runtime references and compatibility surfaces | 28 |
+| Runtime references and compatibility surfaces | 30 |
 | Check families | 25 |
 | Enumerated checks inside those families | 156 |
-| **Total labelled items** | **89** |
+| **Total labelled items** | **91** |
 
 | Label | Items | Disposition |
 |---|---:|---|
 | `core` | 52 | Keep and simplify around one authority |
 | `impeccable` | 25 | Delegate through the versioned Impeccable adapter |
 | `external-workflow` | 2 | Delegate; retain only routing, inputs, outputs and evidence |
-| `compatibility` | 7 | Retain temporarily while callers migrate |
+| `compatibility` | 9 | Retain temporarily while callers migrate |
 | `delete` | 3 | Remove after the replacement path is verified |
 
 CI validates that every current workflow step, schema and canonical reference is present exactly once, that all labels have the permitted action, and that every non-core item names its target.
@@ -84,6 +84,7 @@ It should not maintain a second customer-copy methodology.
 
 ### Retain temporarily
 
+- `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`: Claude Code installation and marketplace registration surfaces; they mirror canonical skill metadata and do not own workflow behavior.
 - `references/planning.md`, `references/evaluation.md` and `references/iteration.md`: explicit aliases to canonical workflow or agent authorities.
 - top-level `agents/*.md`: thin plugin registration stubs.
 - `commands/create.md`: thin platform command over the canonical Studio lane.
