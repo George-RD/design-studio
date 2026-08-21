@@ -108,6 +108,8 @@ class MilestoneZeroOwnershipInventoryTests(unittest.TestCase):
         }
         expected.update(
             {
+                ".claude-plugin/plugin.json",
+                ".claude-plugin/marketplace.json",
                 "skills/design-studio/SKILL.md",
                 "skills/design-studio/workflow.yaml",
                 "skills/design-studio/agents/design-agent.md",
