@@ -128,9 +128,14 @@ def _load_completed_entry(
         )
     if run.get("runId") != entry.get("runId"):
         raise ContractError("completed run does not match the matrix run ID")
-    if run.get("fixture") != entry.get("fixture"):
+    run_fixture = run.get("fixture")
+    if not isinstance(run_fixture, dict) or {
+        "id": run_fixture.get("id"),
+        "version": run_fixture.get("version"),
+    } != entry.get("fixture"):
         raise ContractError("completed run does not match the matrix fixture")
-    if run.get("lane") != entry.get("lane"):
+    run_lane = run.get("lane")
+    if not isinstance(run_lane, dict) or run_lane.get("id") != entry.get("lane", {}).get("id"):
         raise ContractError("completed run does not match the matrix lane")
     if run.get("suite") != matrix_suite:
         raise ContractError("completed run does not match the matrix suite provenance")
