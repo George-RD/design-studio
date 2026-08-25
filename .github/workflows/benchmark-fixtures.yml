@@ -8,9 +8,11 @@ on:
       - "scripts/validate_benchmark_fixtures.py"
       - "scripts/run_boundary_benchmark.py"
       - "scripts/run_boundary_benchmark_matrix.py"
+      - "scripts/run_boundary_benchmark_preference.py"
       - "test/test_benchmark_fixtures.py"
       - "test/test_boundary_benchmark_run.py"
       - "test/test_boundary_benchmark_matrix.py"
+      - "test/test_boundary_benchmark_preference*.py"
       - ".github/workflows/benchmark-fixtures.yml"
   push:
     branches: [main]
@@ -19,9 +21,11 @@ on:
       - "scripts/validate_benchmark_fixtures.py"
       - "scripts/run_boundary_benchmark.py"
       - "scripts/run_boundary_benchmark_matrix.py"
+      - "scripts/run_boundary_benchmark_preference.py"
       - "test/test_benchmark_fixtures.py"
       - "test/test_boundary_benchmark_run.py"
       - "test/test_boundary_benchmark_matrix.py"
+      - "test/test_boundary_benchmark_preference*.py"
       - ".github/workflows/benchmark-fixtures.yml"
 
 permissions:
@@ -41,4 +45,7 @@ jobs:
       - name: Validate frozen fixtures and run lifecycle
         run: |
           python3 -m unittest discover -s test -p 'test_*benchmark*.py'
-          python3 -m py_compile scripts/run_boundary_benchmark.py scripts/run_boundary_benchmark_matrix.py
+          python3 -m py_compile \
+            scripts/run_boundary_benchmark.py \
+            scripts/run_boundary_benchmark_matrix.py \
+            scripts/run_boundary_benchmark_preference.py
