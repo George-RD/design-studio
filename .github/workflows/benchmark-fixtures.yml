@@ -12,7 +12,7 @@ on:
       - "test/test_benchmark_fixtures.py"
       - "test/test_boundary_benchmark_run.py"
       - "test/test_boundary_benchmark_matrix.py"
-      - "test/test_boundary_benchmark_preference.py"
+      - "test/test_boundary_benchmark_preference*.py"
       - ".github/workflows/benchmark-fixtures.yml"
   push:
     branches: [main]
@@ -25,7 +25,7 @@ on:
       - "test/test_benchmark_fixtures.py"
       - "test/test_boundary_benchmark_run.py"
       - "test/test_boundary_benchmark_matrix.py"
-      - "test/test_boundary_benchmark_preference.py"
+      - "test/test_boundary_benchmark_preference*.py"
       - ".github/workflows/benchmark-fixtures.yml"
 
 permissions:
