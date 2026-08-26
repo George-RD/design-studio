@@ -9,6 +9,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 ADR_PATH = ROOT / "docs" / "decisions" / "0002-owned-method-kernel.md"
 DECISION_INDEX_PATH = ROOT / "docs" / "decisions" / "README.md"
+README_PATH = ROOT / "README.md"
 ROADMAP_PATH = ROOT / "ROADMAP.md"
 SOURCES_PATH = ROOT / "docs" / "method-sources.json"
 FEEDBACK_PATH = ROOT / "docs" / "research" / "horaxon-feedback-patterns.json"
@@ -54,6 +55,17 @@ class OwnedMethodKernelDirectionTests(unittest.TestCase):
             index,
         )
 
+    def test_public_readme_matches_the_owned_kernel_direction(self) -> None:
+        """Primary user guidance must not advertise the superseded dependency plan."""
+        readme = README_PATH.read_text(encoding="utf-8")
+        self.assertIn("one self-contained Design Studio runtime", readme)
+        self.assertIn("external systems are research inputs", readme)
+        self.assertIn("ADR 0002", readme)
+        self.assertNotIn(
+            "The v1.6 roadmap makes a compatible Impeccable install required",
+            readme,
+        )
+
     def test_roadmap_moves_from_runtime_modes_to_one_curated_product(self) -> None:
         """The roadmap must retain evidence without restoring environment-dependent modes."""
         roadmap = ROADMAP_PATH.read_text(encoding="utf-8")
@@ -84,7 +96,7 @@ class OwnedMethodKernelDirectionTests(unittest.TestCase):
         self.assertEqual(1, registry["schemaVersion"])
         self.assertEqual("curated-local-kernel", registry["operatingModel"])
         self.assertEqual("manual-evidence-gated", registry["updatePolicy"])
-        self.assertFalse(registry["externalRuntimeDependencyAllowed"])
+        self.assertIs(registry["externalRuntimeDependencyAllowed"], False)
 
         registered = registry["sources"]
         self.assertIsInstance(registered, list)
@@ -110,7 +122,7 @@ class OwnedMethodKernelDirectionTests(unittest.TestCase):
                 self.assertIsInstance(source.get("license"), str)
                 self.assertTrue(source["license"].strip())
                 self.assertEqual("research-input", source.get("role"))
-                self.assertFalse(source.get("runtimeDependency"))
+                self.assertIs(source.get("runtimeDependency"), False)
                 self.assertIn(
                     source.get("currentDisposition"),
                     permitted_dispositions,
