@@ -78,6 +78,7 @@ class CopilotCliAgentReceiptTests(unittest.TestCase):
         self.assertTrue(checks["sourceIsolation"]["renderedCanaryAbsent"])
 
     def test_documentation_preserves_the_verified_surface_without_the_old_runtime_gate(self):
+        """Keep verified capability evidence while retiring the old lane requirement."""
         document = DOCUMENT.read_text(encoding="utf-8")
         roadmap = ROADMAP.read_text(encoding="utf-8")
         for marker in (
