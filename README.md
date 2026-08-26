@@ -102,11 +102,13 @@ harness-output/
 
 Completed iterations are immutable. A failed or interrupted run resumes from the first incomplete step after its recorded artifacts pass validation.
 
-## Impeccable integration
+## Current compatibility and v1.6 direction
 
 In the current v1.5 release, Impeccable is optional. When its CLI is available, Design Studio uses source, desktop and mobile detector passes for mechanical preflight. Without it, the workflow records `detector: fallback` and runs a smaller browser-computed gate.
 
-The v1.6 roadmap makes a compatible Impeccable install required, credited and versioned. Detector output remains mechanical evidence and never counts as visual judgement.
+The v1.6 roadmap removes this environment-dependent split. It targets one self-contained Design Studio runtime with a curated local method kernel. Impeccable and other external systems are research inputs: useful methods may be adapted or narrowly vendored with pinned provenance and licence records, but they are not required runtime foundations. See [ADR 0002](docs/decisions/0002-owned-method-kernel.md).
+
+Mechanical findings remain evidence. They never substitute for source-blind judgement of the rendered result.
 
 ## Requirements
 

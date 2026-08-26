@@ -1,0 +1,48 @@
+name: Validate owned method kernel
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "README.md"
+      - "ROADMAP.md"
+      - "docs/decisions/README.md"
+      - "docs/decisions/0001-impeccable-foundation.md"
+      - "docs/decisions/0002-owned-method-kernel.md"
+      - "docs/method-sources.json"
+      - "docs/research/horaxon-feedback-patterns.json"
+      - "test/test_owned_method_kernel_direction.py"
+      - ".github/workflows/method-kernel-direction.yml"
+  push:
+    branches: [main]
+    paths:
+      - "README.md"
+      - "ROADMAP.md"
+      - "docs/decisions/README.md"
+      - "docs/decisions/0001-impeccable-foundation.md"
+      - "docs/decisions/0002-owned-method-kernel.md"
+      - "docs/method-sources.json"
+      - "docs/research/horaxon-feedback-patterns.json"
+      - "test/test_owned_method_kernel_direction.py"
+      - ".github/workflows/method-kernel-direction.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  direction-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out exact revision
+        uses: actions/checkout@v5
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Validate the method-kernel direction
+        run: |
+          python3 -m unittest discover -s test -p 'test_owned_method_kernel_direction.py' -v
+          python3 -m json.tool docs/method-sources.json > /dev/null
+          python3 -m json.tool docs/research/horaxon-feedback-patterns.json > /dev/null
+          python3 -m py_compile test/test_owned_method_kernel_direction.py

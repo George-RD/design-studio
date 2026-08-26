@@ -77,7 +77,8 @@ class CopilotCliAgentReceiptTests(unittest.TestCase):
         self.assertTrue(checks["browser"]["finalStateStable"])
         self.assertTrue(checks["sourceIsolation"]["renderedCanaryAbsent"])
 
-    def test_documentation_and_roadmap_cite_the_receipt_without_completing_lanes(self):
+    def test_documentation_preserves_the_verified_surface_without_the_old_runtime_gate(self):
+        """Keep verified capability evidence while retiring the old lane requirement."""
         document = DOCUMENT.read_text(encoding="utf-8")
         roadmap = ROADMAP.read_text(encoding="utf-8")
         for marker in (
@@ -88,18 +89,14 @@ class CopilotCliAgentReceiptTests(unittest.TestCase):
             "gpt-5-mini",
         ):
             self.assertIn(marker, document)
+
         self.assertIn(
-            "[x] Verify a repository-scoped controlled agent execution surface",
+            "- [x] Controlled source-blind agent, browser and evidence capability gates.",
             roadmap,
         )
-        self.assertIn(
-            "[sanitized receipt](benchmarks/milestone-0/evidence/copilot-cli-agent-capability.json)",
-            roadmap,
-        )
-        self.assertIn("31257044809", roadmap)
-        self.assertIn("[ ] Impeccable alone", roadmap)
-        self.assertIn("[ ] current Design Studio", roadmap)
-        self.assertIn("[ ] current Design Studio with Impeccable enabled", roadmap)
+        self.assertIn("one supported runtime", roadmap)
+        self.assertIn("optional research comparison, not a release gate", roadmap)
+        self.assertNotIn("[ ] current Design Studio with Impeccable enabled", roadmap)
 
     def test_only_hardened_gate_is_an_executable_entrypoint(self):
         core_source = CORE_RUNNER.read_text(encoding="utf-8")

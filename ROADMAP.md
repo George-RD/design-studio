@@ -2,270 +2,282 @@
 
 ## Direction
 
-Design Studio will become a **design orchestration layer**, not another independent catalogue of frontend rules.
+Design Studio will become a **self-contained agentic design system with a curated method kernel**.
 
-Its job is to choose, combine and evaluate specialist design workflows while preserving the controls that make a run trustworthy:
+It will not expose separate quality paths depending on whether another design project is installed. Users get **one supported runtime**. Design Studio owns the workflow, the method selection, the evidence, the final judgement and the learning loop.
 
-- the agents choosing and judging a direction remain isolated from source code;
-- product truth, capabilities, costs and assumptions are recorded before work starts;
-- every material attempt survives;
-- mechanical evidence and visual judgement stay separate;
-- one component owns the final decision;
-- interrupted runs resume from validated artifacts;
-- the accepted result records which upstream tools and versions produced it.
+External systems remain valuable research sources. Impeccable, Emil Kowalski's skills, Growth Arsenal, Scroll World and later specialist work can contribute ideas, procedures or narrowly bounded implementation slices. Design Studio adopts only the parts that prove useful, reshapes them for progressive disclosure and role isolation, records their provenance, and periodically reviews upstream changes without silently synchronising them into live runs.
 
-**Impeccable becomes the required base design engine.** Design Studio should install and invoke it through a narrow, versioned adapter rather than reimplementing its design guidance, detector rules or provider support.
+The first user remains George. Repeated real projects and owner corrections are the main proving ground. The goal is not to remove human judgement entirely; it is to convert recurring, transferable corrections into a workflow that produces distinctive, coherent results with fewer feedback rounds.
 
-Specialist paradigms can then be added as workflow packs. Scroll World is the first serious candidate. Growth Arsenal copy is a smaller existing candidate. Design Studio owns the composition and evidence, while each upstream project continues to own its specialist method.
+The governing decision is [ADR 0002: Design Studio owns its method kernel](docs/decisions/0002-owned-method-kernel.md).
 
-The first user is George. Build around repeated real use before generalising the architecture for a broader marketplace.
+## Operating model
 
-## Product boundary
-
-| Layer | Owner |
+| Layer | Design Studio owns |
 |---|---|
-| Product and design guidance, deterministic frontend checks, generic design commands | Impeccable |
-| Run lifecycle, role isolation, workflow selection, immutable evidence, resume, final selection and acceptance | Design Studio |
-| Offer and customer-copy workflows | Growth Arsenal |
-| Scroll-cinematic story, scene chain, seam method and scrub runtime | Scroll World |
-| Model-specific image and video execution | Replaceable generation backends such as image generation, Veo, Higgsfield or Monid |
+| Product truth | Audience, outcome, constraints, proof, current state, settled decisions and required behaviour |
+| Direction | Source-blind divergence, named axes, governing metaphor and explicit trade-offs |
+| Method routing | A small always-loaded authority layer plus task-specific progressive-disclosure leaves |
+| Implementation | Source-aware building against the selected direction and real product constraints |
+| Mechanical evidence | A stable local set of justified deterministic checks |
+| Visual judgement | Source-blind rendered evaluation at component, whole-page and target-viewport levels |
+| Acceptance | Immutable attempts, one decision owner, provenance, resume and final evidence |
+| Learning | A feedback-to-eval loop that converts repeated owner corrections into tested interventions |
 
-Design Studio should not claim upstream methods as its own. Public documentation should name the dependency and explain the division of responsibility.
+External projects own their original work. Design Studio records exact source revisions, licences and adaptations, but no external project controls supported runtime behaviour.
 
-## Decisions already made
+## Design principles
 
-- [x] Preserve the source-blind Visual Director and Evaluator model.
-- [x] Preserve immutable iterations, resumable evidence and one final decision owner.
-- [x] Make Impeccable a required dependency rather than maintaining a parallel design rule set.
-- [x] Keep Impeccable upstream. Do not fork or vendor it unless a stable integration cannot be achieved any other way.
-- [x] Pin compatible dependency versions. Do not pull an untested latest release during every run.
-- [x] Prefer upstream contributions for specialist workflows. Fork only behind an explicit decision gate.
-- [x] Delete duplicate logic before introducing a general plugin framework.
+- [x] Preserve source-blind direction and rendered evaluation.
+- [x] Preserve immutable attempts, resumable evidence and one final decision owner.
+- [x] Use one supported Design Studio runtime rather than optional quality modes.
+- [x] Prefer selective, attributed method intake over wholesale cloning.
+- [x] Load specialist knowledge through progressive disclosure.
+- [x] Separate mechanical checks from perceptual judgement.
+- [x] Treat raw owner feedback as research evidence before abstracting it into a rule.
+- [x] Protect settled decisions from unnecessary redesign churn.
+- [x] Remove interventions that add prompt volume without improving outcomes.
 
 ## Success measures
 
-The architectural change is useful only when all of these are true:
+The architecture is useful only when representative projects show that it:
 
-- a clean Design Studio install also installs or resolves a compatible Impeccable version;
-- a run fails early with a precise repair command when the dependency is missing or incompatible;
-- Design Studio contains no second implementation of Impeccable detector rules or generic design commands;
-- roots, capabilities, serving, viewport verification, event recording, resume and acceptance each have one canonical implementation;
-- every run records upstream package names, versions, licenses and invoked capabilities;
-- representative dogfood runs show value over invoking Impeccable alone through better direction separation, repeatability, recovery, selection or composite execution;
-- adding a second workflow does not require copying its complete skill into Design Studio.
+- reduces the number and severity of owner corrections after the first complete pass;
+- produces genuinely different product worlds rather than variations of one house style;
+- keeps accepted visual and product decisions stable while fixing local problems;
+- catches page-level responsive, semantic and interaction failures before owner review;
+- distinguishes technically present motion from perceptually effective motion;
+- keeps task-specific knowledge out of the always-loaded prompt;
+- records the origin, licence and local modification of adopted external methods;
+- can update one method without changing unrelated workflow behaviour;
+- removes a method when its maintenance or prompt cost exceeds its measured value.
 
 ---
 
-## Milestone 0: prove the boundary
+## Historical Milestone 0 evidence
 
-**Goal:** establish what Design Studio uniquely contributes before refactoring around dependencies.
+The previous roadmap tested Design Studio as an orchestration layer around Impeccable. The completed evidence remains useful, but the required-dependency architecture is superseded by ADR 0002.
 
-- [x] Write an architecture decision record for the Impeccable dependency, attribution policy and ownership boundary. Evidence: [ADR 0001](docs/decisions/0001-impeccable-foundation.md).
-- [x] Freeze representative fixtures. Evidence: [Milestone 0 comparison fixtures](benchmarks/milestone-0/README.md), [suite manifest](benchmarks/milestone-0/manifest.json) and [SHA-256 lock](benchmarks/milestone-0/fixture-lock.json).
-  - [x] new marketing surface;
-  - [x] existing product-screen overhaul;
-  - [x] review and polish pass;
-  - [x] visually ambitious experience suitable for a later Scroll World comparison.
-- [x] Define a reproducible, tamper-evident lane-run and evidence protocol. Evidence: [comparison run protocol](benchmarks/milestone-0/RUN_PROTOCOL.md), [run harness](scripts/run_boundary_benchmark.py) and [contract tests](test/test_boundary_benchmark_run.py).
-- [x] Verify a repository-scoped text-and-vision model execution surface before its retirement. Evidence: [historical capability record](benchmarks/milestone-0/MODEL_HARNESS.md), [sanitized receipt](benchmarks/milestone-0/evidence/github-models-capability.json) and [GitHub Actions run 30556498881](https://github.com/George-RD/design-studio/actions/runs/30556498881).
-- [x] Verify a repository-scoped controlled agent execution surface with source-blind roles, bounded file tools, browser capture and durable evidence. Evidence: [Copilot CLI agent gate](benchmarks/milestone-0/AGENT_HARNESS.md), [sanitized receipt](benchmarks/milestone-0/evidence/copilot-cli-agent-capability.json) and [GitHub Actions run 31257044809](https://github.com/George-RD/design-studio/actions/runs/31257044809).
-- [ ] Run the same fixed briefs through:
-  - [ ] Impeccable alone;
-  - [ ] current Design Studio;
-  - [ ] current Design Studio with Impeccable enabled.
-- [ ] Record output preference, task clarity, originality, functional defects, elapsed time, token/tool cost, failed steps and recovery effort.
-- [x] Inventory every Design Studio step, reference, schema and check. Label each item `core`, `impeccable`, `external-workflow`, `compatibility` or `delete`. Evidence: [machine-readable ownership inventory](benchmarks/milestone-0/ownership-inventory.json), [decision summary](benchmarks/milestone-0/OWNERSHIP_INVENTORY.md) and [contract test](test/test_milestone_0_ownership_inventory.py).
-- [x] Identify workflows that only reproduce an Impeccable command and mark them for delegation or removal. Evidence: [Review and detector delegation map](benchmarks/milestone-0/OWNERSHIP_INVENTORY.md#delegate-to-impeccable) and the corresponding `impeccable` and `delete` labels in the [machine-readable inventory](benchmarks/milestone-0/ownership-inventory.json).
-- [ ] Confirm the smallest differentiated product: orchestration, source isolation, evidence, resume, selection and composition. Current hypothesis: source-blind direction, immutable source-aware implementation, source-blind browser evaluation, resumable evidence and one final decision. Confirmation waits on fixed-lane comparison evidence. Evidence: [provisional boundary](benchmarks/milestone-0/OWNERSHIP_INVENTORY.md#decision).
+Completed assets retained:
 
-**Exit:** there is an evidence-backed keep/delete/delegate map. The roadmap may change if Design Studio does not add enough value over Impeccable alone.
+- [x] Architecture boundary research in [ADR 0001](docs/decisions/0001-impeccable-foundation.md), now historical.
+- [x] Frozen representative fixtures in [benchmarks/milestone-0](benchmarks/milestone-0/README.md).
+- [x] Tamper-evident lane, matrix and blind-preference infrastructure.
+- [x] Controlled source-blind agent, browser and evidence capability gates.
+- [x] Inventory every Design Studio step, reference, schema and check. Evidence: [ownership inventory](benchmarks/milestone-0/OWNERSHIP_INVENTORY.md).
+- [x] Identify workflows that only reproduce an Impeccable command and record their previous delegate/delete disposition.
 
-## Milestone 1: make Impeccable the required foundation
+Historical items deliberately left open rather than falsely completed:
+
+- [ ] Run the same fixed briefs through: retained as an optional research comparison, not a release gate.
+- [ ] Confirm the smallest differentiated product: re-framed below as proving the owned kernel and lower human correction.
+
+Do not spend paid runs merely to finish the superseded three-lane matrix. Use the harness only when a targeted comparison answers a live method-intake or ablation question.
+
+---
+
+## Milestone 0: reset the product boundary
+
+**Goal:** replace the external-foundation plan with one owned product and preserve useful prior evidence.
+
+- [x] Accept ADR 0002 and supersede the required-runtime-foundation decision.
+- [x] Pin reviewed upstream research sources in [docs/method-sources.json](docs/method-sources.json).
+- [x] Extract reusable Horaxon feedback classes in [docs/research/horaxon-feedback-patterns.json](docs/research/horaxon-feedback-patterns.json).
+- [x] Add an exact-head contract that prevents the roadmap from returning to optional with/without runtime modes.
+- [ ] Reclassify the historical ownership inventory from `core` / `impeccable` / `external-workflow` into:
+  - [ ] keep-local;
+  - [ ] adapt-local;
+  - [ ] vendor-slice;
+  - [ ] observe;
+  - [ ] delete.
+- [ ] Identify every current runtime branch whose only purpose is handling Impeccable availability.
+- [ ] Freeze the first owned-kernel baseline before behaviour changes.
+- [ ] Define the smallest v1.6 release slice and its evidence.
+
+**Exit:** one authoritative architecture, one runtime path, one source registry and an executable migration map.
+
+## Milestone 1: build the owned method kernel
 
 **Target:** v1.6
 
-- [ ] Add a dependency manifest with:
-  - [ ] compatible version range;
-  - [ ] recommended tested version;
-  - [ ] install source;
-  - [ ] required capabilities;
-  - [ ] license and attribution metadata.
-- [ ] Test whether supported agent plugin systems can declare transitive dependencies.
-- [ ] When native dependency installation is unavailable, add one bootstrap path that installs Design Studio and Impeccable together.
-- [ ] Add a `doctor` or equivalent preflight that verifies:
-  - [ ] Impeccable is installed;
-  - [ ] its version is supported;
-  - [ ] required CLI capabilities and JSON output are available;
-  - [ ] the active harness can invoke it;
-  - [ ] browser requirements are independently satisfied.
-- [ ] Create one Impeccable adapter. No other Design Studio file should parse raw Impeccable output or construct Impeccable commands.
-- [ ] Normalise upstream results into Design Studio's evidence schema with the upstream rule ID, version and original severity retained.
-- [ ] Fail closed on unknown schemas or unsupported versions. Do not silently substitute a smaller local detector.
-- [ ] Record the resolved version and exact invocation in `capabilities.json` and the final report.
-- [ ] Test the minimum supported, recommended and latest candidate versions before changing the compatibility range.
-- [ ] Reposition the README and website:
-  - [ ] “Built on Impeccable” credit with a direct link and maintainer name;
-  - [ ] explain that Impeccable owns design guidance and mechanical quality;
-  - [ ] explain that Design Studio owns orchestration and composite workflows;
-  - [ ] keep Apache-2.0 notices and dependency provenance current.
+### 1.1 Authority and progressive disclosure
 
-**Exit:** a user installs Design Studio once and receives a verified Impeccable-backed setup. There is no supported full run without Impeccable.
+- [ ] Reduce the always-loaded skill to role boundaries, lifecycle, routing, evidence and acceptance authority.
+- [ ] Give every design principle one canonical local authority file.
+- [ ] Route specialist leaves by task, surface type, interaction frequency and evidence need.
+- [ ] Define a minimal leaf contract:
+  - [ ] purpose and triggers;
+  - [ ] required context;
+  - [ ] outputs and handoff;
+  - [ ] authority boundaries;
+  - [ ] failure behaviour;
+  - [ ] evaluation hooks;
+  - [ ] source provenance where adapted.
+- [ ] Measure always-loaded token reduction against v1.5.
 
-## Milestone 2: delete duplication and simplify the core
+### 1.2 One supported runtime
+
+- [ ] Remove user-visible and internal “with Impeccable” / “without Impeccable” branches.
+- [ ] Remove dependency preflight whose only purpose is selecting a quality path.
+- [ ] Make every supported check and method available from the distributed Design Studio package.
+- [ ] Fail only for Design Studio's own missing capabilities, not an optional upstream installation.
+- [ ] Preserve exact source and licence metadata for adapted or vendored material.
+
+### 1.3 Mechanical check selection
+
+- [ ] Re-evaluate each current detector family against real defect evidence and false-positive cost.
+- [ ] Keep only checks that are explainable, testable and cheaper to maintain than the rework they prevent.
+- [ ] Adapt or vendor the smallest proven slices rather than copying a complete upstream command system.
+- [ ] Keep mechanical findings separate from source-blind visual judgement.
+- [ ] Add contract tests before deleting old fallback or duplicate logic.
+
+**Exit:** v1.6 installs as one coherent product, loads only relevant methods, and does not change behaviour based on external tool availability.
+
+## Milestone 2: reduce first-pass human correction
 
 **Target:** v1.7
 
-Delete before abstracting.
+Use Horaxon feedback as evidence of missed decision classes, not as a universal visual template.
 
-- [ ] Remove the local fallback catalogue of generic design checks. Retain only Design Studio-specific runtime integrity checks.
-- [ ] Remove duplicated anti-pattern, typography, layout, accessibility and design-system guidance now owned by Impeccable.
-- [ ] Route Review work to Impeccable wherever Design Studio adds no unique orchestration or evidence.
-- [ ] Reduce local `PRODUCT.md`, `DESIGN.md` and `COPY.md` handling to the fields Design Studio needs for routing, isolation and run evidence. Reuse upstream parsing where a stable interface exists.
-- [ ] Delegate customer-copy rewriting to Growth Arsenal when installed; keep only the cross-workflow input/output contract in Design Studio.
-- [ ] Build a call graph for `SKILL.md`, `workflow.yaml`, agent prompts and references.
-- [ ] Remove dead branches left by optional-Impeccable behaviour.
-- [ ] Remove unreachable transitions, obsolete schemas, superseded evals and unused artifacts.
-- [ ] Merge repeated procedures for:
-  - [ ] root resolution;
-  - [ ] capability probing;
-  - [ ] target serving and readiness;
-  - [ ] viewport verification;
-  - [ ] detector invocation and snapshot replacement;
-  - [ ] event append and artifact validation;
-  - [ ] final acceptance.
-- [ ] Give every policy one authority file. Other files should link to it rather than restate it.
-- [ ] Reduce always-loaded prompt content and measure the token reduction.
-- [ ] Add contract tests before each deletion and preserve failure semantics.
-- [ ] Run a dead-code and duplicate-content check in CI.
+### 2.1 Product world and direction quality
 
-**Exit:** the core is materially smaller, one path owns each runtime concern, and no generic upstream capability has a second local implementation.
+- [ ] Expand product context to capture:
+  - [ ] the user and business outcome;
+  - [ ] the current experience and required behaviour;
+  - [ ] proof and unsupported-claim boundaries;
+  - [ ] settled decisions and explicitly open questions;
+  - [ ] brand or product metaphors that are available, prohibited or already overused.
+- [ ] Require every candidate direction to state a named divergence axis and governing metaphor.
+- [ ] Reject candidates that could be transferred unchanged to an unrelated product.
+- [ ] Keep variants fully functional and evaluate them in realistic context rather than as thumbnails.
 
-## Milestone 3: separate the orchestration core from workflow packs
+### 2.2 Meaning and subtraction
+
+- [ ] Add a semantic-redundancy pass for repeated labels, badges, claims and explanatory chrome.
+- [ ] Require every visible label to name the distinct information it adds.
+- [ ] Add a scope-discipline check that favours local repair over reopening a settled visual world.
+- [ ] Add an intent review that asks what each strong treatment means, not only whether it is polished.
+
+### 2.3 Action and affordance integrity
+
+- [ ] Identify the primary user decision before visual polish.
+- [ ] Trace the shortest valid action path at every target viewport.
+- [ ] Enforce one canonical name per action unless two labels represent different actions.
+- [ ] Compare hover, active, selected and elevated treatments against actual interaction/state semantics.
+- [ ] Prevent positional styling such as `:last-child` from implying meaning it does not own.
+
+### 2.4 Whole-page responsive composition
+
+- [ ] Evaluate full-page and first-viewport captures at phone, laptop and wide desktop sizes.
+- [ ] Measure major section gaps, primary-action position, overflow and reading continuity.
+- [ ] Review page rhythm separately from component quality.
+- [ ] Verify visual order, DOM order and keyboard order together.
+
+### 2.5 Motion that can be felt and trusted
+
+- [ ] Route motion through a purpose, frequency, speed and function gate.
+- [ ] Record rejected motion opportunities as evidence of restraint.
+- [ ] Prefer interruptible transitions for rapidly reversible UI state.
+- [ ] Require no-JS, reduced-motion and unsupported-engine settled states.
+- [ ] Distinguish computed motion evidence from real-device perceptual confidence.
+- [ ] Use physical-device or high-fidelity replay review when motion value depends on being noticed.
+
+### 2.6 Contract migrations
+
+- [ ] Treat material copy, action and state changes as migrations across canonical docs, rendered surfaces, privacy/legal copy, compatibility fields and tests.
+- [ ] Record intentional historical exceptions instead of leaving unexplained drift.
+
+**Exit:** the workflow catches the principal Horaxon correction classes before owner review without forcing every project into the Traverse style.
+
+## Milestone 3: create the feedback-to-eval loop
 
 **Target:** v1.8
 
-Do not design a universal plugin API from theory. Use Impeccable plus one real second integration to discover the contract.
+- [ ] Define a durable feedback record containing:
+  - [ ] raw owner comment;
+  - [ ] output and revision being criticised;
+  - [ ] accepted correction;
+  - [ ] local preference, one-off defect or reusable failure class;
+  - [ ] missed workflow/evaluation point;
+  - [ ] proposed intervention;
+  - [ ] validation and later outcome.
+- [ ] Add a command or maintenance workflow that mines completed dogfood PRs for unresolved learning.
+- [ ] Promote a new always-on gate only after two independent examples or one severe outcome failure.
+- [ ] Prefer evaluation questions and routed leaves over a growing universal prohibition list.
+- [ ] Add regression fixtures for accepted reusable failure classes.
+- [ ] Compare kernel revisions with the existing blind preference infrastructure.
+- [ ] Track:
+  - [ ] first-complete-pass acceptance;
+  - [ ] owner feedback rounds;
+  - [ ] material rework commits;
+  - [ ] repeated correction classes;
+  - [ ] elapsed/token/tool cost;
+  - [ ] methods loaded per run;
+  - [ ] methods later removed as low value.
 
-- [ ] Define the stable core around:
-  - [ ] run and event lifecycle;
-  - [ ] role isolation;
-  - [ ] dependency and capability resolution;
-  - [ ] workflow routing;
-  - [ ] budget and approval gates;
-  - [ ] immutable artifact registration;
-  - [ ] evaluation and final acceptance;
-  - [ ] provenance and reporting.
-- [ ] Define a minimal workflow-pack manifest containing:
-  - [ ] ID, version, source and license;
-  - [ ] compatible Design Studio range;
-  - [ ] required and optional capabilities;
-  - [ ] accepted inputs and produced artifacts;
-  - [ ] cost-bearing steps and approval points;
-  - [ ] resume boundaries;
-  - [ ] quality and acceptance hooks;
-  - [ ] fallback and failure behaviour.
-- [ ] Add a dependency lock so completed and resumed runs use the same workflow and backend versions.
-- [ ] Make packs addressable through adapters rather than copied prompts or files.
-- [ ] Isolate pack failure so partial artifacts remain inspectable and resumable.
-- [ ] Use Growth Arsenal's copy workflow as the smaller second integration if it exposes enough real differences to test the contract.
-- [ ] Keep pack discovery explicit. Do not build a public registry until several packs exist and repeated use proves the need.
+**Exit:** feedback survives project history and can be shown to improve later runs rather than merely expanding prompts.
 
-**Exit:** one optional external workflow can be added, updated or removed without changing the orchestration kernel.
+## Milestone 4: operate method intake and upstream scouting
 
-## Milestone 4: Scroll World integration spike
+**Target:** v1.9
 
-**Target:** v1.9 experimental
+- [ ] Run the method intake review at least quarterly.
+- [ ] Trigger an extra review after a major upstream release, repeated dogfood gap or new specialist capability.
+- [ ] Compare pinned source revisions and shortlist only changes relevant to known needs.
+- [ ] Evaluate every candidate for:
+  - [ ] outcome benefit;
+  - [ ] overlap with local authority;
+  - [ ] prompt and runtime cost;
+  - [ ] maintenance and security cost;
+  - [ ] licence/attribution impact;
+  - [ ] fit with role isolation and progressive disclosure.
+- [ ] Test candidates as targeted ablations before adoption.
+- [ ] Record explicit adopt, observe or reject decisions.
+- [ ] Never auto-pull latest guidance into a production run.
+- [ ] Review at minimum:
+  - [ ] Impeccable for useful deterministic checks and evidence patterns;
+  - [ ] Emil Kowalski's skills for motion, prototype and audit workflows;
+  - [ ] Growth Arsenal for copy/offer coordination;
+  - [ ] Scroll World for cinematic scene-chain methods;
+  - [ ] other specialist systems only when a real project exposes the need.
 
-Scroll World currently combines several concerns in one skill: story intake, art direction, still generation, video generation, seam construction, encoding and the browser scrub runtime. The integration should preserve its method while separating backend choice from the workflow.
+**Exit:** external expertise improves Design Studio without turning upstream projects into hidden runtime authorities.
 
-### 4.1 Map the existing system
-
-- [ ] Pin and credit the upstream `oso95/scroll-world` version used for the spike.
-- [ ] Map the pipeline into explicit stages:
-  - [ ] product and story brief;
-  - [ ] ordered scene contract;
-  - [ ] still generation;
-  - [ ] motion generation;
-  - [ ] boundary-frame extraction and frame-locked connectors;
-  - [ ] encode and mobile variants;
-  - [ ] scrub runtime and page integration;
-  - [ ] visual, functional and performance evaluation.
-- [ ] Separate Scroll World's core invariants from provider-specific commands.
-- [ ] Record which current files and prompts assume Higgsfield, Monid or a particular model.
-
-### 4.2 Define generation backend contracts
-
-- [ ] Define an image backend contract: prompt, references, aspect ratio, output path, cost estimate, async status and provenance.
-- [ ] Define a video backend contract: start-frame support, end-frame support, duration, aspect ratio, resolution, model options, async status, cost estimate and output path.
-- [ ] Make frame-lock capability explicit. A backend that cannot condition both ends cannot silently produce connector clips.
-- [ ] Keep seam extraction, encoding and scrub behaviour independent of the generation provider.
-- [ ] Add Veo as the first alternative video backend used by George.
-- [ ] Keep Higgsfield and Monid support upstream where practical rather than reproducing their command logic in Design Studio.
-- [ ] Make native mobile generation, crop fallback and cost approval explicit capabilities rather than hidden branches.
-
-### 4.3 Upstream-first change path
-
-- [ ] Open an upstream issue or proposal describing the provider separation with a concrete interface.
-- [ ] Prefer a focused upstream PR that keeps current defaults working.
-- [ ] Use a Design Studio adapter if the existing Scroll World outputs are already sufficient.
-- [ ] Fork only when provider coupling blocks the required composition and the upstream project cannot or will not accept a narrow abstraction.
-
-If a fork is required:
-
-- [ ] preserve the MIT license and original attribution;
-- [ ] document every intentional divergence;
-- [ ] keep the delta limited to provider separation and required integration hooks;
-- [ ] track upstream and test rebases regularly;
-- [ ] avoid renaming or rewriting unrelated Scroll World concepts.
-
-### 4.4 Compose the first cinematic workflow
-
-- [ ] Let Impeccable establish product, brand, interface and mechanical design context.
-- [ ] Let Scroll World own the cinematic scene-chain method.
-- [ ] Let Design Studio decide when the cinematic paradigm is appropriate, manage budgets and approvals, preserve attempts and coordinate final evaluation.
-- [ ] Evaluate the cinematic canvas and the surrounding interface together rather than accepting a strong video inside a weak page.
-- [ ] Preserve a non-cinematic responsive path when motion, bandwidth, reduced-motion preference or backend capability requires it.
-- [ ] Record all upstream tools, models, prompts, costs and generated asset provenance in the run report.
-
-**Exit:** the same Scroll World workflow can use Veo or its original supported backend without changing Design Studio's orchestration logic or the seam/scroll runtime.
-
-## Milestone 5: prove composition adds value
+## Milestone 5: prove autonomous, distinct dogfood outcomes
 
 **Target:** v2.0
 
-- [ ] Add routing that selects the smallest suitable workflow rather than running every installed pack.
-- [ ] Support at least:
-  - [ ] standard Impeccable-backed surface work;
-  - [ ] overhaul of an existing surface;
-  - [ ] focused review delegated to Impeccable;
-  - [ ] cinematic Scroll World composition;
-  - [ ] optional Growth Arsenal copy pass.
-- [ ] Compare each composite workflow against its upstream tool used alone with the same brief and assets.
-- [ ] Measure independent preference, task clarity, functional defects, run cost, elapsed time, failed generations, recovery and manual intervention.
-- [ ] Remove any Design Studio layer that adds cost without improving quality, repeatability, recovery or decision confidence.
-- [ ] Add provenance to every accepted artifact so users can trace which workflow and provider produced it.
-- [ ] Publish the narrower positioning and examples only after dogfood results support the claims.
+- [ ] Run the owned kernel on Horaxon or its next material surface revision.
+- [ ] Run it on at least one product with a substantially different audience and visual world.
+- [ ] Compare against the v1.5 baseline or an ablated kernel using identical briefs and evidence rules.
+- [ ] Require source-blind preference evidence where outputs are comparable.
+- [ ] Measure reduction in owner feedback rounds and material rework.
+- [ ] Verify that outputs remain distinguishable and product-specific.
+- [ ] Remove methods that add cost without improving quality, recovery, confidence or human intervention.
+- [ ] Publish claims only after dogfood evidence supports them.
 
-**Exit:** Design Studio can choose and combine specialist design workflows, and the evidence shows that composition is better than manually invoking the same tools in sequence.
+**Exit:** Design Studio repeatedly produces coherent, unique and usable results with materially less human steering, while preserving the ability to learn from expert external systems.
 
 ---
 
 ## Explicit non-goals
 
-- Rebuilding Impeccable inside Design Studio.
-- Automatically following the latest dependency release without compatibility tests.
-- Forking Scroll World solely to replace one CLI command when an adapter is sufficient.
-- Copying complete external skills into the Design Studio repository.
-- Building a public workflow marketplace before two or three real integrations prove the common contract.
-- Running expensive cinematic or copy workflows for every page.
-- Optimising for broad adoption before the primary dogfood workflow is reliable.
+- Supporting different design quality depending on which upstream tools happen to be installed.
+- Vendoring complete external projects before their useful slices are known.
+- Copying prompts or rules without provenance and licence records.
+- Automatically following upstream latest releases.
+- Encoding Horaxon's Traverse visual language as a universal default.
+- Replacing perceptual design judgement with a larger static detector catalogue.
+- Eliminating all human taste; the target is fewer repeated corrections and better decision leverage.
+- Building a public method marketplace before the owned kernel proves itself across distinct projects.
 
 ## Release sequence
 
 | Release | Outcome |
 |---|---|
-| v1.6 | Required, credited and versioned Impeccable dependency |
-| v1.7 | Duplicate logic removed and orchestration core simplified |
-| v1.8 | Minimal external workflow-pack contract proven by a second integration |
-| v1.9 | Experimental Scroll World composition with provider-neutral generation and Veo support |
-| v2.0 | Evidence-backed routing and composition across specialist design workflows |
+| v1.6 | One owned runtime and progressively disclosed method kernel |
+| v1.7 | Horaxon-derived meaning, subtraction, composition, affordance and motion interventions |
+| v1.8 | Durable feedback-to-eval learning loop |
+| v1.9 | Evidence-gated periodic upstream method intake |
+| v2.0 | Distinct dogfood results with materially lower human correction |

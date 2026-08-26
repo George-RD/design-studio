@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "operatingModel": "curated-local-kernel",
+  "updatePolicy": "manual-evidence-gated",
+  "externalRuntimeDependencyAllowed": false,
+  "reviewedAt": "2026-08-26",
+  "reviewCadence": {
+    "minimum": "quarterly",
+    "triggers": [
+      "dogfood-gap",
+      "major-upstream-release",
+      "new-specialist-method",
+      "repeated-owner-correction"
+    ]
+  },
+  "intakePolicy": {
+    "defaultDisposition": "observe",
+    "wholesaleCloneDefault": false,
+    "permittedDispositions": [
+      "reject",
+      "observe",
+      "adapt-local",
+      "vendor-slice"
+    ],
+    "requirements": [
+      "Name the reusable failure class or capability gap before importing a method.",
+      "Pin the exact source revision and verify its licence before copying or adapting material.",
+      "Reduce the source to the smallest coherent method that fits Design Studio's progressive-disclosure architecture.",
+      "Record what changed from the source and retain required attribution.",
+      "Protect the adopted behaviour with an eval, contract test or dogfood comparison.",
+      "Reject the candidate when it adds prompt volume or maintenance cost without improving outcomes or reducing human correction."
+    ]
+  },
+  "sources": [
+    {
+      "id": "pbakaus/impeccable",
+      "repository": "https://github.com/pbakaus/impeccable",
+      "revision": "63b04e2530f5c7b41ea83c133daab24f34912456",
+      "observedRelease": "cli-v3.6.1",
+      "license": "Apache-2.0",
+      "role": "research-input",
+      "runtimeDependency": false,
+      "relevantMethods": [
+        "deterministic source and browser checks",
+        "explicit finding identities and severities",
+        "design command and anti-pattern taxonomies",
+        "mechanical evidence separated from visual judgement"
+      ],
+      "currentDisposition": "observe",
+      "attribution": "Impeccable by Paul Bakaus and contributors; retain Apache-2.0 licence, change notices and applicable attribution when material is copied or adapted."
+    },
+    {
+      "id": "emilkowalski/skills",
+      "repository": "https://github.com/emilkowalski/skills",
+      "revision": "d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7",
+      "observedRelease": "main-at-2026-08-21",
+      "license": "MIT",
+      "role": "research-input",
+      "runtimeDependency": false,
+      "relevantMethods": [
+        "purpose and frequency gate for motion",
+        "precise motion values and interruptibility rules",
+        "read-only expert audit followed by executable plans",
+        "genuinely divergent prototypes compared in realistic context",
+        "explicitly recording rejected animation opportunities"
+      ],
+      "currentDisposition": "observe",
+      "attribution": "Emil Kowalski's design-engineering skills; retain the MIT copyright and permission notice for copied or substantial adapted material."
+    }
+  ]
+}
