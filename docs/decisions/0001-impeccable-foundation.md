@@ -1,10 +1,14 @@
 # ADR 0001: Make Impeccable the required design foundation
 
-- **Status:** Accepted
+- **Status:** Superseded
 - **Decision date:** 2026-07-30
-- **Applies from:** Design Studio v1.6
+- **Superseded by:** [ADR 0002](0002-owned-method-kernel.md)
+- **Superseded date:** 2026-08-26
+- **Historical target:** Design Studio v1.6
 - **Owners:** Design Studio maintainers
 - **Upstream:** [Impeccable](https://github.com/pbakaus/impeccable), maintained by Paul Bakaus (`pbakaus`)
+
+> Historical record. This decision was superseded before the v1.6 dependency plan was implemented. ADR 0002 is authoritative.
 
 ## Decision contract
 
