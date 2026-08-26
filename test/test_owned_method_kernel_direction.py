@@ -7,6 +7,7 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
+LEGACY_ADR_PATH = ROOT / "docs" / "decisions" / "0001-impeccable-foundation.md"
 ADR_PATH = ROOT / "docs" / "decisions" / "0002-owned-method-kernel.md"
 DECISION_INDEX_PATH = ROOT / "docs" / "decisions" / "README.md"
 README_PATH = ROOT / "README.md"
@@ -44,6 +45,18 @@ class OwnedMethodKernelDirectionTests(unittest.TestCase):
         self.assertIn("periodic source review", text)
         self.assertIn("owner-feedback learning loop", text)
         self.assertIn("progressive disclosure", text)
+
+    def test_superseded_adr_marks_its_own_status_and_successor(self) -> None:
+        """Opening ADR 0001 directly must not present it as an active v1.6 decision."""
+        legacy = LEGACY_ADR_PATH.read_text(encoding="utf-8")
+        self.assertIn("- **Status:** Superseded", legacy)
+        self.assertIn(
+            "- **Superseded by:** [ADR 0002](0002-owned-method-kernel.md)",
+            legacy,
+        )
+        self.assertIn("- **Historical target:** Design Studio v1.6", legacy)
+        self.assertNotIn("- **Status:** Accepted", legacy)
+        self.assertNotIn("- **Applies from:** Design Studio v1.6", legacy)
 
     def test_decision_index_marks_the_new_record_authoritative(self) -> None:
         """The decision index must expose both status changes and precedence."""
