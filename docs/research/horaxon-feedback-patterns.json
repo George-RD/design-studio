@@ -1,0 +1,162 @@
+{
+  "schemaVersion": 1,
+  "dogfoodRepository": "George-RD/horaxon-web",
+  "analysedAt": "2026-08-26",
+  "primaryPullRequests": [
+    54,
+    56,
+    57,
+    58,
+    59,
+    63,
+    64,
+    69
+  ],
+  "purpose": "Turn repeated owner corrections into reusable workflow failure classes without turning Horaxon's visual language into a universal style.",
+  "patterns": [
+    {
+      "id": "semantic-redundancy",
+      "failureClass": "The interface says the same thing more than once through labels, headings, copy or explanatory chrome, making an authored design feel generated and over-labelled.",
+      "evidence": [
+        {
+          "pullRequest": 54,
+          "observation": "The Offer repeated its core promises and mechanics; the accepted correction stated each honest commitment once in its strongest location."
+        },
+        {
+          "pullRequest": 56,
+          "observation": "Mono labels such as 01 / STRATEGY repeated the adjacent Strategy heading; the accepted rule was that labels must add information rather than echo it."
+        }
+      ],
+      "workflowIntervention": "Add a subtraction pass after composition and before polish. Inventory labels, badges, helper copy, repeated claims and adjacent semantic echoes; remove any element that does not add ordering, category, state or evidence.",
+      "validation": "For every visible label or explanatory fragment, record the distinct information it adds. Flag adjacent or cross-section repetition and require a deliberate keep/remove decision.",
+      "stylePrescription": false
+    },
+    {
+      "id": "whole-page-responsive-composition",
+      "failureClass": "Components can pass local checks while the page-level rhythm, section boundaries or first-screen action hierarchy fail at a real viewport.",
+      "evidence": [
+        {
+          "pullRequest": 59,
+          "observation": "The visual system was retained, but the laptop first screen still needed a reachable action and clearer station communication."
+        },
+        {
+          "pullRequest": 63,
+          "observation": "On a 390x844 phone, individually valid station sections accumulated 178-298px boundaries that read as page breaks rather than one route."
+        }
+      ],
+      "workflowIntervention": "Evaluate full-page screenshots and measured boundaries at phone, laptop and wide desktop sizes after component review. Treat section rhythm, reading continuity and first-action reachability as separate acceptance concerns.",
+      "validation": "Capture full-page and first-viewport evidence at declared viewports; measure major section gaps, overflow and primary-action position instead of inferring page quality from component checks.",
+      "stylePrescription": false
+    },
+    {
+      "id": "real-device-perceptibility",
+      "failureClass": "A technically present animation or responsive behaviour may be unsupported, missed below the fold or too subtle to perceive on the user's actual device.",
+      "evidence": [
+        {
+          "pullRequest": 58,
+          "observation": "The shipped scroll reveal was absent on older iOS and below perceptual threshold where animation-timeline was available; automated existence checks did not answer whether the motion could be felt."
+        },
+        {
+          "pullRequest": 59,
+          "observation": "Motion was revised to trigger when sections entered view because much of the earlier pass was hover-only or completed before a phone reader saw it."
+        }
+      ],
+      "workflowIntervention": "Separate mechanical motion validation from perceptual confidence. Require capability fallback, in-view timing and a declared physical-device or high-fidelity feel check for motion whose value depends on being noticed.",
+      "validation": "Record supported engines, trigger timing, reduced-motion/no-JS states and computed motion. Mark perceptual confidence unverified until a representative real device or equivalent visual replay is reviewed.",
+      "stylePrescription": false
+    },
+    {
+      "id": "product-specific-metaphor",
+      "failureClass": "A generic animation or visual convention can be mechanically polished but still fail to express the product's own world, purpose or story.",
+      "evidence": [
+        {
+          "pullRequest": 59,
+          "observation": "The site moved away from generic grid, glow and telemetry chrome toward a Traverse system built around one datum, station marks and working sheets."
+        },
+        {
+          "pullRequest": 69,
+          "observation": "The process rail became a surveyor walking stations: route fill, occupied station and title scribe explained the four-step method rather than acting as a generic progress bar."
+        }
+      ],
+      "workflowIntervention": "Before implementation, require each visual direction to name its product-specific governing metaphor, what interface decisions it controls and what familiar generic treatment it deliberately avoids. Reject directions whose concept can be swapped into an unrelated company unchanged.",
+      "validation": "A source-blind reviewer must explain how the visual and motion system derives from the brief. If the explanation relies only on palette, typography or generic premium language, the direction is not specific enough.",
+      "stylePrescription": false
+    },
+    {
+      "id": "action-hierarchy-and-consistency",
+      "failureClass": "A page can look coherent while using inconsistent action names, burying the next action or forcing a convinced reader through unnecessary content.",
+      "evidence": [
+        {
+          "pullRequest": 59,
+          "observation": "Start here moved before Questions, the FAQ was reduced, the CTA became Show me what's slowing us down, and surviving Book the audit language was removed."
+        },
+        {
+          "pullRequest": 59,
+          "observation": "Owner review explicitly kept the visual world and motion stable while prioritising one action name and a laptop-visible route to act."
+        }
+      ],
+      "workflowIntervention": "Add a conversion and task-path pass independent of visual polish. Identify the primary user decision, use one stable name for it, check where it first becomes actionable and remove content that delays an already-convinced user.",
+      "validation": "Trace the primary path from first viewport to completion at each target size. Assert one canonical action label unless a different label communicates a genuinely different action.",
+      "stylePrescription": false
+    },
+    {
+      "id": "false-affordance",
+      "failureClass": "Visual feedback can imply clickability, selection or state even when no corresponding interaction or meaning exists.",
+      "evidence": [
+        {
+          "pullRequest": 59,
+          "observation": "Owner review required service rows either to become links or to lose hover treatment that suggested they were interactive."
+        },
+        {
+          "pullRequest": 64,
+          "observation": "The last proof row looked selected because of its nested rectangle and gold index; the fix made the semantic outcome an explicit After field instead of styling :last-child."
+        }
+      ],
+      "workflowIntervention": "Run an affordance audit after styling. For every hover, focus, selected, active or elevated treatment, identify the underlying interaction or state; remove or rename treatments whose appearance carries a false promise.",
+      "validation": "Compare computed interactive styling with the actual control inventory and semantic state model. No non-interactive surface should gain action feedback, and no positional selector should masquerade as meaning.",
+      "stylePrescription": false
+    },
+    {
+      "id": "settled-world-preservation",
+      "failureClass": "Broad redesign agents tend to reopen accepted decisions when the remaining problem is local, increasing churn and losing coherence.",
+      "evidence": [
+        {
+          "pullRequest": 59,
+          "observation": "Owner review explicitly said not to reopen the visual world, add more motion or move Questions back above the form; the page already knew what it was."
+        },
+        {
+          "pullRequest": 58,
+          "observation": "The repair was scoped to a dead reveal primitive and deliberately did not invent a new motion thesis or disturb the hero focal sequence."
+        }
+      ],
+      "workflowIntervention": "Maintain a settled-decisions register for each run. Before proposing a change, classify it as required repair, coherent extension or reopened decision; reopening needs new evidence that the settled choice blocks the outcome.",
+      "validation": "Every revision states what remains invariant. Evaluators penalise unnecessary concept resets, added motion or section reordering when the observed failure can be fixed locally.",
+      "stylePrescription": false
+    },
+    {
+      "id": "cross-surface-contract-drift",
+      "failureClass": "A corrected concept or promise can remain stale in privacy copy, docs, forms, tests or hidden fields, leaving the product internally inconsistent.",
+      "evidence": [
+        {
+          "pullRequest": 57,
+          "observation": "Reader-neutral intake language and a removed records claim had to be swept through offer copy, FAQ, privacy, canonical offer docs, personas and tests."
+        },
+        {
+          "pullRequest": 59,
+          "observation": "Review found privacy copy still describing repetitive work and a free automation audit after the live intake had moved to broader operational friction."
+        }
+      ],
+      "workflowIntervention": "Treat material copy, action and state changes as contract migrations. Search canonical sources, rendered surfaces, legal/privacy copy, API compatibility fields and tests before accepting the change.",
+      "validation": "Record the concept's canonical wording and all known echoes. Acceptance requires either updating each echo or documenting why a historical or compatibility copy intentionally remains different.",
+      "stylePrescription": false
+    }
+  ],
+  "learningGuardrails": [
+    "Do not codify one site's visual language as a universal rule.",
+    "Promote feedback into the kernel only when it identifies a reusable failure class.",
+    "Keep the raw owner comment and the implemented correction as evidence before abstracting a rule.",
+    "Prefer a workflow intervention or evaluation question over a growing universal prohibition list.",
+    "Require at least two independent examples, or one severe outcome failure, before making a new always-on gate.",
+    "Measure whether the intervention reduces feedback rounds or rework; remove it when it only adds prompt volume."
+  ]
+}
