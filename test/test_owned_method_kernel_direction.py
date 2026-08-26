@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import re
 import unittest
 
 
@@ -78,25 +79,61 @@ class OwnedMethodKernelDirectionTests(unittest.TestCase):
         self.assertIn("- [ ] Run the same fixed briefs through:", roadmap)
 
     def test_upstream_sources_are_pinned_research_inputs_not_runtime_switches(self) -> None:
-        """Pinned sources must remain observed until a proved local adoption lands."""
+        """Validate every source record, then protect the known exact source pins."""
         registry = json.loads(SOURCES_PATH.read_text(encoding="utf-8"))
         self.assertEqual(1, registry["schemaVersion"])
         self.assertEqual("curated-local-kernel", registry["operatingModel"])
         self.assertEqual("manual-evidence-gated", registry["updatePolicy"])
         self.assertFalse(registry["externalRuntimeDependencyAllowed"])
 
-        sources = {source["id"]: source for source in registry["sources"]}
+        registered = registry["sources"]
+        self.assertIsInstance(registered, list)
+        self.assertTrue(registered)
+        permitted_dispositions = set(
+            registry["intakePolicy"]["permittedDispositions"]
+        )
+        source_ids: list[str] = []
+        for index, source in enumerate(registered):
+            with self.subTest(index=index):
+                self.assertIsInstance(source, dict)
+                source_id = source.get("id")
+                self.assertIsInstance(source_id, str)
+                self.assertTrue(source_id.strip())
+                source_ids.append(source_id)
+
+                repository = source.get("repository")
+                self.assertIsInstance(repository, str)
+                self.assertTrue(repository.startswith("https://github.com/"))
+                self.assertRegex(source.get("revision", ""), r"^[0-9a-f]{40}$")
+                self.assertIsInstance(source.get("observedRelease"), str)
+                self.assertTrue(source["observedRelease"].strip())
+                self.assertIsInstance(source.get("license"), str)
+                self.assertTrue(source["license"].strip())
+                self.assertEqual("research-input", source.get("role"))
+                self.assertFalse(source.get("runtimeDependency"))
+                self.assertIn(
+                    source.get("currentDisposition"),
+                    permitted_dispositions,
+                )
+
+                methods = source.get("relevantMethods")
+                self.assertIsInstance(methods, list)
+                self.assertTrue(methods)
+                self.assertTrue(
+                    all(isinstance(method, str) and method.strip() for method in methods)
+                )
+                self.assertIsInstance(source.get("attribution"), str)
+                self.assertTrue(source["attribution"].strip())
+
+        self.assertEqual(len(source_ids), len(set(source_ids)))
+        sources = {source["id"]: source for source in registered}
         self.assertTrue(EXPECTED_SOURCES.keys() <= sources.keys())
         for source_id, (revision, license_id) in EXPECTED_SOURCES.items():
             with self.subTest(source=source_id):
                 source = sources[source_id]
                 self.assertEqual(revision, source["revision"])
                 self.assertEqual(license_id, source["license"])
-                self.assertEqual("research-input", source["role"])
                 self.assertEqual("observe", source["currentDisposition"])
-                self.assertFalse(source["runtimeDependency"])
-                self.assertTrue(source["relevantMethods"])
-                self.assertTrue(source["attribution"])
 
         cadence = registry["reviewCadence"]
         self.assertEqual("quarterly", cadence["minimum"])
