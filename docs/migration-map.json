@@ -2,6 +2,7 @@
   "schemaVersion": 1,
   "status": "authoritative-baseline",
   "externalRuntimeDependencyAllowed": false,
+  "externalRuntimeDependencyPolicy": "target-v1.6",
   "baseline": {
     "repository": "George-RD/design-studio",
     "revision": "492a874d0a7c935e51395d66f420608a997d9ed3",
@@ -15,7 +16,7 @@
     "optional-host-adapter": "Host-specific installation or registration metadata that must remain thin.",
     "compatibility-bridge": "Temporary wrapper that forwards to a canonical skill authority without owning behavior.",
     "repository-only-tooling": "Repository, documentation, benchmark, or maintainer surface that does not ship as skill runtime.",
-    "delete-candidate": "Surface eligible for removal only after its observable contract is protected elsewhere."
+    "delete-candidate": "Surface eligible for removal only after its useful behavior or provenance is protected elsewhere."
   },
   "scriptLabels": {
     "product-runtime": "Deterministic helper required by the supported installed runtime.",
@@ -29,9 +30,23 @@
     "keep-local": "Keep the local method authoritative; external material does not replace it.",
     "adapt-local": "Adapt the smallest coherent external method into the owned kernel with provenance and tests.",
     "vendor-slice": "Vendor a bounded external slice only when executable fidelity is necessary and licence obligations are retained.",
-    "observe": "Keep as a pinned research input only; do not make it a runtime dependency or duplicate it yet.",
+    "observe": "Keep as a pinned research input only; do not make it a future runtime dependency or duplicate it yet.",
     "delete-reject": "Reject the external method or delete a superseded local duplicate once behavior is protected."
   },
+  "currentRuntimeBranches": [
+    {
+      "id": "optional-impeccable-mechanical-gate",
+      "status": "migration-debt",
+      "trigger": "impeccable-cli-available",
+      "authorities": [
+        "skills/design-studio/references/quality-gates.md",
+        "skills/design-studio/workflow.yaml"
+      ],
+      "behavior": "The v1.5 mechanical gate prefers three Impeccable JSON passes when the CLI is available; otherwise it runs a smaller, explicitly non-equivalent fallback.",
+      "preserve": "Preserve normalized mechanical-findings snapshots, current-truth semantics, severity/waiver behavior, and the mechanical-versus-visual boundary while removing environment-dependent capability.",
+      "migration": "#46 defines the owned runtime seam, #47 decides which external mechanical methods become local authority, and #50 normalizes deterministic runtime so supported behavior no longer depends on whether Impeccable is installed."
+    }
+  ],
   "surfaces": [
     {
       "path": "skills/design-studio/SKILL.md",
@@ -80,7 +95,7 @@
       "path": "commands/review.md",
       "label": "compatibility-bridge",
       "target": "skills/design-studio/SKILL.md#Review",
-      "reason": "Legacy Claude command wrapper for canonical Review routing. Under ADR 0002 it does not route to an external runtime."
+      "reason": "Legacy Claude command wrapper for canonical Review routing."
     },
     {
       "path": "agents/design-agent.md",
@@ -103,6 +118,12 @@
       "path": "docs/app.js",
       "label": "repository-only-tooling",
       "reason": "Behavior for the repository documentation site, not installed skill runtime."
+    },
+    {
+      "path": "references/methodology.md",
+      "label": "delete-candidate",
+      "target": "Delete after #47/#51 confirm rationale, meta and workflow authorities retain any still-useful method content.",
+      "reason": "Unreferenced legacy harness methodology already identified by the frozen ownership inventory as superseded by current local authorities."
     }
   ],
   "scripts": [
@@ -177,8 +198,14 @@
         "skills/design-studio/references/rationale.md"
       ],
       "dogfoodEvidence": [],
-      "externalOverlaps": [],
-      "reason": "Source isolation and independent rendered judgement are differentiated Design Studio controls and remain local."
+      "externalOverlaps": [
+        {
+          "source": "emilkowalski/skills",
+          "disposition": "observe",
+          "reason": "Emil's genuinely divergent prototypes compared in realistic context overlaps direction exploration, but does not replace Design Studio's source-isolation, hidden assignment or independent evaluator boundaries."
+        }
+      ],
+      "reason": "Source isolation and independent rendered judgement are differentiated Design Studio controls and remain local while #47 evaluates the prototype-comparison tactic separately."
     },
     {
       "id": "runtime-integrity-and-immutable-evidence",
@@ -204,10 +231,10 @@
         {
           "source": "pbakaus/impeccable",
           "disposition": "observe",
-          "reason": "Impeccable has context/design guidance, but this baseline keeps it research-only until #47 separates generic design context from Design Studio routing and evidence semantics."
+          "reason": "Impeccable has context/design guidance; #47 must separate generic design context from Design Studio routing and evidence semantics before adaptation."
         }
       ],
-      "reason": "Design Studio retains product truth, run scoping and evidence routing while #47 decides which generic design-context method is worth adapting."
+      "reason": "Design Studio retains product truth, run scoping and evidence routing while generic design-context methods remain intake candidates."
     },
     {
       "id": "implementation-fidelity",
@@ -226,10 +253,10 @@
         {
           "source": "pbakaus/impeccable",
           "disposition": "observe",
-          "reason": "Impeccable remains a pinned source for deterministic check design. #47 decides the smallest local adaptation while preserving normalized snapshots, waivers and the mechanical-versus-visual boundary."
+          "reason": "Impeccable is both the source of useful detector methods and a current optional v1.5 execution branch. #47 decides the smallest local method adaptation while #46/#50 remove environment-dependent runtime behavior."
         }
       ],
-      "reason": "The owned runtime needs one mechanical-evidence contract even if individual checks are later consolidated from external methods."
+      "reason": "The owned runtime needs one stable mechanical-evidence capability independent of which external tools happen to be installed."
     },
     {
       "id": "review-orchestration",
@@ -240,10 +267,15 @@
         {
           "source": "pbakaus/impeccable",
           "disposition": "observe",
-          "reason": "Impeccable overlaps audit/polish tactics, but Review routing and readiness evidence remain local. #47 decides which tactics to adapt instead of making Impeccable a runtime."
+          "reason": "Impeccable overlaps audit/polish tactics, while Review routing and readiness evidence remain Design Studio responsibilities."
+        },
+        {
+          "source": "emilkowalski/skills",
+          "disposition": "observe",
+          "reason": "Emil's read-only expert audit followed by executable plans overlaps review sequencing; #47 should assess the tactic without replacing Review's evidence boundary or decision ownership."
         }
       ],
-      "reason": "Review remains a supported Design Studio lane while duplicated generic tactics are candidates for consolidation."
+      "reason": "Review remains a supported Design Studio lane while duplicated generic audit tactics are candidates for one consolidated method authority."
     },
     {
       "id": "accessibility-review",
@@ -254,10 +286,10 @@
         {
           "source": "pbakaus/impeccable",
           "disposition": "observe",
-          "reason": "Accessibility audit tactics overlap. Keep the source pinned and research-only until #47 chooses a single local authority."
+          "reason": "Accessibility audit tactics overlap; #47 chooses one local authority rather than retaining competing rulebooks."
         }
       ],
-      "reason": "Accessibility remains required product behavior; method duplication is resolved later without outsourcing the runtime."
+      "reason": "Accessibility remains required product behavior; method duplication is resolved without outsourcing the runtime."
     },
     {
       "id": "hierarchy-rhythm-and-responsive-composition",
@@ -268,10 +300,10 @@
         {
           "source": "pbakaus/impeccable",
           "disposition": "observe",
-          "reason": "Hierarchy and polish guidance overlap. Horaxon evidence adds the need to judge whole-page composition rather than only component correctness."
+          "reason": "Hierarchy and polish guidance overlaps; Horaxon evidence adds whole-page composition failures that component-level correctness can miss."
         }
       ],
-      "reason": "The concept needs one local authority that combines reusable dogfood evidence with selected external methods, not competing rulebooks."
+      "reason": "One local authority should combine reusable dogfood evidence with only the external method slices that reduce correction."
     },
     {
       "id": "interaction-state-and-affordance",
@@ -296,12 +328,12 @@
         {
           "source": "emilkowalski/skills",
           "disposition": "observe",
-          "reason": "Motion-purpose, interruptibility and precision methods directly address the gap, but stay observe-only until #47 selects a bounded adaptation."
+          "reason": "Motion-purpose, frequency, interruptibility and precision methods directly address the gap, but stay observe-only until #47 selects a bounded adaptation."
         },
         {
           "source": "pbakaus/impeccable",
           "disposition": "observe",
-          "reason": "Impeccable also contains interaction/polish guidance; it remains secondary research input rather than a runtime dependency."
+          "reason": "Impeccable also contains interaction/polish guidance; it remains a secondary method input rather than future runtime authority."
         }
       ],
       "reason": "Technical motion existence is insufficient; the owned method must cover purpose, perceptibility, reduced motion and product-specific meaning."
@@ -315,10 +347,10 @@
         {
           "source": "pbakaus/impeccable",
           "disposition": "observe",
-          "reason": "Impeccable's anti-pattern taxonomy overlaps generic-template detection. Keep it pinned while #47 selects only methods that reduce human correction without importing a universal style."
+          "reason": "Impeccable's anti-pattern taxonomy overlaps generic-template detection. #47 should retain only methods that reduce human correction without importing a universal style."
         }
       ],
-      "reason": "This is the reusable owner-correction class behind interfaces that feel generated: subtract semantic echoes and require visible choices that derive from the product world."
+      "reason": "This is the reusable owner-correction class behind interfaces that feel generated: subtract semantic echoes and require visible choices derived from the product world."
     },
     {
       "id": "design-system-codification",
@@ -329,10 +361,10 @@
         {
           "source": "pbakaus/impeccable",
           "disposition": "observe",
-          "reason": "Generic design-system/token guidance overlaps, but Design Studio owns accepted-direction provenance and portable codification."
+          "reason": "Generic design-system/token guidance overlaps, while Design Studio owns accepted-direction provenance and portable codification."
         }
       ],
-      "reason": "The accepted visual system can become a portable artifact; generic token rules should have one method authority after #47."
+      "reason": "An accepted visual system can become a portable artifact; generic token rules should have one method authority after #47."
     },
     {
       "id": "offer-copy-authority",
@@ -415,10 +447,12 @@
     },
     {
       "id": "orchestrator-decision-and-final-acceptance",
-      "behavior": "The Orchestrator is the sole decision owner and accepted output requires the final acceptance receipt.",
+      "behavior": "The Orchestrator is the sole decision owner; corrected trees with regressions or acceptance mismatches are rejected, and accepted output requires the final acceptance receipt.",
       "protectedBy": [
         "skills/design-studio/workflow.yaml#invariants",
         "skills/design-studio/evals/evals.json#3",
+        "skills/design-studio/evals/evals.json#16",
+        "skills/design-studio/evals/evals.json#29",
         "skills/design-studio/references/runtime-integrity.md#Final acceptance receipt"
       ]
     },
@@ -455,11 +489,12 @@
     }
   ],
   "summary": {
-    "surfaceCount": 13,
+    "surfaceCount": 14,
     "scriptFamilyCount": 7,
     "scriptPathCount": 16,
     "productRuntimeScriptFamilies": 0,
     "hostAdapterSupportScriptFamilies": 0,
+    "currentRuntimeBranchCount": 1,
     "conceptCount": 15,
     "behaviorContractCount": 7,
     "historicalEvidenceCount": 4,
@@ -467,7 +502,8 @@
       "#45": "make the Agent Skill the canonical install surface",
       "#46": "establish the internal runtime seam without promoting research harnesses",
       "#47": "resolve observed external method overlaps into one authority",
-      "#49": "physically separate shipped runtime helpers from research tooling after the seam exists"
+      "#49": "physically separate shipped runtime helpers from research tooling after the seam exists",
+      "#50": "normalize owned deterministic runtime and eliminate environment-dependent capability"
     }
   }
 }
