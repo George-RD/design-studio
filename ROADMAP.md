@@ -27,17 +27,17 @@ The governing architecture is [ADR 0002: Design Studio owns its method kernel](d
 
 ## Execution graph
 
-### Frontier
+### Baseline complete
 
-- [#44 — Inventory the portable product boundary and migration map](https://github.com/George-RD/design-studio/issues/44)
+- [#44 — Inventory the portable product boundary and migration map](https://github.com/George-RD/design-studio/issues/44) — baseline recorded in [`docs/migration-map.md`](docs/migration-map.md) and [`docs/migration-map.json`](docs/migration-map.json) against pre-change revision `492a874d0a7c935e51395d66f420608a997d9ed3`.
 
-This is the first implementation ticket. It freezes the baseline and classifies the current surfaces, script families and method ownership before behavior changes.
+The map classifies current surfaces, script families, method overlaps and protected behavior without changing production behavior. It also keeps the frozen Milestone 0 inventory as historical evidence rather than current architecture.
 
-### Parallel work after #44
+### Current frontier after #44
 
-- [#45 — Make the Agent Skill the canonical install and distribution surface](https://github.com/George-RD/design-studio/issues/45) — blocked by #44
-- [#46 — Establish one stable internal runtime seam before script reorganisation](https://github.com/George-RD/design-studio/issues/46) — blocked by #44
-- [#47 — Consolidate external design guidance into one method authority map](https://github.com/George-RD/design-studio/issues/47) — blocked by #44
+- [#45 — Make the Agent Skill the canonical install and distribution surface](https://github.com/George-RD/design-studio/issues/45) — unblocked by #44
+- [#46 — Establish one stable internal runtime seam before script reorganisation](https://github.com/George-RD/design-studio/issues/46) — unblocked by #44
+- [#47 — Consolidate external design guidance into one method authority map](https://github.com/George-RD/design-studio/issues/47) — unblocked by #44
 
 ### Runtime simplification
 
