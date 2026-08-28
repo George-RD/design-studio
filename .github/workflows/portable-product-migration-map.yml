@@ -1,0 +1,64 @@
+name: Validate portable product migration map
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "ROADMAP.md"
+      - "docs/decisions/README.md"
+      - "docs/migration-map.json"
+      - "docs/migration-map.md"
+      - "docs/method-sources.json"
+      - "docs/research/horaxon-feedback-patterns.json"
+      - "docs/index.html"
+      - "docs/app.js"
+      - "benchmarks/milestone-0/**"
+      - "references/**"
+      - "skills/design-studio/**"
+      - "scripts/**"
+      - "commands/**"
+      - "agents/**"
+      - ".claude-plugin/**"
+      - "test/test_portable_product_migration_map.py"
+      - ".github/workflows/portable-product-migration-map.yml"
+  push:
+    branches: [main]
+    paths:
+      - "ROADMAP.md"
+      - "docs/decisions/README.md"
+      - "docs/migration-map.json"
+      - "docs/migration-map.md"
+      - "docs/method-sources.json"
+      - "docs/research/horaxon-feedback-patterns.json"
+      - "docs/index.html"
+      - "docs/app.js"
+      - "benchmarks/milestone-0/**"
+      - "references/**"
+      - "skills/design-studio/**"
+      - "scripts/**"
+      - "commands/**"
+      - "agents/**"
+      - ".claude-plugin/**"
+      - "test/test_portable_product_migration_map.py"
+      - ".github/workflows/portable-product-migration-map.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  migration-map-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out exact revision
+        uses: actions/checkout@v5
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Validate portable product boundary
+        run: |
+          python3 -m unittest discover -s test -p 'test_portable_product_migration_map.py' -v
+          python3 -m unittest discover -s test -p 'test_owned_method_kernel_direction.py' -v
+          python3 -m json.tool docs/migration-map.json > /dev/null
+          python3 -m py_compile test/test_portable_product_migration_map.py

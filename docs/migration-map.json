@@ -1,0 +1,509 @@
+{
+  "schemaVersion": 1,
+  "status": "authoritative-baseline",
+  "externalRuntimeDependencyAllowed": false,
+  "externalRuntimeDependencyPolicy": "target-v1.6",
+  "baseline": {
+    "repository": "George-RD/design-studio",
+    "revision": "492a874d0a7c935e51395d66f420608a997d9ed3",
+    "recordedAt": "2026-08-28",
+    "version": "1.5.0",
+    "governingDecision": "docs/decisions/0002-owned-method-kernel.md",
+    "historicalInventory": "benchmarks/milestone-0/ownership-inventory.json"
+  },
+  "surfaceLabels": {
+    "canonical-skill": "Portable Agent Skill authority that defines supported product behavior.",
+    "optional-host-adapter": "Host-specific installation or registration metadata that must remain thin.",
+    "compatibility-bridge": "Temporary wrapper that forwards to a canonical skill authority without owning behavior.",
+    "repository-only-tooling": "Repository, documentation, benchmark, or maintainer surface that does not ship as skill runtime.",
+    "delete-candidate": "Surface eligible for removal only after its useful behavior or provenance is protected elsewhere."
+  },
+  "scriptLabels": {
+    "product-runtime": "Deterministic helper required by the supported installed runtime.",
+    "host-adapter-support": "Deterministic helper used only by an optional host adapter.",
+    "benchmark-research": "Capability, comparison, or benchmark machinery retained for research evidence rather than the installed product.",
+    "ci-dev-support": "Repository validation or development helper.",
+    "compatibility-bridge": "Temporary script-level wrapper over a canonical runtime seam.",
+    "delete-candidate": "Retired helper that should disappear after required historical evidence is preserved."
+  },
+  "externalMethodDispositions": {
+    "keep-local": "Keep the local method authoritative; external material does not replace it.",
+    "adapt-local": "Adapt the smallest coherent external method into the owned kernel with provenance and tests.",
+    "vendor-slice": "Vendor a bounded external slice only when executable fidelity is necessary and licence obligations are retained.",
+    "observe": "Keep as a pinned research input only; do not make it a future runtime dependency or duplicate it yet.",
+    "delete-reject": "Reject the external method or delete a superseded local duplicate once behavior is protected."
+  },
+  "currentRuntimeBranches": [
+    {
+      "id": "optional-impeccable-mechanical-gate",
+      "status": "migration-debt",
+      "trigger": "impeccable-cli-available",
+      "authorities": [
+        "skills/design-studio/references/quality-gates.md",
+        "skills/design-studio/workflow.yaml"
+      ],
+      "behavior": "The v1.5 mechanical gate prefers three Impeccable JSON passes when the CLI is available; otherwise it runs a smaller, explicitly non-equivalent fallback.",
+      "preserve": "Preserve normalized mechanical-findings snapshots, current-truth semantics, severity/waiver behavior, and the mechanical-versus-visual boundary while removing environment-dependent capability.",
+      "migration": "#46 defines the owned runtime seam, #47 decides which external mechanical methods become local authority, and #50 normalizes deterministic runtime so supported behavior no longer depends on whether Impeccable is installed."
+    }
+  ],
+  "surfaces": [
+    {
+      "path": "skills/design-studio/SKILL.md",
+      "label": "canonical-skill",
+      "reason": "Canonical portable Agent Skill entrypoint and progressive-disclosure router."
+    },
+    {
+      "path": "skills/design-studio/workflow.yaml",
+      "label": "canonical-skill",
+      "reason": "Canonical lifecycle, schemas, paths, budgets, selection and acceptance contract."
+    },
+    {
+      "path": "skills/design-studio/agents/design-agent.md",
+      "label": "canonical-skill",
+      "reason": "Canonical source-blind visual-direction role contract."
+    },
+    {
+      "path": "skills/design-studio/agents/evaluator.md",
+      "label": "canonical-skill",
+      "reason": "Canonical source-blind rendered-evaluation role contract."
+    },
+    {
+      "path": "skills/design-studio/evals/evals.json",
+      "label": "canonical-skill",
+      "reason": "Observable behavior contract suite for the supported skill."
+    },
+    {
+      "path": ".claude-plugin/plugin.json",
+      "label": "optional-host-adapter",
+      "target": "skills/design-studio/SKILL.md",
+      "reason": "Claude Code registration metadata; it must not own product behavior."
+    },
+    {
+      "path": ".claude-plugin/marketplace.json",
+      "label": "optional-host-adapter",
+      "target": ".claude-plugin/plugin.json",
+      "reason": "Claude marketplace packaging metadata for the optional Claude host adapter."
+    },
+    {
+      "path": "commands/create.md",
+      "label": "compatibility-bridge",
+      "target": "skills/design-studio/SKILL.md",
+      "reason": "Legacy Claude command wrapper for canonical Studio/create routing."
+    },
+    {
+      "path": "commands/review.md",
+      "label": "compatibility-bridge",
+      "target": "skills/design-studio/SKILL.md#Review",
+      "reason": "Legacy Claude command wrapper for canonical Review routing."
+    },
+    {
+      "path": "agents/design-agent.md",
+      "label": "compatibility-bridge",
+      "target": "skills/design-studio/agents/design-agent.md",
+      "reason": "Root Claude registration stub; canonical role instructions live inside the Agent Skill."
+    },
+    {
+      "path": "agents/evaluator.md",
+      "label": "compatibility-bridge",
+      "target": "skills/design-studio/agents/evaluator.md",
+      "reason": "Root Claude registration stub; canonical role instructions live inside the Agent Skill."
+    },
+    {
+      "path": "docs/index.html",
+      "label": "repository-only-tooling",
+      "reason": "Public repository documentation/marketing surface, not a product invocation surface."
+    },
+    {
+      "path": "docs/app.js",
+      "label": "repository-only-tooling",
+      "reason": "Behavior for the repository documentation site, not installed skill runtime."
+    },
+    {
+      "path": "references/methodology.md",
+      "label": "delete-candidate",
+      "target": "Delete after #47/#51 confirm rationale, meta and workflow authorities retain any still-useful method content.",
+      "reason": "Unreferenced legacy harness methodology already identified by the frozen ownership inventory as superseded by current local authorities."
+    }
+  ],
+  "scripts": [
+    {
+      "id": "browser-capability-research",
+      "label": "benchmark-research",
+      "paths": [
+        "scripts/browser_motion_evidence.mjs",
+        "scripts/browser_profile_cleanup.mjs",
+        "scripts/browser_websocket_ready.mjs",
+        "scripts/run_browser_capability.mjs",
+        "scripts/run_browser_capability_completion.mjs"
+      ],
+      "reason": "Browser capability and evidence probes support the historical capability/benchmark harness. #46 must define the product runtime seam before any reusable subset can be promoted."
+    },
+    {
+      "id": "copilot-agent-capability-research",
+      "label": "benchmark-research",
+      "paths": [
+        "scripts/run_copilot_cli_agent_capability.py",
+        "scripts/run_copilot_cli_agent_capability_gate.py"
+      ],
+      "reason": "Copilot CLI capability-gate machinery proves an execution environment; it is not a supported Design Studio runtime interface."
+    },
+    {
+      "id": "boundary-benchmark-research",
+      "label": "benchmark-research",
+      "paths": [
+        "scripts/run_boundary_benchmark.py",
+        "scripts/run_boundary_benchmark_matrix.py",
+        "scripts/run_boundary_benchmark_preference.py"
+      ],
+      "reason": "Frozen comparison lifecycle and blind preference machinery remains optional research evidence after ADR 0002."
+    },
+    {
+      "id": "copilot-comparison-research",
+      "label": "benchmark-research",
+      "paths": [
+        "scripts/run_copilot_comparison.py",
+        "scripts/run_copilot_comparison_lane.py",
+        "scripts/run_copilot_comparison_matrix_generation.py"
+      ],
+      "reason": "Live comparison generation exists to execute the historical benchmark matrix, not to serve installed Design Studio runs."
+    },
+    {
+      "id": "deadline-ci-helper",
+      "label": "ci-dev-support",
+      "paths": ["scripts/run_with_deadline.py"],
+      "reason": "Generic repository helper for bounded CI/research processes; no installed product contract currently calls it."
+    },
+    {
+      "id": "benchmark-fixture-validator",
+      "label": "ci-dev-support",
+      "paths": ["scripts/validate_benchmark_fixtures.py"],
+      "reason": "Validates frozen research fixtures and their lockfile in repository CI."
+    },
+    {
+      "id": "retired-github-models-probe",
+      "label": "delete-candidate",
+      "paths": ["scripts/probe_github_models.py"],
+      "target": "Delete only after #49/#50 confirm no active CI path needs the probe and the historical receipt remains discoverable.",
+      "reason": "The GitHub Models probe belongs to the retired execution path; its permanent receipt remains historical evidence."
+    }
+  ],
+  "conceptMap": [
+    {
+      "id": "source-blind-direction-and-evaluation",
+      "canonicalOwner": "design-studio",
+      "localAuthorities": [
+        "skills/design-studio/agents/design-agent.md",
+        "skills/design-studio/agents/evaluator.md",
+        "skills/design-studio/references/rationale.md"
+      ],
+      "dogfoodEvidence": [],
+      "externalOverlaps": [
+        {
+          "source": "emilkowalski/skills",
+          "disposition": "observe",
+          "reason": "Emil's genuinely divergent prototypes compared in realistic context overlaps direction exploration, but does not replace Design Studio's source-isolation, hidden assignment or independent evaluator boundaries."
+        }
+      ],
+      "reason": "Source isolation and independent rendered judgement are differentiated Design Studio controls and remain local while #47 evaluates the prototype-comparison tactic separately."
+    },
+    {
+      "id": "runtime-integrity-and-immutable-evidence",
+      "canonicalOwner": "design-studio",
+      "localAuthorities": [
+        "skills/design-studio/workflow.yaml",
+        "skills/design-studio/references/runtime-integrity.md",
+        "skills/design-studio/references/iteration.md"
+      ],
+      "dogfoodEvidence": ["settled-world-preservation"],
+      "externalOverlaps": [],
+      "reason": "Roots, capability evidence, immutable iterations, append-only events, resume and final acceptance are orchestration responsibilities."
+    },
+    {
+      "id": "product-context-and-planning",
+      "canonicalOwner": "design-studio",
+      "localAuthorities": [
+        "skills/design-studio/references/context.md",
+        "skills/design-studio/references/planning.md"
+      ],
+      "dogfoodEvidence": ["cross-surface-contract-drift"],
+      "externalOverlaps": [
+        {
+          "source": "pbakaus/impeccable",
+          "disposition": "observe",
+          "reason": "Impeccable has context/design guidance; #47 must separate generic design context from Design Studio routing and evidence semantics before adaptation."
+        }
+      ],
+      "reason": "Design Studio retains product truth, run scoping and evidence routing while generic design-context methods remain intake candidates."
+    },
+    {
+      "id": "implementation-fidelity",
+      "canonicalOwner": "design-studio",
+      "localAuthorities": ["skills/design-studio/references/generation.md"],
+      "dogfoodEvidence": ["settled-world-preservation"],
+      "externalOverlaps": [],
+      "reason": "Builder fidelity to a selected source-blind direction and immutable build handoff are local orchestration contracts."
+    },
+    {
+      "id": "mechanical-source-and-browser-evidence",
+      "canonicalOwner": "design-studio",
+      "localAuthorities": ["skills/design-studio/references/quality-gates.md"],
+      "dogfoodEvidence": ["whole-page-responsive-composition", "real-device-perceptibility"],
+      "externalOverlaps": [
+        {
+          "source": "pbakaus/impeccable",
+          "disposition": "observe",
+          "reason": "Impeccable is both the source of useful detector methods and a current optional v1.5 execution branch. #47 decides the smallest local method adaptation while #46/#50 remove environment-dependent runtime behavior."
+        }
+      ],
+      "reason": "The owned runtime needs one stable mechanical-evidence capability independent of which external tools happen to be installed."
+    },
+    {
+      "id": "review-orchestration",
+      "canonicalOwner": "design-studio",
+      "localAuthorities": ["skills/design-studio/references/review/polish.md"],
+      "dogfoodEvidence": ["whole-page-responsive-composition", "settled-world-preservation"],
+      "externalOverlaps": [
+        {
+          "source": "pbakaus/impeccable",
+          "disposition": "observe",
+          "reason": "Impeccable overlaps audit/polish tactics, while Review routing and readiness evidence remain Design Studio responsibilities."
+        },
+        {
+          "source": "emilkowalski/skills",
+          "disposition": "observe",
+          "reason": "Emil's read-only expert audit followed by executable plans overlaps review sequencing; #47 should assess the tactic without replacing Review's evidence boundary or decision ownership."
+        }
+      ],
+      "reason": "Review remains a supported Design Studio lane while duplicated generic audit tactics are candidates for one consolidated method authority."
+    },
+    {
+      "id": "accessibility-review",
+      "canonicalOwner": "design-studio",
+      "localAuthorities": ["skills/design-studio/references/review/a11y.md"],
+      "dogfoodEvidence": [],
+      "externalOverlaps": [
+        {
+          "source": "pbakaus/impeccable",
+          "disposition": "observe",
+          "reason": "Accessibility audit tactics overlap; #47 chooses one local authority rather than retaining competing rulebooks."
+        }
+      ],
+      "reason": "Accessibility remains required product behavior; method duplication is resolved without outsourcing the runtime."
+    },
+    {
+      "id": "hierarchy-rhythm-and-responsive-composition",
+      "canonicalOwner": "design-studio",
+      "localAuthorities": ["skills/design-studio/references/review/hierarchy.md"],
+      "dogfoodEvidence": ["whole-page-responsive-composition", "action-hierarchy-and-consistency"],
+      "externalOverlaps": [
+        {
+          "source": "pbakaus/impeccable",
+          "disposition": "observe",
+          "reason": "Hierarchy and polish guidance overlaps; Horaxon evidence adds whole-page composition failures that component-level correctness can miss."
+        }
+      ],
+      "reason": "One local authority should combine reusable dogfood evidence with only the external method slices that reduce correction."
+    },
+    {
+      "id": "interaction-state-and-affordance",
+      "canonicalOwner": "design-studio",
+      "localAuthorities": ["skills/design-studio/references/review/interaction.md"],
+      "dogfoodEvidence": ["false-affordance", "action-hierarchy-and-consistency"],
+      "externalOverlaps": [
+        {
+          "source": "pbakaus/impeccable",
+          "disposition": "observe",
+          "reason": "Interaction/state audit guidance overlaps and remains a research input pending #47."
+        }
+      ],
+      "reason": "State completeness and honest affordances are reusable outcome checks; #47 consolidates tactics without changing the local evidence boundary."
+    },
+    {
+      "id": "motion-craft-and-perceptibility",
+      "canonicalOwner": "design-studio",
+      "localAuthorities": ["skills/design-studio/references/review/interaction.md"],
+      "dogfoodEvidence": ["real-device-perceptibility", "product-specific-metaphor"],
+      "externalOverlaps": [
+        {
+          "source": "emilkowalski/skills",
+          "disposition": "observe",
+          "reason": "Motion-purpose, frequency, interruptibility and precision methods directly address the gap, but stay observe-only until #47 selects a bounded adaptation."
+        },
+        {
+          "source": "pbakaus/impeccable",
+          "disposition": "observe",
+          "reason": "Impeccable also contains interaction/polish guidance; it remains a secondary method input rather than future runtime authority."
+        }
+      ],
+      "reason": "Technical motion existence is insufficient; the owned method must cover purpose, perceptibility, reduced motion and product-specific meaning."
+    },
+    {
+      "id": "generated-specificity-and-subtraction",
+      "canonicalOwner": "design-studio",
+      "localAuthorities": ["skills/design-studio/references/review/slop.md"],
+      "dogfoodEvidence": ["semantic-redundancy", "product-specific-metaphor"],
+      "externalOverlaps": [
+        {
+          "source": "pbakaus/impeccable",
+          "disposition": "observe",
+          "reason": "Impeccable's anti-pattern taxonomy overlaps generic-template detection. #47 should retain only methods that reduce human correction without importing a universal style."
+        }
+      ],
+      "reason": "This is the reusable owner-correction class behind interfaces that feel generated: subtract semantic echoes and require visible choices derived from the product world."
+    },
+    {
+      "id": "design-system-codification",
+      "canonicalOwner": "design-studio",
+      "localAuthorities": ["skills/design-studio/assets/design-system-skill/SKILL.md.template"],
+      "dogfoodEvidence": ["cross-surface-contract-drift"],
+      "externalOverlaps": [
+        {
+          "source": "pbakaus/impeccable",
+          "disposition": "observe",
+          "reason": "Generic design-system/token guidance overlaps, while Design Studio owns accepted-direction provenance and portable codification."
+        }
+      ],
+      "reason": "An accepted visual system can become a portable artifact; generic token rules should have one method authority after #47."
+    },
+    {
+      "id": "offer-copy-authority",
+      "canonicalOwner": "growth-arsenal",
+      "localAuthorities": ["skills/design-studio/references/copy.md"],
+      "dogfoodEvidence": ["semantic-redundancy", "cross-surface-contract-drift", "action-hierarchy-and-consistency"],
+      "externalOverlaps": [],
+      "reason": "Growth Arsenal owns offer/copy method. Design Studio consumes durable copy/product truth and preserves it across visual work; #48 defines the neutral composition artifact."
+    },
+    {
+      "id": "overhaul-scope-and-settled-world",
+      "canonicalOwner": "design-studio",
+      "localAuthorities": [
+        "skills/design-studio/references/overhaul.md",
+        "skills/design-studio/references/meta.md"
+      ],
+      "dogfoodEvidence": ["settled-world-preservation"],
+      "externalOverlaps": [],
+      "reason": "Preserve-versus-reopen decisions and evidence-based deletion prevent broad redesign churn once the visual world is already working."
+    },
+    {
+      "id": "visual-evaluation-contract",
+      "canonicalOwner": "design-studio",
+      "localAuthorities": [
+        "skills/design-studio/references/evaluation.md",
+        "skills/design-studio/agents/evaluator.md"
+      ],
+      "dogfoodEvidence": ["whole-page-responsive-composition", "real-device-perceptibility"],
+      "externalOverlaps": [],
+      "reason": "Rendered evidence and source-blind judgement stay local; external mechanical methods cannot become visual authority."
+    }
+  ],
+  "behaviorContracts": [
+    {
+      "id": "source-blind-role-isolation",
+      "behavior": "Visual Director and Evaluator remain source-blind and the Evaluator cannot make workflow decisions.",
+      "protectedBy": [
+        "skills/design-studio/workflow.yaml#invariants",
+        "skills/design-studio/agents/design-agent.md",
+        "skills/design-studio/agents/evaluator.md",
+        "skills/design-studio/evals/evals.json#3"
+      ]
+    },
+    {
+      "id": "immutable-iterations-and-events",
+      "behavior": "Completed iterations remain immutable and events.jsonl is append-only across normal execution and resume.",
+      "protectedBy": [
+        "skills/design-studio/workflow.yaml#invariants",
+        "skills/design-studio/evals/evals.json#7",
+        "skills/design-studio/evals/evals.json#25"
+      ]
+    },
+    {
+      "id": "precommitted-unattended-direction",
+      "behavior": "Unattended direction assignment is committed before generation and hidden from the Visual Director.",
+      "protectedBy": [
+        "skills/design-studio/workflow.yaml#invariants",
+        "skills/design-studio/evals/evals.json#8",
+        "skills/design-studio/evals/evals.json#26"
+      ]
+    },
+    {
+      "id": "current-mechanical-snapshots",
+      "behavior": "Mechanical findings describe current truth rather than an accumulated stale cache and remain separate from visual judgement.",
+      "protectedBy": [
+        "skills/design-studio/workflow.yaml#invariants",
+        "skills/design-studio/evals/evals.json#10",
+        "skills/design-studio/evals/evals.json#27"
+      ]
+    },
+    {
+      "id": "required-rendered-evidence",
+      "behavior": "Review and Studio do not claim visual readiness without the required measured viewports; partial evidence remains explicitly unverified.",
+      "protectedBy": [
+        "skills/design-studio/workflow.yaml#invariants",
+        "skills/design-studio/evals/evals.json#5",
+        "skills/design-studio/evals/evals.json#6",
+        "skills/design-studio/evals/evals.json#21"
+      ]
+    },
+    {
+      "id": "orchestrator-decision-and-final-acceptance",
+      "behavior": "The Orchestrator is the sole decision owner; corrected trees with regressions or acceptance mismatches are rejected, and accepted output requires the final acceptance receipt.",
+      "protectedBy": [
+        "skills/design-studio/workflow.yaml#invariants",
+        "skills/design-studio/evals/evals.json#3",
+        "skills/design-studio/evals/evals.json#16",
+        "skills/design-studio/evals/evals.json#29",
+        "skills/design-studio/references/runtime-integrity.md#Final acceptance receipt"
+      ]
+    },
+    {
+      "id": "cross-surface-version-parity",
+      "behavior": "Canonical skill, workflow, eval and optional Claude adapter metadata stay on one declared product version while the adapter exists.",
+      "protectedBy": ["skills/design-studio/evals/evals.json#14"]
+    }
+  ],
+  "historicalEvidence": [
+    {
+      "path": "benchmarks/milestone-0/ownership-inventory.json",
+      "classification": "repository-only-tooling",
+      "shipsWithSkill": false,
+      "reason": "Frozen ADR-0001-era ownership baseline retained for provenance; it is superseded by this map for current product direction."
+    },
+    {
+      "path": "benchmarks/milestone-0/OWNERSHIP_INVENTORY.md",
+      "classification": "repository-only-tooling",
+      "shipsWithSkill": false,
+      "reason": "Human-readable companion to the frozen historical ownership baseline."
+    },
+    {
+      "path": "benchmarks/milestone-0/evidence/copilot-cli-agent-capability.json",
+      "classification": "repository-only-tooling",
+      "shipsWithSkill": false,
+      "reason": "Permanent capability-gate receipt for historical benchmark execution, not installed runtime evidence."
+    },
+    {
+      "path": "benchmarks/milestone-0/evidence/github-models-capability.json",
+      "classification": "repository-only-tooling",
+      "shipsWithSkill": false,
+      "reason": "Permanent receipt for the retired GitHub Models capability path; kept to explain historical decisions."
+    }
+  ],
+  "summary": {
+    "surfaceCount": 14,
+    "scriptFamilyCount": 7,
+    "scriptPathCount": 16,
+    "productRuntimeScriptFamilies": 0,
+    "hostAdapterSupportScriptFamilies": 0,
+    "currentRuntimeBranchCount": 1,
+    "conceptCount": 15,
+    "behaviorContractCount": 7,
+    "historicalEvidenceCount": 4,
+    "nextDecisions": {
+      "#45": "make the Agent Skill the canonical install surface",
+      "#46": "establish the internal runtime seam without promoting research harnesses",
+      "#47": "resolve observed external method overlaps into one authority",
+      "#49": "physically separate shipped runtime helpers from research tooling after the seam exists",
+      "#50": "normalize owned deterministic runtime and eliminate environment-dependent capability"
+    }
+  }
+}
