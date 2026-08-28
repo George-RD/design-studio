@@ -24,9 +24,11 @@ Understand the current state, use project vocabulary, respect ADRs, and look for
 
 Each slice should cut a narrow but complete path through the relevant layers, be independently verifiable, and fit in one fresh context window. Give each ticket its blocking edges. Use expand-contract for wide refactors that cannot stay green as one vertical slice.
 
-### 4. Quiz the user
+### 4. Validate the graph
 
-Present title, blockers and delivered behavior for each proposed ticket and iterate until approved.
+Review the proposed titles, delivered behavior and blocker edges against the source spec and current codebase. Prefer the smallest graph that covers the required behavior without horizontal layer tickets or duplicate scope.
+
+When the user has already asked for tickets and the source material is sufficient, publish without an additional approval round. Ask only when a material ambiguity cannot be resolved from the spec, ADRs, codebase or current conversation; otherwise record assumptions in the affected ticket.
 
 ### 5. Publish tickets
 
