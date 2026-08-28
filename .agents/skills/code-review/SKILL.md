@@ -1,6 +1,6 @@
 ---
 name: code-review
-description: "Review changes since a fixed point (commit, branch, tag, or merge-base) along two axes: Standards and Spec. Includes current staged, unstaged, and untracked work when reviewing work in progress."
+description: "Review changes since a fixed point along two axes: Standards and Spec. Includes staged, unstaged, and untracked work for WIP reviews."
 ---
 
 Two-axis review of the change set since a fixed point:
@@ -14,43 +14,57 @@ The issue tracker should have been provided to you. If `docs/agents/issue-tracke
 
 ## Process
 
-### 1. Pin the fixed point and review bundle
+### 1. Pin the fixed point and review bundle safely
 
-Whatever the user said is the fixed point (a commit SHA, branch name, tag, `main`, `HEAD~5`, etc.). If they didn't specify one, use the repository's normal integration branch when it is unambiguous; otherwise ask for the fixed point.
+Treat any user-provided revision as untrusted input. Never interpolate it into a shell command string or pass it through `sh -c`/`eval`.
 
-Resolve it first with `git rev-parse <fixed-point>`.
+When a process API is available, pass Git arguments as an argv array. Conceptually:
+
+- resolve: `["git", "rev-parse", "--verify", "--end-of-options", "<fixed-point>^{commit}"]`
+- committed diff: `["git", "diff", "<resolved-sha>...HEAD"]`
+- full commit messages: `["git", "log", "<resolved-sha>..HEAD", "--format=fuller"]`
+
+Use the resolved commit SHA for later diff/log commands. If the host exposes only a shell-string interface, accept only a revision token that contains no whitespace, quotes, backticks, `$`, backslashes, semicolons, pipes, ampersands, redirection characters or parentheses; then resolve it before use. Reject unsafe tokens instead of trying to escape arbitrary shell syntax.
+
+If the user did not specify a fixed point, use the repository's normal integration branch when it is unambiguous; otherwise ask for the fixed point.
 
 Build one review bundle from:
 
-1. **Committed branch changes:** `git diff <fixed-point>...HEAD` (three-dot, against the merge-base).
+1. **Committed branch changes:** diff the resolved fixed-point SHA against `HEAD` using three-dot merge-base semantics.
 2. **Current tracked WIP:** `git diff HEAD`, which adds staged and unstaged tracked changes relative to `HEAD`.
 3. **Current untracked WIP:** `git ls-files --others --exclude-standard`; read each listed file as part of the review input rather than silently omitting it.
-4. **Commit list:** `git log <fixed-point>..HEAD --oneline`.
+4. **Commit context:** read full commit messages/bodies between the fixed point and `HEAD`, not only one-line summaries.
+5. **PR context when available:** read the PR body, linked issues and review discussion relevant to the requested work.
 
 Use `git status --porcelain` to determine whether WIP exists. A review is empty only when the committed diff, tracked WIP, and untracked-file list are all empty. Do not reject a WIP review merely because no new commit exists.
 
-Avoid double-counting findings when a line appears in both the committed and working-tree material. The review target is the **current resulting work**, while the committed diff remains useful evidence for how it diverged from the fixed point.
+Avoid double-counting findings when a line appears in both committed and working-tree material. The review target is the **current resulting work**, while the committed diff remains useful evidence for how it diverged from the fixed point.
 
-### 2. Identify the spec source
+### 2. Identify the originating specification
 
-Look for the originating spec, in this order:
+Resolve the spec from the full context, not from the first issue number encountered.
 
-1. Issue references in the commit messages (`#123`, `Closes #45`, GitLab `!67`, etc.), fetched via the workflow in `docs/agents/issue-tracker.md`.
-2. A path the user passed as an argument.
-3. A spec file under `docs/`, `specs/`, or `.scratch/` matching the branch name or feature.
-4. If nothing is found, ask the user where the spec is. If they say there isn't one, the **Spec** sub-agent will skip and report "no spec available".
+1. Read issue references from the PR body, linked issues, full commit messages and user-provided references.
+2. Fetch each relevant issue body **and comments** through `docs/agents/issue-tracker.md`.
+3. If an implementation/tracer ticket declares a `Parent`, follow that relation until the designated parent specification is reached; do not substitute a narrow implementation ticket for its parent spec.
+4. Prefer an explicitly named parent/specification issue over incidental issue references.
+5. If the user supplied a spec path, use it after checking it does not conflict with the tracker parent.
+6. Otherwise check `docs/`, `specs/`, or `.scratch/` for a matching spec.
+7. If no spec exists, report the Spec axis as `no spec available` rather than inventing one.
+
+For this repository, implementation tickets generated by `to-tickets` commonly point to a parent spec issue; the Spec reviewer should receive both the parent spec and the implementation ticket so it can distinguish global requirements from slice-specific acceptance criteria.
 
 ### 3. Identify the standards sources
 
-Anything in the repo that documents how code should be written, such as `CODING_STANDARDS.md` or `CONTRIBUTING.md`.
+Read repository guidance that constrains the changed area, including `AGENTS.md`, relevant ADRs, coding/contribution standards, and the source issue's explicit implementation/testing decisions.
 
-On top of whatever the repo documents, the Standards axis always carries this smell baseline: Mysterious Name, Duplicated Code, Feature Envy, Data Clumps, Primitive Obsession, Repeated Switches, Shotgun Surgery, Divergent Change, Speculative Generality, Message Chains, Middle Man and Refused Bequest. Repository standards override the baseline; baseline smells are judgement calls, not hard violations.
+On top of documented standards, the Standards axis carries this smell baseline: Mysterious Name, Duplicated Code, Feature Envy, Data Clumps, Primitive Obsession, Repeated Switches, Shotgun Surgery, Divergent Change, Speculative Generality, Message Chains, Middle Man and Refused Bequest. Repository standards override the baseline; baseline smells are judgement calls, not hard violations.
 
 ### 4. Spawn both sub-agents in parallel
 
 The Standards sub-agent receives the full review bundle, standards sources and smell baseline. It reports documented-standard violations separately from heuristic smells.
 
-The Spec sub-agent receives the full review bundle and originating spec. It reports missing/partial requirements, scope creep and apparently implemented requirements whose behavior is wrong. If no spec exists, skip this axis and say so.
+The Spec sub-agent receives the full review bundle, the implementation ticket and the designated parent spec. It reports missing/partial requirements, scope creep and apparently implemented requirements whose behavior is wrong. If no spec exists, skip this axis and say so.
 
 Both sub-agents must inspect untracked files listed in the bundle. Neither may infer that `HEAD` alone represents a WIP review.
 
