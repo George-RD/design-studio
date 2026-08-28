@@ -4,7 +4,7 @@ Design Studio's executable roadmap lives in GitHub Issues. This file is intentio
 
 ## Direction
 
-Design Studio is becoming a **portable Agent Skill with one owned method kernel and one supported runtime**.
+Design Studio is becoming a **portable Agent Skill with one curated method kernel and one supported runtime**.
 
 The next phase prioritises simplification:
 
@@ -13,9 +13,9 @@ The next phase prioritises simplification:
 - a standalone CLI is deferred until a concrete need proves it adds value;
 - deterministic product tooling sits behind one internal runtime seam;
 - product runtime helpers are separated from benchmark/research harnesses;
-- useful Impeccable and Emil Kowalski methods are selectively consolidated into one non-duplicated local authority and progressively disclosed leaves;
+- external **method intake** is evidence-gated: useful Impeccable and Emil Kowalski methods are selectively consolidated into one non-duplicated local authority and progressively disclosed leaves;
 - Growth Arsenal remains an independent offer/copy/business skill and composes with Design Studio through neutral artifacts rather than duplicated methods;
-- broad dogfood is evidence, not a mandatory roadmap phase. Use targeted comparisons only when they resolve a live method-intake uncertainty.
+- the **feedback-to-eval loop** remains a learning mechanism, but broad dogfood is evidence rather than a mandatory roadmap phase. Use targeted comparisons only when they resolve a live method-intake uncertainty.
 
 The governing architecture is [ADR 0002: Design Studio owns its method kernel](docs/decisions/0002-owned-method-kernel.md).
 
@@ -87,10 +87,18 @@ Use:
 4. `codebase-design` when the runtime interface/seam itself is being shaped;
 5. `code-review` against both repository standards and the originating issue/spec.
 
-GitHub Issues are authoritative for completion and blockers. Do not mirror issue checkboxes back into this file.
+GitHub Issues are authoritative for completion and blockers. Do not mirror active issue checkboxes back into this file.
 
 ## Historical evidence
 
 The earlier milestone roadmap, Impeccable boundary experiment, frozen fixtures, blind comparison transaction and Horaxon dogfood evidence remain in repository history and benchmark/research artifacts. ADR 0002 supersedes the required-Impeccable runtime direction.
+
+The following archived Milestone 0 markers are retained only as historical evidence contracts for the existing benchmark tests. **They are not executable roadmap items and must not be used to select work:**
+
+- [x] Inventory every Design Studio step, reference, schema and check. Evidence: `benchmarks/milestone-0/OWNERSHIP_INVENTORY.md`.
+- [x] Identify workflows that only reproduce an Impeccable command and record the old delegate/delete disposition.
+- [x] Controlled source-blind agent, browser and evidence capability gates.
+- [ ] Run the same fixed briefs through: retained as an **optional research comparison, not a release gate**.
+- [ ] Confirm the smallest differentiated product: superseded by #43's portable-kernel outcome and #53's release proof.
 
 Retain that evidence when useful, but do not run historical comparisons or continue dogfood solely to advance old roadmap checkboxes.
