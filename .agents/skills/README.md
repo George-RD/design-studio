@@ -34,8 +34,9 @@ The subset covers planning, issue decomposition, implementation, test-driven dev
 
 Current deliberate differences from the reviewed source include:
 
+- `setup-matt-pocock-skills` merges defaults into existing repository guidance and verifies sentinel rules survive instead of treating seed templates as overwrite sources.
 - `to-spec` preserves its no-interview promise by inferring testing seams from existing conversation, code and ADR evidence; unresolved material uncertainty becomes a documented assumption.
-- `to-tickets` validates and publishes a sufficiently specified ticket graph without a mandatory approval round, asks only when a material ambiguity cannot be resolved, and emits the full `ready-for-agent` contract.
+- `to-tickets` validates and publishes a sufficiently specified ticket graph without a mandatory approval round, asks only when a material ambiguity cannot be resolved, uses immediate blocker edges, and emits the full `ready-for-agent` contract.
 - `code-review` includes committed, staged, unstaged and untracked work, treats revision input as untrusted, and resolves implementation tickets back to their parent specification.
 - `tdd` uses a red → green → refactor vertical-slice loop while reserving broader restructuring for separately justified work.
 - `codebase-design` is a compact local adaptation of the upstream deep-module/seam vocabulary and its deepening/design-it-twice references.
