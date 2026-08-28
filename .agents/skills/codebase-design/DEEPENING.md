@@ -27,4 +27,4 @@ Inject the external dependency behind a small port and use a mock adapter at the
 
 ## Testing strategy: replace, don't layer
 
-Once tests exist at the deepened module's interface, delete obsolete shallow-module tests. Assert observable outcomes through the interface, not internal state.
+Before deleting shallow-module tests, map each one to equivalent observable coverage at the deepened module's interface, including edge cases and failure behavior. Delete a shallow test only when its protected behavior is demonstrably covered through the deeper public seam. Retain tests for behavior that the deepened interface intentionally does not expose or cannot verify. Prefer observable outcomes through the highest stable interface over duplicate internal-state assertions.
