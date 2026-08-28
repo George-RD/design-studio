@@ -1,9 +1,9 @@
 ---
 name: code-review
-description: "Review the changes since a fixed point (commit, branch, tag, or merge-base) along two axes: Standards (does the code follow this repo's documented coding standards?) and Spec (does the code match what the originating issue/spec asked for?). Runs both reviews in parallel sub-agents and reports them side by side. Use when the user wants to review a branch, a PR, work-in-progress changes, or asks to \"review since X\"."
+description: "Review changes since a fixed point (commit, branch, tag, or merge-base) along two axes: Standards and Spec. Includes current staged, unstaged, and untracked work when reviewing work in progress."
 ---
 
-Two-axis review of the diff between `HEAD` and a fixed point the user supplies:
+Two-axis review of the change set since a fixed point:
 
 - **Standards**: does the code conform to this repo's documented coding standards?
 - **Spec**: does the code faithfully implement the originating issue / spec?
@@ -14,13 +14,22 @@ The issue tracker should have been provided to you. If `docs/agents/issue-tracke
 
 ## Process
 
-### 1. Pin the fixed point
+### 1. Pin the fixed point and review bundle
 
-Whatever the user said is the fixed point (a commit SHA, branch name, tag, `main`, `HEAD~5`, etc.). If they didn't specify one, ask for it.
+Whatever the user said is the fixed point (a commit SHA, branch name, tag, `main`, `HEAD~5`, etc.). If they didn't specify one, use the repository's normal integration branch when it is unambiguous; otherwise ask for the fixed point.
 
-Capture the diff command once: `git diff <fixed-point>...HEAD` (three-dot, so the comparison is against the merge-base). Also note the list of commits via `git log <fixed-point>..HEAD --oneline`.
+Resolve it first with `git rev-parse <fixed-point>`.
 
-Before going further, confirm the fixed point resolves (`git rev-parse <fixed-point>`) and the diff is non-empty. A bad ref or empty diff should fail here, not inside two parallel sub-agents.
+Build one review bundle from:
+
+1. **Committed branch changes:** `git diff <fixed-point>...HEAD` (three-dot, against the merge-base).
+2. **Current tracked WIP:** `git diff HEAD`, which adds staged and unstaged tracked changes relative to `HEAD`.
+3. **Current untracked WIP:** `git ls-files --others --exclude-standard`; read each listed file as part of the review input rather than silently omitting it.
+4. **Commit list:** `git log <fixed-point>..HEAD --oneline`.
+
+Use `git status --porcelain` to determine whether WIP exists. A review is empty only when the committed diff, tracked WIP, and untracked-file list are all empty. Do not reject a WIP review merely because no new commit exists.
+
+Avoid double-counting findings when a line appears in both the committed and working-tree material. The review target is the **current resulting work**, while the committed diff remains useful evidence for how it diverged from the fixed point.
 
 ### 2. Identify the spec source
 
@@ -39,9 +48,11 @@ On top of whatever the repo documents, the Standards axis always carries this sm
 
 ### 4. Spawn both sub-agents in parallel
 
-The Standards sub-agent receives the fixed diff, commit list, standards sources and smell baseline. It reports documented-standard violations separately from heuristic smells.
+The Standards sub-agent receives the full review bundle, standards sources and smell baseline. It reports documented-standard violations separately from heuristic smells.
 
-The Spec sub-agent receives the fixed diff, commit list and originating spec. It reports missing/partial requirements, scope creep and apparently implemented requirements whose behavior is wrong. If no spec exists, skip this axis and say so.
+The Spec sub-agent receives the full review bundle and originating spec. It reports missing/partial requirements, scope creep and apparently implemented requirements whose behavior is wrong. If no spec exists, skip this axis and say so.
+
+Both sub-agents must inspect untracked files listed in the bundle. Neither may infer that `HEAD` alone represents a WIP review.
 
 ### 5. Aggregate
 
