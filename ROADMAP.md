@@ -42,7 +42,7 @@ This is the first implementation ticket. It freezes the baseline and classifies 
 ### Runtime simplification
 
 - [#49 — Separate shipped runtime helpers from benchmark and research tooling](https://github.com/George-RD/design-studio/issues/49) — blocked by #46
-- [#50 — Normalize product runtime script families behind the shared seam](https://github.com/George-RD/design-studio/issues/50) — blocked by #46 and #49
+- [#50 — Normalize product runtime script families behind the shared seam](https://github.com/George-RD/design-studio/issues/50) — blocked by #49
 
 ### Method consolidation and modular composition
 
@@ -52,23 +52,23 @@ This is the first implementation ticket. It freezes the baseline and classifies 
 
 ### Adapter contraction and release proof
 
-- [#52 — Reduce Claude Code integration to a thin adapter and defer the standalone CLI](https://github.com/George-RD/design-studio/issues/52) — blocked by #45, #46, #50 and #51
-- [#53 — Prove the portable v1.6 path and contract legacy surfaces](https://github.com/George-RD/design-studio/issues/53) — blocked by #45, #48, #50, #51 and #52
+- [#52 — Reduce Claude Code integration to a thin adapter and defer the standalone CLI](https://github.com/George-RD/design-studio/issues/52) — blocked by #45, #50 and #51
+- [#53 — Prove the portable v1.6 path and contract legacy surfaces](https://github.com/George-RD/design-studio/issues/53) — blocked by #48 and #52
 
 ## Dependency sketch
 
 ```text
 #44 inventory
- ├─> #45 canonical Agent Skill install ────────────────┐
+ ├─> #45 canonical Agent Skill install ─────────────────────────┐
  ├─> #46 runtime seam ─> #49 runtime/research split ─> #50 script normalisation ─┐
- │                    └───────────────────────────────> #51 method leaves ───────┤
- └─> #47 method authority ─> #51 method leaves ─────────────────────────────────┤
+ │                    └───────────────────────────────> #51 method leaves ────────┤
+ └─> #47 method authority ─> #51 method leaves ──────────────────────────────────┤
                          └─> #48 Growth Arsenal contract ─────────────────────────┤
 
-#45 + #46 + #50 + #51 ─> #52 thin Claude adapter / CLI deferral ────────────────┤
-#45 + #48 + #50 + #51 + #52 ─> #53 portable v1.6 proof                         │
-                                                                                ▼
-                                                                              v1.6
+#45 + #50 + #51 ─> #52 thin Claude adapter / CLI deferral ───────────────────────┤
+#48 + #52 ─> #53 portable v1.6 proof                                             │
+                                                                                  ▼
+                                                                                v1.6
 ```
 
 ## Non-blocking maintenance
@@ -77,7 +77,7 @@ This is the first implementation ticket. It freezes the baseline and classifies 
 
 ## Planning and implementation discipline
 
-Repo-owned Matt Pocock engineering skills are installed under `.agents/skills/`, pinned to source revision `6654f6b60cd9d5be8b54c6fafe44346dabeb3b76`.
+Repo-owned Matt Pocock engineering skills are installed under `.agents/skills/`, based on reviewed source revision `6654f6b60cd9d5be8b54c6fafe44346dabeb3b76`.
 
 Use:
 
