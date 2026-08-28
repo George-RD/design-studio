@@ -50,6 +50,7 @@ EXPECTED_SURFACES = {
     "agents/evaluator.md": "compatibility-bridge",
     "docs/index.html": "repository-only-tooling",
     "docs/app.js": "repository-only-tooling",
+    "references/methodology.md": "delete-candidate",
 }
 
 EXPECTED_SCRIPT_PATHS = {
@@ -83,6 +84,7 @@ EXPECTED_BEHAVIOR_CONTRACTS = {
 
 
 def path_without_fragment(reference: str) -> str:
+    """Return a repository path from a path-plus-fragment reference."""
     return reference.split("#", 1)[0]
 
 
@@ -90,12 +92,15 @@ class PortableProductMigrationMapTests(unittest.TestCase):
     """Freeze issue #44's no-behavior-change migration baseline."""
 
     def setUp(self) -> None:
+        """Load the machine-readable migration baseline for each assertion."""
         self.record = json.loads(MAP_PATH.read_text(encoding="utf-8"))
 
     def test_baseline_and_taxonomies_are_explicit(self) -> None:
+        """Pin baseline identity and the allowed classification vocabularies."""
         self.assertEqual(1, self.record["schemaVersion"])
         self.assertEqual("authoritative-baseline", self.record["status"])
         self.assertIs(self.record["externalRuntimeDependencyAllowed"], False)
+        self.assertEqual("target-v1.6", self.record["externalRuntimeDependencyPolicy"])
 
         baseline = self.record["baseline"]
         self.assertEqual("George-RD/design-studio", baseline["repository"])
@@ -118,7 +123,23 @@ class PortableProductMigrationMapTests(unittest.TestCase):
             set(self.record["externalMethodDispositions"]),
         )
 
+    def test_current_external_runtime_branch_is_explicit_migration_debt(self) -> None:
+        """Record v1.5's Impeccable availability branch without blessing it for v1.6."""
+        branches = {row["id"]: row for row in self.record["currentRuntimeBranches"]}
+        self.assertEqual({"optional-impeccable-mechanical-gate"}, set(branches))
+
+        branch = branches["optional-impeccable-mechanical-gate"]
+        self.assertEqual("migration-debt", branch["status"])
+        self.assertEqual("impeccable-cli-available", branch["trigger"])
+        self.assertIn("non-equivalent fallback", branch["behavior"])
+        self.assertIn("#46", branch["migration"])
+        self.assertIn("#47", branch["migration"])
+        self.assertIn("#50", branch["migration"])
+        for authority in branch["authorities"]:
+            self.assertTrue((ROOT / authority).exists(), authority)
+
     def test_every_current_product_and_adapter_surface_is_classified_once(self) -> None:
+        """Ensure every tracked invocation/adapter surface has one migration role."""
         rows = self.record["surfaces"]
         paths = [row["path"] for row in rows]
         self.assertEqual(len(paths), len(set(paths)))
@@ -129,10 +150,15 @@ class PortableProductMigrationMapTests(unittest.TestCase):
                 self.assertIn(row["label"], EXPECTED_SURFACE_LABELS)
                 self.assertTrue(row["reason"].strip())
                 self.assertTrue((ROOT / row["path"]).exists())
-                if row["label"] in {"optional-host-adapter", "compatibility-bridge"}:
+                if row["label"] in {
+                    "optional-host-adapter",
+                    "compatibility-bridge",
+                    "delete-candidate",
+                }:
                     self.assertTrue(row.get("target", "").strip())
 
     def test_script_families_cover_the_scripts_directory_without_promoting_research(self) -> None:
+        """Classify every script recursively and keep the research harness out of runtime."""
         rows = self.record["scripts"]
         family_ids = [row["id"] for row in rows]
         self.assertEqual(len(family_ids), len(set(family_ids)))
@@ -143,7 +169,7 @@ class PortableProductMigrationMapTests(unittest.TestCase):
 
         actual_paths = {
             path.relative_to(ROOT).as_posix()
-            for path in (ROOT / "scripts").iterdir()
+            for path in (ROOT / "scripts").rglob("*")
             if path.is_file()
         }
         self.assertEqual(EXPECTED_SCRIPT_PATHS, actual_paths)
@@ -157,8 +183,6 @@ class PortableProductMigrationMapTests(unittest.TestCase):
                 if row["label"] in {"compatibility-bridge", "delete-candidate"}:
                     self.assertTrue(row.get("target", "").strip())
 
-        # Issue #44 is an inventory, not permission to turn the historical
-        # capability/comparison harness into the shipped portable runtime.
         promoted = {
             row["id"]
             for row in rows
@@ -167,6 +191,7 @@ class PortableProductMigrationMapTests(unittest.TestCase):
         self.assertEqual(set(), promoted)
 
     def test_concept_map_preserves_local_authority_and_external_provenance(self) -> None:
+        """Keep one local owner per concept while current upstream candidates stay observed."""
         sources = json.loads(SOURCES_PATH.read_text(encoding="utf-8"))
         source_by_id = {source["id"]: source for source in sources["sources"]}
         feedback = json.loads(FEEDBACK_PATH.read_text(encoding="utf-8"))
@@ -192,11 +217,20 @@ class PortableProductMigrationMapTests(unittest.TestCase):
                     self.assertIn(evidence_id, feedback_ids)
                 for overlap in concept.get("externalOverlaps", []):
                     self.assertIn(overlap["source"], source_by_id)
-                    self.assertIn(
-                        overlap["disposition"], EXPECTED_METHOD_DISPOSITIONS
-                    )
+                    self.assertEqual("observe", overlap["disposition"])
                     self.assertTrue(overlap["reason"].strip())
                     self.assertIs(source_by_id[overlap["source"]]["runtimeDependency"], False)
+
+        direction = concept_by_id["source-blind-direction-and-evaluation"]
+        self.assertIn(
+            "emilkowalski/skills",
+            {overlap["source"] for overlap in direction["externalOverlaps"]},
+        )
+        review = concept_by_id["review-orchestration"]
+        self.assertIn(
+            "emilkowalski/skills",
+            {overlap["source"] for overlap in review["externalOverlaps"]},
+        )
 
         specificity = concept_by_id["generated-specificity-and-subtraction"]
         self.assertIn("semantic-redundancy", specificity["dogfoodEvidence"])
@@ -211,6 +245,7 @@ class PortableProductMigrationMapTests(unittest.TestCase):
         self.assertEqual([], copy["externalOverlaps"])
 
     def test_behavior_contracts_name_existing_protection_before_contraction(self) -> None:
+        """Point contraction work at existing observable behavior protection."""
         contracts = self.record["behaviorContracts"]
         by_id = {contract["id"]: contract for contract in contracts}
         self.assertEqual(len(contracts), len(by_id))
@@ -224,7 +259,12 @@ class PortableProductMigrationMapTests(unittest.TestCase):
                     path = path_without_fragment(reference)
                     self.assertTrue((ROOT / path).exists(), reference)
 
+        finalization = by_id["orchestrator-decision-and-final-acceptance"]["protectedBy"]
+        self.assertIn("skills/design-studio/evals/evals.json#16", finalization)
+        self.assertIn("skills/design-studio/evals/evals.json#29", finalization)
+
     def test_historical_evidence_stays_discoverable_and_out_of_runtime(self) -> None:
+        """Retain benchmark provenance without classifying it as shipped product runtime."""
         evidence = self.record["historicalEvidence"]
         paths = [row["path"] for row in evidence]
         self.assertEqual(len(paths), len(set(paths)))
@@ -244,14 +284,19 @@ class PortableProductMigrationMapTests(unittest.TestCase):
                 self.assertTrue((ROOT / row["path"]).exists())
 
     def test_narrative_states_scope_and_downstream_boundaries(self) -> None:
+        """Keep the human-readable map aligned with the machine-readable baseline."""
         text = NARRATIVE_PATH.read_text(encoding="utf-8")
         self.assertIn("ADR 0002", text)
         self.assertIn(BASELINE_REVISION, text)
         self.assertIn("No production behavior changes in this ticket", text)
         self.assertIn("No current script family is product runtime", text)
+        self.assertIn("non-equivalent fallback", text)
+        self.assertIn("migration debt", text)
         self.assertIn("#46", text)
         self.assertIn("#47", text)
         self.assertIn("#49", text)
+        self.assertIn("#50", text)
+        self.assertIn("#45`, `#50` and `#51", text)
         self.assertIn("semantic-redundancy", text)
         self.assertIn("product-specific-metaphor", text)
         self.assertIn("does not make Horaxon a house style", text)
