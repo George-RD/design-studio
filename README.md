@@ -84,6 +84,12 @@ claude plugin marketplace add George-RD/design-studio
 claude plugin install design-studio@design-studio
 ```
 
+## Runtime boundary
+
+The standard Agent Skills install contains `skills/design-studio/`. Root `commands/`, `agents/` and `.claude-plugin/` remain optional compatibility adapters.
+
+Repository `scripts/`, `benchmarks/`, `test/` and `.github/` are research and development support, not runtime dependencies. Deterministic helpers needed by a supported run must ship inside the skill behind its internal runtime contract. See [the runtime boundary](docs/runtime-boundary.md).
+
 ## Run output
 
 ```text

@@ -29,8 +29,10 @@ class CleanInstallContractTests(unittest.TestCase):
         temporary = tempfile.TemporaryDirectory()
         root = Path(temporary.name)
         for relative in (
+            "runtime-surface.json",
             "skills/design-studio",
             ".claude-plugin",
+            "agents",
             "commands",
             "README.md",
             "docs/index.html",
@@ -46,6 +48,15 @@ class CleanInstallContractTests(unittest.TestCase):
 
     def test_repository_clean_install_contract_is_valid(self) -> None:
         self.assertEqual([], self.validator.validate(REPO_ROOT))
+
+    def test_missing_runtime_surface_manifest_is_rejected(self) -> None:
+        temporary, root = self.copy_repository()
+        self.addCleanup(temporary.cleanup)
+        (root / "runtime-surface.json").unlink()
+
+        errors = self.validator.validate(root)
+
+        self.assertTrue(any("missing runtime surface manifest" in error for error in errors), errors)
 
     def test_missing_in_skill_invocation_contract_is_rejected(self) -> None:
         temporary, root = self.copy_repository()
@@ -82,6 +93,43 @@ class CleanInstallContractTests(unittest.TestCase):
         errors = self.validator.validate(root)
 
         self.assertTrue(any("external design-skill dependency" in error for error in errors), errors)
+
+    def test_installed_skill_cannot_call_repository_only_tooling(self) -> None:
+        temporary, root = self.copy_repository()
+        self.addCleanup(temporary.cleanup)
+        invocation = root / "skills" / "design-studio" / "invocation.md"
+        invocation.write_text(
+            invocation.read_text()
+            + "\nRun `python3 scripts/run_boundary_benchmark.py` before planning.\n"
+        )
+
+        errors = self.validator.validate(root)
+
+        self.assertTrue(any("repository-only tooling dependency" in error for error in errors), errors)
+
+    def test_optional_adapter_cannot_call_repository_only_tooling(self) -> None:
+        temporary, root = self.copy_repository()
+        self.addCleanup(temporary.cleanup)
+        command = root / "commands" / "create.md"
+        command.write_text(
+            command.read_text()
+            + "\nRun `python3 scripts/run_boundary_benchmark.py` before invoking the skill.\n"
+        )
+
+        errors = self.validator.validate(root)
+
+        self.assertTrue(any("repository-only tooling dependency" in error for error in errors), errors)
+
+    def test_runtime_helper_cannot_import_repository_only_tooling(self) -> None:
+        temporary, root = self.copy_repository()
+        self.addCleanup(temporary.cleanup)
+        helper = root / "skills" / "design-studio" / "runtime" / "bridge.py"
+        helper.parent.mkdir(parents=True, exist_ok=True)
+        helper.write_text("from scripts.run_boundary_benchmark import prepare_run\n")
+
+        errors = self.validator.validate(root)
+
+        self.assertTrue(any("repository-only tooling dependency" in error for error in errors), errors)
 
 
 if __name__ == "__main__":
