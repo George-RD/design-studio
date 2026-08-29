@@ -2,7 +2,7 @@
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "design-studio",
   "metadata": {
-    "description": "Multi-agent frontend design with rooted context, code-blind direction and browser judgement, resumable evidence and bounded finish review."
+    "description": "Optional Claude Code adapter for the portable Design Studio Agent Skill."
   },
   "owner": {
     "name": "George Reid-Dowd"
@@ -10,7 +10,7 @@
   "plugins": [
     {
       "name": "design-studio",
-      "description": "Separate product framing, visual direction, implementation and blind browser evaluation; preserve immutable iterations and codify the accepted result.",
+      "description": "Host discovery and invocation adapter over the canonical Agent Skill; design methods and runtime behavior remain under skills/design-studio/.",
       "version": "1.5.0",
       "author": {
         "name": "George Reid-Dowd"
