@@ -1,6 +1,5 @@
 workflow:
   name: design-studio
-  version: 1.6.0
   description: >-
     Rooted, resumable multi-agent frontend design. Product framing and implementation may see source;
     visual direction and browser judgement do not. Every build is preserved, mechanical findings are

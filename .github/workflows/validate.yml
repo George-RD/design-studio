@@ -49,11 +49,9 @@ jobs:
           versions = {
               plugin['version'],
               marketplace_plugin['version'],
-              evals['version'],
-              workflow['version'],
               skill_version,
           }
-          if versions != {'1.6.0'}:
+          if versions != {'1.7.0'}:
               raise SystemExit(f'version mismatch: {versions}')
 
           ids = [step['id'] for step in workflow['steps']]

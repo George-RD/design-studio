@@ -104,15 +104,14 @@ class ClaudeAdapterCompatibilityTests(unittest.TestCase):
     def test_public_docs_make_plugin_optional_and_define_capable_host(self):
         readme = self.read("README.md")
         required = [
-            "canonical, host-portable artifact",
+            "canonical, host-portable product",
             "copy `skills/design-studio/`",
-            "does not reduce supported Design Studio capability",
-            "file I/O",
-            "shell access",
+            "does not reduce supported capability",
+            "File and shell access",
             "isolated subagents",
             "browser automation",
             "runnable target",
-            "optional convenience",
+            "optional, thin adapter",
             "claude plugin marketplace add George-RD/design-studio",
             "claude plugin install design-studio@design-studio",
         ]
@@ -146,8 +145,11 @@ class ClaudeAdapterCompatibilityTests(unittest.TestCase):
         skill_version = re.search(r"^version:\s*([^\s]+)", skill, re.M).group(1)
         marketplace_plugin = next(p for p in marketplace["plugins"] if p["name"] == "design-studio")
 
-        self.assertIn("Optional Claude Code adapter", plugin["description"])
-        self.assertIn("adapter", marketplace_plugin["description"].lower())
+        for marker in ("Optional", "thin Claude Code adapter", "skills/design-studio/"):
+            self.assertIn(marker, plugin["description"])
+        marketplace_description = marketplace_plugin["description"].lower()
+        for marker in ("studio and review", "document", "skills/design-studio/"):
+            self.assertIn(marker, marketplace_description)
         self.assertEqual(plugin["version"], skill_version)
         self.assertEqual(marketplace_plugin["version"], skill_version)
 

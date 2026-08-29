@@ -2,7 +2,7 @@
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "design-studio",
   "metadata": {
-    "description": "Optional Claude Code adapter for the portable Design Studio Agent Skill."
+    "description": "Optional, thin Claude Code adapter for the portable Design Studio Agent Skill."
   },
   "owner": {
     "name": "George Reid-Dowd"
@@ -10,8 +10,8 @@
   "plugins": [
     {
       "name": "design-studio",
-      "description": "Host discovery and invocation adapter over the canonical Agent Skill; design methods and runtime behavior remain under skills/design-studio/.",
-      "version": "1.6.0",
+      "description": "Host discovery and invocation for Studio and Review over the canonical Agent Skill; Document and all design/runtime authority remain under skills/design-studio/.",
+      "version": "1.7.0",
       "author": {
         "name": "George Reid-Dowd"
       },
@@ -19,11 +19,11 @@
       "category": "design",
       "homepage": "https://george-rd.github.io/design-studio/",
       "tags": [
-        "design",
+        "design-engineering",
+        "agent-skill",
         "frontend",
-        "evaluation",
-        "multi-agent",
-        "design-system"
+        "design-review",
+        "document-design"
       ]
     }
   ]

@@ -71,7 +71,7 @@ class OwnedMethodKernelDirectionTests(unittest.TestCase):
     def test_public_readme_matches_the_owned_kernel_direction(self) -> None:
         """Primary user guidance must describe one local runtime without upstream requirements."""
         readme = README_PATH.read_text(encoding="utf-8")
-        self.assertIn("## v1.6 product boundary", readme)
+        self.assertIn("## v1.7 product boundary", readme)
         self.assertIn("one self-contained Design Studio runtime", readme)
         self.assertIn("local deterministic mechanical runtime", readme)
         self.assertIn("External systems are research inputs, not runtime dependencies", readme)
