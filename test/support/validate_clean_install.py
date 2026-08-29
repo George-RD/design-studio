@@ -185,11 +185,21 @@ def external_dependency_errors(path: Path, text: str) -> list[str]:
     return errors
 
 
+def repository_only_markers(repository_only_roots: list[Path]) -> tuple[str, ...]:
+    markers: list[str] = []
+    for root in repository_only_roots:
+        value = root.as_posix().strip("/")
+        markers.append(f"{value}/")
+        if value and not value.startswith("."):
+            markers.append(f"{value.replace('/', '.') }.")
+    return tuple(markers)
+
+
 def repository_only_dependency_errors(
     path: Path, text: str, repository_only_roots: list[Path]
 ) -> list[str]:
     errors: list[str] = []
-    markers = tuple(f"{root.as_posix().rstrip('/')}/" for root in repository_only_roots)
+    markers = repository_only_markers(repository_only_roots)
     for line_number, line in enumerate(text.splitlines(), start=1):
         lower = re.sub(r"\s+", " ", line.lower())
         if not any(marker in lower for marker in markers):
