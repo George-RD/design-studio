@@ -8,6 +8,8 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 SKILL_ROOT = REPO_ROOT / "skills" / "design-studio"
 CONTRACT_PATH = SKILL_ROOT / "runtime-contract.md"
 WORKFLOW_PATH = SKILL_ROOT / "workflow.yaml"
+QUALITY_GATE_PATH = SKILL_ROOT / "references" / "quality-gates.md"
+MECHANICAL_RUNTIME_PATH = SKILL_ROOT / "runtime" / "mechanical" / "index.mjs"
 
 
 class RuntimeContractTests(unittest.TestCase):
@@ -70,6 +72,17 @@ class RuntimeContractTests(unittest.TestCase):
                 self.assertIn(token, contract)
         self.assertIn("required: [file_io, shell, isolated_subagents]", workflow)
         self.assertIn("enum: [full, build-once-unselected, mechanical-review]", workflow)
+
+    def test_local_mechanical_runtime_is_the_only_supported_detector_path(self) -> None:
+        workflow = WORKFLOW_PATH.read_text()
+        quality_gate = QUALITY_GATE_PATH.read_text()
+
+        self.assertTrue(MECHANICAL_RUNTIME_PATH.is_file())
+        self.assertIn("detector: { enum: [design-studio] }", workflow)
+        self.assertNotIn("impeccable_cli", workflow)
+        self.assertIn("node runtime/mechanical/index.mjs", quality_gate)
+        self.assertIn("External detector availability must not change the supported rule set", quality_gate)
+        self.assertNotIn("npx impeccable", quality_gate)
 
     def test_contract_excludes_research_only_concepts(self) -> None:
         contract = self.contract_text()
