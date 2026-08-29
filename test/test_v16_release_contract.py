@@ -42,6 +42,12 @@ class V16ReleaseContractTests(unittest.TestCase):
         self.assertIn("agent: [codex, claude-code]", workflow)
         self.assertIn('--agent "${{ matrix.agent }}"', workflow)
         self.assertIn("skills@1.5.23", workflow)
+        self.assertIn(
+            'cmp "$GITHUB_WORKSPACE/skills/design-studio/SKILL.md" "$installed_skill"',
+            workflow,
+        )
+        self.assertIn('node "$skill_root/runtime/mechanical/index.mjs"', workflow)
+        self.assertIn("clean-install smoke proof", workflow)
         self.assertIn("skills/design-studio", self.read("README.md"))
 
     def test_final_delete_candidate_is_contracted_without_rewriting_history(self) -> None:
