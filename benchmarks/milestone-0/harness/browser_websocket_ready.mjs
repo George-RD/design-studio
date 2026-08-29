@@ -1,1 +1,1 @@
-../../../scripts/browser_websocket_ready.mjs
+export { waitForWebSocketOpen } from '../../../scripts/browser_websocket_ready.mjs';
