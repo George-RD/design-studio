@@ -7,6 +7,8 @@
 
 Design Studio has one canonical installed product: the Agent Skill under `skills/design-studio/`. The stable deterministic interface is [`runtime-contract.md`](../skills/design-studio/runtime-contract.md). A supported run may use only behavior carried by that installed skill plus capabilities supplied by the host.
 
+`runtime-surface.json` records the current distribution invariant. The frozen [`migration-map.json`](migration-map.json) remains the pre-change inventory and provenance baseline; it is not a second current runtime definition.
+
 ## Installed runtime
 
 `skills/design-studio/**` is the installed runtime. It contains the skill router, workflow, source-blind roles, references, eval contract and stable runtime contract.
@@ -30,7 +32,7 @@ The boundary is protected at two observable seams:
 1. `test/support/validate_clean_install.py` scans the complete installed skill and optional adapters and rejects positive execution/import dependencies on repository-only roots.
 2. `.github/workflows/validate-agent-skill-install.yml` installs Design Studio through the pinned standard Agent Skills CLI and verifies the resulting skill package does not contain repository-only or Claude-only surfaces.
 
-`runtime-surface.json` is the single machine-readable classification used by repository validation. `ROADMAP.md` remains a map to issue state rather than duplicating this implementation contract.
+`runtime-surface.json` is the single machine-readable current distribution classification used by repository validation. `ROADMAP.md` remains a map to issue state rather than duplicating this implementation contract.
 
 ## Downstream constraint
 

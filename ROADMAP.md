@@ -33,17 +33,18 @@ The governing architecture is [ADR 0002: Design Studio owns its method kernel](d
 - [#45 — Make the Agent Skill the canonical install and distribution surface](https://github.com/George-RD/design-studio/issues/45) — canonical Agent Skill install surface merged and verified.
 - [#46 — Establish one stable internal runtime seam before script reorganisation](https://github.com/George-RD/design-studio/issues/46) — stable runtime seam and follow-up review fixes merged and verified.
 - [#47 — Consolidate external design guidance into one method authority map](https://github.com/George-RD/design-studio/issues/47) — concept ownership, provenance, intake dispositions, domain boundaries and routing are recorded in [`docs/method-authority-map.json`](docs/method-authority-map.json) and [`docs/method-authority-map.md`](docs/method-authority-map.md).
+- [#49 — Separate shipped runtime helpers from benchmark and research tooling](https://github.com/George-RD/design-studio/issues/49) — current distribution boundary, clean-install dependency checks and real Agent Skill package proof are recorded in [`docs/runtime-boundary.md`](docs/runtime-boundary.md) and [`runtime-surface.json`](runtime-surface.json).
 
-The migration map classifies the pre-change product boundary. The method authority map resolves that inventory into the current one-authority-per-concept contract without making external repositories runtime dependencies.
+The migration map classifies the pre-change product boundary. The method authority map resolves that inventory into the current one-authority-per-concept contract without making external repositories runtime dependencies. The runtime boundary records the current installed/adaptor/repository-only split without changing the frozen migration baseline.
 
 ### Next ready roadmap item
 
-- [#49 — Separate shipped runtime helpers from benchmark and research tooling](https://github.com/George-RD/design-studio/issues/49) — first ready item in roadmap order; dependency #46 is complete.
+- [#50 — Normalize product runtime script families behind the shared seam](https://github.com/George-RD/design-studio/issues/50) — first ready item in roadmap order; dependencies #46 and #49 are complete.
 
 ### Runtime simplification
 
-- [#49 — Separate shipped runtime helpers from benchmark and research tooling](https://github.com/George-RD/design-studio/issues/49) — unblocked by completed #46
-- [#50 — Normalize product runtime script families behind the shared seam](https://github.com/George-RD/design-studio/issues/50) — blocked by #49
+- [#49 — Separate shipped runtime helpers from benchmark and research tooling](https://github.com/George-RD/design-studio/issues/49) — complete; runtime/research dependency boundary is enforced without moving historical tooling
+- [#50 — Normalize product runtime script families behind the shared seam](https://github.com/George-RD/design-studio/issues/50) — unblocked by completed #46 and #49
 
 ### Method consolidation and modular composition
 
