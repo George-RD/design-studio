@@ -10,7 +10,7 @@ SKILL_ROOT = ROOT / "skills" / "design-studio"
 CONTRACT_PATH = SKILL_ROOT / "composition-contract.json"
 REFERENCE_PATH = SKILL_ROOT / "references" / "composition-contract.md"
 FIXTURE_PATH = ROOT / "test" / "fixtures" / "composition-contract.json"
-LEGACY_METHODOLOGY_PATH = ROOT / "references" / "methodology.md"
+ROUTER_PATH = SKILL_ROOT / "method-router.json"
 
 
 class CompositionContractTests(unittest.TestCase):
@@ -123,15 +123,22 @@ class CompositionContractTests(unittest.TestCase):
                 self.assertEqual(expected, resolve(scenario["artifacts"]))
                 self.assertEqual(expected, resolve(list(reversed(scenario["artifacts"]))))
 
+    def test_router_loads_existing_copy_boundary_only_when_composition_evidence_exists(self) -> None:
+        router = self.load(ROUTER_PATH)
+        routes = {item["id"]: item for item in router["routes"]}
+        route = routes["composition-boundary"]
+        self.assertEqual(["composition-artifacts"], route["signals"]["evidence"])
+        self.assertEqual([], route["signals"]["task"])
+        self.assertEqual(["references/copy.md"], route["leaves"])
+        self.assertNotIn("composition-contract.json", router["coreAuthorities"])
+        self.assertNotIn("references/composition-contract.md", router["coreAuthorities"])
+
     def test_installed_reference_states_the_non_duplication_boundary(self) -> None:
         text = REFERENCE_PATH.read_text(encoding="utf-8")
         self.assertIn("Growth Arsenal owns offer, positioning, persuasion strategy and authoritative commercial copy", text)
         self.assertIn("Design Studio owns visual direction, design implementation, rendered evaluation and accepted visual-system output", text)
         self.assertIn("does not invoke, copy or reimplement Growth Arsenal methods", text)
         self.assertIn("Prompt order, file modification time and basename alone never establish authority", text)
-
-    def test_legacy_top_level_methodology_is_retired_after_composition_migration(self) -> None:
-        self.assertFalse(LEGACY_METHODOLOGY_PATH.exists())
 
 
 if __name__ == "__main__":

@@ -37,6 +37,8 @@ Design Studio is a portable design-engineering method kernel. Keep the always-lo
 
 `method-router.json` is routing data, not another method authority. Its repository authority-map/ADR paths are provenance metadata only; an installed run does not depend on repository docs being present.
 
+When context discovery identifies compatible role-scoped composition artifacts, emit `composition-artifacts`; the routed copy boundary then applies `composition-contract.json` without making Growth Arsenal an always-loaded or runtime dependency.
+
 ## Required references
 
 - `invocation.md`
@@ -102,6 +104,6 @@ Design Studio has no upstream design-method runtime dependency. Repository-level
 - `adapt-local` methods are available only through the local leaf named in `method-router.json`.
 - `observe` and `reject` entries are research evidence, not permission to copy or ambient guidance.
 - Do not import another command taxonomy, prompt library or fallback runtime around the local kernel.
-- Growth Arsenal owns offer, positioning, persuasion strategy and authoritative copy. Design Studio consumes approved composition artifacts through its local copy boundary; it does not reproduce Growth Arsenal methods.
+- Growth Arsenal owns offer, positioning, persuasion strategy and authoritative copy. Design Studio consumes approved role-scoped composition artifacts through `composition-contract.json` and its local copy boundary; it does not reproduce Growth Arsenal methods.
 
 A new method must name a reusable gap, fit an existing authority or justify a new one, pin source/licence when external, adapt the smallest coherent slice, record modifications and prove benefit with an eval, contract test or dogfood evidence.

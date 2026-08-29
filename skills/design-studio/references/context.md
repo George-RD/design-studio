@@ -68,11 +68,15 @@ Do not put palettes, component recipes, page layouts or an invented visual world
 
 Load it into planning and the surface brief. Do not let it override confirmed product facts. Do not create it for a one-line edit unless the user asks to preserve language rules across future work.
 
+When an approved external offer/copy artifact or composition metadata is present, do not infer authority from `COPY.md` or any other basename. Classify candidate artifacts by declared role, project scope and approval/acceptance provenance using `../composition-contract.json`. Add the `composition-artifacts` evidence signal so the method router loads the local copy boundary. Its human reference is `composition-contract.md`.
+
+A Growth Arsenal repository-internal `DESIGN.md` or token file is not project visual authority merely because its name matches Design Studio's project artifact. Role and scope come before basename.
+
 ## DESIGN.md: proven visual system
 
 `DESIGN.md` records the visual system demonstrated by an accepted build.
 
-- **Extension or refinement**: existing `DESIGN.md` is authority unless the user changes it.
+- **Extension or refinement**: existing project-scoped accepted `DESIGN.md` is authority unless the user changes it.
 - **Requested redesign**: preserve explicit brand commitments, but treat the incumbent visual world as evidence and an anti-reference rather than something to average into the replacement.
 - **Missing file**: inspect code, tokens, components and assets before deciding there is no visual authority.
 
@@ -138,20 +142,22 @@ Every run starts with:
 
 1. Explicit current user instruction.
 2. Confirmed product truth and pinned brand commitments.
-3. `COPY.md` for language decisions, when present.
+3. The authoritative approved offer/copy artifact resolved through the composition contract when composition evidence exists; otherwise durable `COPY.md` language rules when present.
 4. Current surface brief.
 
 For an **extension, polish or preserve-world refinement**:
 
-5. Existing proven `DESIGN.md`.
+5. Existing project-scoped accepted `DESIGN.md`.
 6. `selected-direction.md`, constrained to evolve the requested surface without replacing the proven system.
 
 For a **greenfield surface or explicit redesign**:
 
 5. `selected-direction.md` for active visual choices.
-6. Existing `DESIGN.md` only for retained commitments, useful evidence and anti-reference lessons.
+6. Existing project-scoped accepted `DESIGN.md` only for retained commitments, useful evidence and anti-reference lessons.
 
 Then, in either mode:
 
 7. Repository evidence, treated as a hypothesis until confirmed.
 8. Model preference, which has no authority.
+
+When a higher-authority artifact changes, apply the staleness rules in `../composition-contract.json` rather than treating every downstream file as current because it is newer on disk.
