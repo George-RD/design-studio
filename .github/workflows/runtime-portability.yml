@@ -54,7 +54,7 @@ jobs:
           python-version: '3.13'
 
       - name: Validate runtime seam contract
-        run: python -m unittest test.test_runtime_contract -v
+        run: python -m unittest discover -s test -p test_runtime_contract.py -v
 
       - name: Validate mechanical runtime behavior
         run: node --test test/test_mechanical_runtime.mjs
