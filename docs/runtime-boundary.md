@@ -1,6 +1,6 @@
 # Runtime distribution boundary
 
-**Status:** Authoritative for issue #49  
+**Status:** Authoritative from issue #49, updated by #50  
 **Governing spec:** [#43](https://github.com/George-RD/design-studio/issues/43)  
 **Governing decision:** [ADR 0002](decisions/0002-owned-method-kernel.md)  
 **Machine-readable boundary:** [`runtime-surface.json`](../runtime-surface.json)
@@ -11,9 +11,11 @@ Design Studio has one canonical installed product: the Agent Skill under `skills
 
 ## Installed runtime
 
-`skills/design-studio/**` is the installed runtime. It contains the skill router, workflow, source-blind roles, references, eval contract and stable runtime contract.
+`skills/design-studio/**` is the installed runtime. It contains the skill router, workflow, source-blind roles, references, eval contract, stable runtime contract and any deterministic helpers required by supported operations.
 
-Any deterministic executable helper that a supported run later needs must ship under `skills/design-studio/runtime/` and implement the operations defined by the stable runtime contract. There are no such helper files today. The migration inventory found no current repository script family that should be promoted wholesale into the product runtime.
+The current helper family is `skills/design-studio/runtime/mechanical/`. It implements the local `mechanical_preflight` evidence contract without launching a browser or depending on an external detector. The host supplies current source/browser facts; the helper validates and normalizes them into the canonical snapshot.
+
+The migration inventory found no historical repository script family that should be promoted wholesale. Future helpers must follow the same rule: extract only deterministic behavior a supported operation actually needs, behind the stable seam and under the installed runtime helper root.
 
 ## Optional adapters
 
@@ -23,17 +25,20 @@ The root `.claude-plugin/`, `agents/` and `commands/` trees are compatibility su
 
 The root `scripts/`, `benchmarks/`, `test/` and `.github/` trees are repository research, evidence, test and CI support. Existing entrypoints remain in place so historical research and CI stay runnable, but a supported Design Studio run or adapter must not import, execute or shell into them.
 
-Historical Milestone 0 comparison evidence remains available under `benchmarks/milestone-0/`. Its status is research evidence for targeted questions, not a release gate and not an installed-runtime dependency.
+Historical Milestone 0 comparison evidence remains available under `benchmarks/milestone-0/`. Its status is research evidence for targeted questions, not a release gate and not an installed-runtime dependency. Issue #42 remains reliability work for the historical capability gate; #50 does not make that gate part of the product runtime.
 
 ## Enforcement
 
-The boundary is protected at two observable seams:
+The boundary is protected at observable distribution and behavior seams:
 
 1. `test/support/validate_clean_install.py` scans the complete installed skill and optional adapters and rejects positive execution/import dependencies on repository-only roots.
-2. `.github/workflows/validate-agent-skill-install.yml` installs Design Studio through the pinned standard Agent Skills CLI and verifies the resulting skill package does not contain repository-only or Claude-only surfaces.
+2. `.github/workflows/validate-agent-skill-install.yml` installs Design Studio through the pinned standard Agent Skills CLI and verifies the resulting package contains the shipped runtime helper but no repository-only or Claude-only surfaces.
+3. `.github/workflows/runtime-portability.yml` runs the mechanical runtime contract on Linux, macOS and Windows.
 
 `runtime-surface.json` is the single machine-readable current distribution classification used by repository validation. `ROADMAP.md` remains a map to issue state rather than duplicating this implementation contract.
 
-## Downstream constraint
+## Normalization rule
 
-Issue #50 may reorganise only deterministic behavior that a supported run actually needs. It must not absorb benchmark, capability-probe or comparison machinery merely because similar code already exists in the repository, and it must not rewrite stable Python or Node code solely for uniformity.
+#50 normalizes product runtime by responsibility, not by historical host or milestone. The first responsibility extracted is mechanical evidence because supported runs need deterministic snapshot/signature/waiver behavior and the old optional external-detector branch violated ADR 0002.
+
+Browser launching, agent-capability probes, comparison runners, benchmark fixtures and deadline wrappers stay repository-only. Stable Python or Node research code is not rewritten solely for uniformity, and no compatibility shim is added for an entrypoint that was never part of the installed product.
