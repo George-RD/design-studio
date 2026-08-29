@@ -65,7 +65,7 @@ Impeccable accessibility, hierarchy/responsive, interaction, generic motion and 
 
 The installed compatibility stubs `references/planning.md`, `references/evaluation.md` and `references/iteration.md` were removed by #51 after callers were routed to their real authorities.
 
-Top-level `references/methodology.md` remains historical/legacy evidence until #48 finishes the composition migration. It is not a runtime authority. Once #48 completes and clean-install evidence confirms no dependency, delete it under the existing `delete-after` record.
+Top-level `references/methodology.md` was removed by #53 after #48 completed composition migration and clean-install validation confirmed no supported runtime path required it. The machine-readable `delete-after` record is retained as the historical disposition that authorized the contraction.
 
 ## Future intake
 

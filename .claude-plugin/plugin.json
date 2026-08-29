@@ -1,6 +1,6 @@
 {
   "name": "design-studio",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "Optional Claude Code adapter for the portable Design Studio Agent Skill. Provides host discovery and invocation only; canonical design and runtime behavior lives under skills/design-studio/.",
   "author": { "name": "George Reid-Dowd" },
   "keywords": [

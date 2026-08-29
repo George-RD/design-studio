@@ -41,9 +41,9 @@ The method/runtime architecture is governed by [ADR 0002: Design Studio owns its
 
 The migration map classifies the pre-change product boundary. The method authority map resolves that inventory into the current one-authority-per-concept contract without making external repositories runtime dependencies. The runtime boundary records the current installed/adaptor/repository-only split without changing the frozen migration baseline.
 
-### Next ready roadmap item
+### Portable v1.6 complete
 
-- [#53 — Prove the portable v1.6 path and contract legacy surfaces](https://github.com/George-RD/design-studio/issues/53) — #48 and #52 are complete, so final portable-path and legacy-surface proof is next in milestone order.
+- [#53 — Prove the portable v1.6 path and contract legacy surfaces](https://github.com/George-RD/design-studio/issues/53) — complete; two-host install, cross-platform runtime, local method authority, optional composition, thin adapters and legacy contraction are recorded in [`docs/releases/v1.6.0.md`](docs/releases/v1.6.0.md).
 
 ### Runtime simplification
 
@@ -59,7 +59,7 @@ The migration map classifies the pre-change product boundary. The method authori
 ### Adapter contraction and release proof
 
 - [#52 — Reduce Claude Code integration to a thin adapter and defer the standalone CLI](https://github.com/George-RD/design-studio/issues/52) — complete; Claude-specific surfaces contribute discovery and invocation only, while ADR 0003 defers a public CLI until repeated need proves it
-- [#53 — Prove the portable v1.6 path and contract legacy surfaces](https://github.com/George-RD/design-studio/issues/53) — next in milestone order
+- [#53 — Prove the portable v1.6 path and contract legacy surfaces](https://github.com/George-RD/design-studio/issues/53) — complete; v1.6 acceptance evidence is recorded in [`docs/releases/v1.6.0.md`](docs/releases/v1.6.0.md)
 
 ## Dependency sketch
 
