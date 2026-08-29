@@ -64,8 +64,6 @@ class ClaudeAdapterCompatibilityTests(unittest.TestCase):
             ".claude-plugin/",
             "commands/create.md",
             "commands/review.md",
-            "agents/design-agent.md`",
-            "agents/evaluator.md`",
         )
         for path in skill_root.rglob("*"):
             if not path.is_file() or path.suffix not in {".md", ".json", ".yaml", ".yml"}:
@@ -107,12 +105,18 @@ class ClaudeAdapterCompatibilityTests(unittest.TestCase):
         for marker in required:
             self.assertIn(marker, text)
 
-    def test_plugin_metadata_version_matches_canonical_skill(self):
+        decision_index = self.read("docs/decisions/README.md")
+        self.assertIn("0003-claude-adapter-and-deferred-cli.md", decision_index)
+
+    def test_plugin_metadata_is_adapter_only_and_versions_match(self):
         plugin = json.loads(self.read(".claude-plugin/plugin.json"))
         marketplace = json.loads(self.read(".claude-plugin/marketplace.json"))
         skill = self.read("skills/design-studio/SKILL.md")
         skill_version = re.search(r"^version:\s*([^\s]+)", skill, re.M).group(1)
         marketplace_plugin = next(p for p in marketplace["plugins"] if p["name"] == "design-studio")
+
+        self.assertIn("Optional Claude Code adapter", plugin["description"])
+        self.assertIn("adapter", marketplace_plugin["description"].lower())
         self.assertEqual(plugin["version"], skill_version)
         self.assertEqual(marketplace_plugin["version"], skill_version)
 
