@@ -17,6 +17,7 @@ EXPECTED_DOMAINS = {
     "orchestration-runtime": "design-studio",
     "copy-offer": "growth-arsenal",
 }
+RETIRED_DUPLICATE_PATHS = {"references/methodology.md"}
 
 
 class MethodAuthorityMapTests(unittest.TestCase):
@@ -122,7 +123,11 @@ class MethodAuthorityMapTests(unittest.TestCase):
         self.assertTrue(record["duplicateResolutions"])
         for resolution in record["duplicateResolutions"]:
             self.assertIn(resolution["action"], {"supersede", "delete-after"})
-            self.assertTrue((ROOT / resolution["duplicatePath"]).exists())
+            duplicate = ROOT / resolution["duplicatePath"]
+            if resolution["duplicatePath"] in RETIRED_DUPLICATE_PATHS:
+                self.assertFalse(duplicate.exists())
+            else:
+                self.assertTrue(duplicate.exists())
             self.assertTrue(resolution["retainedAuthorities"])
             self.assertTrue(all((ROOT / path).exists() for path in resolution["retainedAuthorities"]))
             self.assertTrue(resolution["condition"].strip())
