@@ -34,25 +34,21 @@ The Evaluator reports what happened in the browser. It cannot decide to refine, 
 
 ## Use it
 
-Create a new surface:
+With the Agent Skill installed, ask a capable host to use Design Studio directly:
+
+```text
+Use Design Studio to create a landing page for a small coffee shop.
+```
+
+Claude Code can expose the same skill through its optional adapter:
 
 ```text
 /design-studio:create a landing page for a small coffee shop
-```
-
-Replace the visual direction of an existing surface:
-
-```text
 /design-studio:create --overhaul ./site --goals "keep the information architecture" replace the visual direction
-```
-
-Audit and polish without redesigning:
-
-```text
 /design-studio:review ./site
 ```
 
-A standard run gets four builds. The best eligible build wins, even when it is not the latest one.
+The skill owns input mapping, isolated roles and workflow rules. Host adapters only translate invocation. A standard run gets four builds, and the best eligible build wins even when it is not the latest one.
 
 ## What a run records
 
@@ -63,11 +59,17 @@ A standard run gets four builds. The best eligible build wins, even when it is n
 - Mechanical checks and blind browser judgement remain separate.
 - The accepted build becomes `DESIGN.md`, design DNA and reusable tokens.
 
-`COPY.md` is optional. When present, it carries durable voice, claim and terminology rules into the surface brief. Design Studio can also call Growth Arsenal's `business-copy-style` workflow when it is installed.
+`COPY.md` is optional. When present, it carries durable voice, claim and terminology rules into the surface brief. Growth Arsenal may provide separate offer or copy inputs when both skills are present; it is not required to install or start Design Studio.
 
 ## Install
 
-Add this repository as a Claude Code marketplace, install the plugin, then reload plugins:
+Canonical Agent Skill install:
+
+```bash
+npx skills add George-RD/design-studio
+```
+
+Claude Code plugin support remains an optional convenience:
 
 ```text
 /plugin marketplace add George-RD/design-studio
@@ -75,7 +77,7 @@ Add this repository as a Claude Code marketplace, install the plugin, then reloa
 /reload-plugins
 ```
 
-The CLI equivalents are:
+The Claude CLI equivalents are:
 
 ```bash
 claude plugin marketplace add George-RD/design-studio
@@ -106,7 +108,7 @@ Completed iterations are immutable. A failed or interrupted run resumes from the
 
 In the current v1.5 release, Impeccable is optional. When its CLI is available, Design Studio uses source, desktop and mobile detector passes for mechanical preflight. Without it, the workflow records `detector: fallback` and runs a smaller browser-computed gate.
 
-The v1.6 roadmap removes this environment-dependent split. It targets one self-contained Design Studio runtime with a curated local method kernel. Impeccable and other external systems are research inputs: useful methods may be adapted or narrowly vendored with pinned provenance and licence records, but they are not required runtime foundations. See [ADR 0002](docs/decisions/0002-owned-method-kernel.md).
+The v1.6 roadmap removes this environment-dependent split. It targets one self-contained Design Studio runtime with a curated local method kernel. Impeccable and Emil Kowalski's skills are credited research inputs, not install requirements. Growth Arsenal remains a separate optional skill for offer and copy work. See [ADR 0002](docs/decisions/0002-owned-method-kernel.md).
 
 Mechanical findings remain evidence. They never substitute for source-blind judgement of the rendered result.
 
@@ -119,4 +121,4 @@ Mechanical findings remain evidence. They never substitute for source-blind judg
 
 ## Licence
 
-MIT. The current Impeccable integration is attributed in `NOTICE.md` and remains governed by Impeccable's Apache-2.0 licence.
+MIT. Attribution and licence notes for Impeccable and Emil Kowalski's skills are recorded in `NOTICE.md`; neither is required to install Design Studio.
