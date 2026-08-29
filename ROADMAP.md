@@ -55,3 +55,10 @@ Planning and implementation use the repository-owned skills under `.agents/skill
 ## Historical evidence
 
 The pre-v1.7 migration map, v1.6 release record, frozen Milestone 0 fixtures, Impeccable boundary experiments, blind comparison transactions and Horaxon dogfood evidence remain available in repository history and their existing docs/benchmark locations. They are evidence, not an active execution graph.
+
+The following Milestone 0 markers are retained only as frozen benchmark compatibility evidence. They are **not executable roadmap items**:
+
+- [x] Inventory every Design Studio step, reference, schema and check. Evidence: `benchmarks/milestone-0/OWNERSHIP_INVENTORY.md`.
+- [x] Identify workflows that only reproduce an Impeccable command and preserve their historical disposition.
+- [ ] Run the same fixed briefs through: optional research comparison only, not a release gate.
+- [ ] Confirm the smallest differentiated product: superseded by the owned-kernel product and v1.7 release proof.
