@@ -69,9 +69,7 @@ The canonical, host-portable artifact is the Agent Skill:
 npx skills add George-RD/design-studio
 ```
 
-`npx skills` is the installer used to obtain the Agent Skill; it is not a Design Studio runtime dependency. The public GitHub repository is the install source, so no separate skills.sh registration is required.
-
-A capable host can also copy `skills/design-studio/` into its local skills directory. It needs file I/O, shell access and isolated subagents; a complete visual run also needs a runnable target and browser automation. Removing or not installing the Claude plugin does not reduce supported Design Studio capability on a capable host.
+`npx skills` is the installer used to obtain the Agent Skill; it is not a Design Studio runtime dependency. The public GitHub repository is the install source, so no separate skills.sh registration is required. A capable host can also copy `skills/design-studio/` into its local skills directory. It needs file I/O, shell access and isolated subagents; a complete visual run also needs a runnable target and browser automation. Removing or not installing the Claude plugin does not reduce supported Design Studio capability on a capable host.
 
 Claude Code plugin support is an optional convenience adapter:
 
