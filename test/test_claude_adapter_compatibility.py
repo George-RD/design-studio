@@ -26,7 +26,14 @@ class ClaudeAdapterCompatibilityTests(unittest.TestCase):
         }
         for path, entrypoint in expected.items():
             with self.subTest(path=path):
+                text = self.read(path)
+                frontmatter = text.split("---", 2)[1]
                 body = self.body_after_frontmatter(path)
+                self.assertIn("description: Optional Claude Code command adapter", frontmatter)
+                self.assertNotRegex(
+                    frontmatter,
+                    r"(?:mechanical preflight|blind evaluation|design-system capture|readiness verdict)",
+                )
                 self.assertIn("Claude Code adapter", body)
                 self.assertIn("skills/design-studio/SKILL.md", body)
                 self.assertIn(entrypoint, body)
