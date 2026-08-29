@@ -1,122 +1,37 @@
 # Meta: improve Design Studio
 
-Design Studio is a living experiment. Model capability changes which controls remain useful, but anecdotes alone do not justify changing the workflow.
+## Purpose
 
-## Sources of truth
+Tune Design Studio's workflow and method kernel from representative evidence rather than anecdotes, while preventing prompt growth and duplicate authorities.
 
-- `SKILL.md` owns routing and public behaviour.
-- `workflow.yaml` owns paths, schemas, transitions, budgets and decisions.
-- agent files own role behaviour and isolation.
-- focused references own procedures.
-- run traces and external preference are evidence of actual behaviour.
+## Triggers
 
-Keep duplicated policy small. Version plugin metadata, skill, workflow and eval suite together.
+Load for Meta lane work, method-intake decisions, repeated owner corrections, dogfood gaps, model changes, or a meaningful upstream method change.
 
-## Inspect complete runs
+## Required context
 
-Sample run directories, not only final screenshots. Compare:
+Inspect complete run traces: prompt, roots/capabilities, direction assignment/candidates/selection, design flags, mechanical snapshots, screenshots/observations, events/resume, finish acceptance, and final codification. For external intake also load the exact pinned source metadata and the relevant concept in `docs/method-authority-map.json`.
 
-- prompt, roots, capabilities and product context;
-- direction assignment timing, three candidates and final selection;
-- design descriptions and Builder fidelity flags;
-- detector snapshots and finding lifecycle;
-- screenshots, observations and critiques;
-- event journal, resume points and failures;
-- decisions, final selection and acceptance receipt;
-- codified design DNA and tokens.
+## Outputs and handoff
 
-Look for recurring failure modes:
+Produce one bounded change hypothesis with the failure class, current authority, proposed smallest method/control change, evidence needed, and acceptance/ablation test. Update routing or a leaf only after the evidence justifies the maintenance cost.
 
-- the wrong app or context root is selected;
-- capabilities are assumed rather than probed;
-- a resumed run repeats a completed build or trusts a partial directory;
-- candidates converge despite different names;
-- unattended selection correlates with candidate order;
-- Visual Director uses implementation language or appears source-anchored;
-- Builder softens ambitious instructions without flags;
-- Evaluator gives high scores to competent templates;
-- fixed detector findings remain open, or reintroduced findings remain closed;
-- mechanical facts appear in screenshot-only critique;
-- later iterations become more complex while functionality falls;
-- latest wins despite an earlier stronger build;
-- finish review restarts an unbounded taste loop;
-- acceptance and codified output point to different trees.
+## Authority boundary
 
-## Why the runtime controls exist
+`SKILL.md` owns the small public kernel, `workflow.yaml` owns lifecycle mechanics, agents own isolated role behaviour, and focused references own specialist procedures. Meta may evaluate those authorities but must not create competing copies. `method-router.json` maps signals to leaves; it does not own the leaf methods.
 
-The controls should answer real failure classes:
+## Failure behavior
 
-| Failure class | Workflow response |
-|---|---|
-| Nested app or monorepo runs from the wrong directory | evidence-backed `roots.json` |
-| Tool or browser access is assumed | `capabilities.json` before planning |
-| Agent candidate ordering becomes hidden preference | precommitted slot hidden from Visual Director |
-| A crash loses state or repeats expensive work | append-only events plus artifact-validated resume |
-| Detector cache keeps stale issues or misses regressions | complete current snapshots with stable signatures |
-| A corrected directory is accepted because it exists | final acceptance receipt with postconditions |
-| Customer copy improves mechanically but loses meaning | frozen baseline plus qualitative copy gates |
+Do not change the workflow because one run felt weak. Do not import a whole upstream command system for one useful heuristic. Reject a candidate when it adds prompt volume or maintenance without improving quality, reliability or reducing human correction.
 
-Delete a control when representative evidence shows it no longer earns its cost.
+## Evaluation hooks
 
-## Tune criteria without creating a house style
+For material changes use representative prompts and fixed contexts, vary one layer where possible, and compare task success, independent preference, reliability, cost and intervention rate. Useful metrics include root/capability failures, resume success, candidate convergence, REFINE/PIVOT success, stale findings, finish-review yield, acceptance failures and user preference. A higher internal score alone is not proof.
 
-Scoring language steers generation. Define qualities such as clarity, cohesion, specificity, craft and task fit. Named movements, fonts, palettes and composition examples belong in the user brief or one candidate, not always-loaded scoring prompts.
+## Method leaf contract
 
-When runs look alike, audit prompt examples, candidate diversity axes and rubric nouns before adding more bans.
+Every routed specialist leaf declares: Purpose, Triggers, Required context, Outputs and handoff, Authority boundary, Failure behavior, Evaluation hooks, plus Source provenance when an external method is formally adopted. Keep provenance exact and method-sized.
 
-## Calibrate the Evaluator
+## Source provenance
 
-Across representative first iterations:
-
-- median scores materially above 6.5 suggest inflation;
-- critiques without interaction evidence suggest superficial testing;
-- Craft mirroring Design Quality suggests criterion conflation;
-- high Originality on swappable pages suggests poor product-specificity calibration;
-- post-ship user bugs suggest weak adversarial gates.
-
-Use blind benchmark screenshots with known defects to test catch rate. Do not train the Evaluator only on its own previous prose.
-
-## Ablation protocol
-
-For a material model or workflow upgrade:
-
-1. select representative prompts and fixed product contexts;
-2. run the current workflow and record cost, time, scores and independent human preference;
-3. remove or simplify exactly one layer;
-4. repeat with the same seeds, assignment slots and budgets;
-5. retain the layer only when quality, reliability or debuggability improves enough to justify its cost.
-
-Test planner depth, candidate count, precommit assignment, zone screenshots, iteration budget, finish review and resume separately. Test the code-blind Visual Director and Builder split last because it addresses anchoring rather than context size.
-
-## Metrics worth tracking
-
-- root-resolution override and failure rate;
-- capability downgrade rate;
-- resume success and repeated-step rate;
-- candidate-slot selection distribution;
-- first-iteration score distribution;
-- user-selected direction distribution;
-- REFINE and PIVOT success rate;
-- best iteration versus latest frequency;
-- open primary finding rate and stale-finding rate;
-- finish-review defect yield;
-- acceptance postcondition failure rate;
-- final user preference against one-pass and Impeccable-only baselines;
-- time, tokens and browser operations per accepted run;
-- waiver count and whether each traces to a real commitment.
-
-A higher internal score is not proof of a better workflow. Prefer blinded external preference and real task success.
-
-## Change discipline
-
-A workflow change is complete only when:
-
-- schemas and transitions terminate deterministically;
-- roots and capability evidence are explicit;
-- isolation tests pass;
-- resume cannot overwrite completed iterations;
-- detector snapshots cannot retain stale open state;
-- eval cases cover the new behaviour and likely near-misses;
-- docs describe current capability rather than roadmap;
-- version metadata agrees;
-- one greenfield and one overhaul smoke run complete in a browser-capable tool.
+No external method is adopted into this Meta leaf. External sources remain governed by `docs/method-sources.json` and concept-level dispositions in `docs/method-authority-map.json`.

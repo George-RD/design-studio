@@ -12,6 +12,11 @@ SOURCES_PATH = ROOT / "docs" / "method-sources.json"
 FEEDBACK_PATH = ROOT / "docs" / "research" / "horaxon-feedback-patterns.json"
 
 BASELINE_REVISION = "492a874d0a7c935e51395d66f420608a997d9ed3"
+RETIRED_POST_BASELINE_AUTHORITIES = {
+    "skills/design-studio/references/planning.md",
+    "skills/design-studio/references/evaluation.md",
+    "skills/design-studio/references/iteration.md",
+}
 
 EXPECTED_SURFACE_LABELS = {
     "canonical-skill",
@@ -191,7 +196,7 @@ class PortableProductMigrationMapTests(unittest.TestCase):
         self.assertEqual(set(), promoted)
 
     def test_concept_map_preserves_local_authority_and_external_provenance(self) -> None:
-        """Keep one local owner per concept while current upstream candidates stay observed."""
+        """Keep the frozen pre-change authority/provenance inventory interpretable after contraction."""
         sources = json.loads(SOURCES_PATH.read_text(encoding="utf-8"))
         source_by_id = {source["id"]: source for source in sources["sources"]}
         feedback = json.loads(FEEDBACK_PATH.read_text(encoding="utf-8"))
@@ -212,7 +217,9 @@ class PortableProductMigrationMapTests(unittest.TestCase):
                 )
                 self.assertTrue(concept["reason"].strip())
                 for local_path in concept.get("localAuthorities", []):
-                    self.assertTrue((ROOT / local_path).exists(), local_path)
+                    self.assertTrue(local_path.strip())
+                    if local_path not in RETIRED_POST_BASELINE_AUTHORITIES:
+                        self.assertTrue((ROOT / local_path).exists(), local_path)
                 for evidence_id in concept.get("dogfoodEvidence", []):
                     self.assertIn(evidence_id, feedback_ids)
                 for overlap in concept.get("externalOverlaps", []):

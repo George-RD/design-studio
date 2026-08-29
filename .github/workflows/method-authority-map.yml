@@ -13,6 +13,7 @@ on:
       - "references/**"
       - "skills/design-studio/**"
       - "test/test_method_authority_map.py"
+      - "test/test_method_kernel_routing.py"
       - ".github/workflows/method-authority-map.yml"
   push:
     branches: [main]
@@ -26,6 +27,7 @@ on:
       - "references/**"
       - "skills/design-studio/**"
       - "test/test_method_authority_map.py"
+      - "test/test_method_kernel_routing.py"
       - ".github/workflows/method-authority-map.yml"
 
 permissions:
@@ -45,5 +47,7 @@ jobs:
       - name: Validate authority, provenance, and routing
         run: |
           python3 -m unittest discover -s test -p 'test_method_authority_map.py' -v
+          python3 -m unittest discover -s test -p 'test_method_kernel_routing.py' -v
           python3 -m json.tool docs/method-authority-map.json > /dev/null
-          python3 -m py_compile test/test_method_authority_map.py
+          python3 -m json.tool skills/design-studio/method-router.json > /dev/null
+          python3 -m py_compile test/test_method_authority_map.py test/test_method_kernel_routing.py

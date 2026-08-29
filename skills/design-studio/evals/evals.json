@@ -117,15 +117,16 @@
     },
     {
       "id": 10,
-      "prompt": "Run the mechanical gate when Impeccable is installed.",
-      "expected_output": "Design Studio consumes Impeccable JSON for source, desktop and mobile passes as a current snapshot without treating detector output as visual judgement.",
+      "prompt": "Run the mechanical gate for source, desktop and mobile evidence.",
+      "expected_output": "Design Studio normalizes host-provided source and browser facts through its shipped local mechanical runtime as one current snapshot without treating mechanical output as visual judgement.",
       "assertions": [
-        "mechanical-findings detector is impeccable",
+        "mechanical-findings detector is design-studio",
         "version, snapshotId and generatedAt are recorded",
-        "source, 1440x900 and 390x844 passes are recorded",
+        "source, 1440x900 and 390x844 passes are recorded when provided",
         "findings have stable signatures and current statuses",
-        "advisory findings do not block",
-        "Design Quality and Originality are absent from mechanical output"
+        "open primary findings block only their affected mechanical floor unless waived by exact authority",
+        "Design Quality and Originality are absent from mechanical output",
+        "external design-skill availability cannot change supported rules or result semantics"
       ]
     },
     {
@@ -330,12 +331,12 @@
     },
     {
       "id": 28,
-      "prompt": "Rewrite the homepage hero. COPY.md exists, and Growth Arsenal business-copy-style is installed.",
-      "expected_output": "Planning loads durable language rules, freezes incumbent copy and uses Growth Arsenal without allowing lint metrics to decide meaning.",
+      "prompt": "Rewrite the homepage hero. COPY.md exists and an approved external copy or offer artifact is available.",
+      "expected_output": "Planning loads durable local language rules, freezes incumbent copy and consumes the approved composition artifact without importing its method or weakening PRODUCT.md factual authority.",
       "assertions": [
-        "capabilities.json records copyWorkflow business-copy-style",
         "surface-brief.md names copy job, baseline and claim constraints",
         "COPY.md is loaded but does not override PRODUCT.md facts",
+        "approved external copy or offer artifact is consumed as input rather than invoked as a runtime dependency",
         "baseline and candidate receive paired qualitative comparison",
         "at least one judgement dimension remains outside deterministic lint",
         "no unsupported claim is introduced"

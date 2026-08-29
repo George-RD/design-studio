@@ -1,59 +1,29 @@
-# Customer-facing copy
+# Customer-facing copy boundary
 
-Use this reference when a surface adds or materially rewrites customer-facing copy. It does not replace product strategy or technical documentation.
+## Purpose
 
-## Authority
+Coordinate copy that must fit a designed surface while keeping offer, positioning, persuasion strategy and authoritative commercial copy outside the Design Studio method kernel.
 
-1. Current user instruction.
-2. Confirmed facts and claim boundaries in `PRODUCT.md`.
-3. Voice, terminology and journey rules in `COPY.md` when present.
-4. The current surface brief.
-5. Incumbent copy as a baseline, not automatic authority.
+## Triggers
 
-Never weaken a legal, factual or commercial qualification to make a line shorter.
+Load when a surface adds or materially rewrites customer-facing copy, when an approved external copy artifact is supplied, or when layout work exposes a wording constraint that affects comprehension/action.
 
-## Existing copy
+## Required context
 
-Freeze the incumbent before rewriting. A candidate replaces it only when it improves the important jobs without introducing a trust, action or factual regression.
+Authority order: current user instruction; confirmed facts/claim boundaries in `PRODUCT.md`; durable language rules in `COPY.md` when present; approved external copy artifacts; current surface brief; incumbent copy as baseline. Never weaken a factual, legal or commercial qualification for brevity.
 
-Compare:
+## Outputs and handoff
 
-- audience recognition;
-- category clarity;
-- mechanism clarity;
-- specificity;
-- action clarity;
-- claim discipline;
-- voice and memorability.
+For local surface wording, keep the point early, one main idea per sentence, concrete nouns/verbs, consistent terminology and a clear next action. Freeze incumbent copy before replacement and compare audience recognition, category/mechanism clarity, specificity, action clarity, claim discipline and voice. Strategic offer or positioning changes hand back to the external copy authority or user.
 
-A lower reading grade or shorter sentence count does not choose the winner by itself.
+## Authority boundary
 
-## Drafting rules
+Growth Arsenal owns offer, positioning, persuasion strategy and authoritative copy outside the Design Studio method kernel. Design Studio consumes approved composition artifacts; it does not invoke, duplicate or reimplement Growth Arsenal methods. This leaf owns only design-side copy coordination and safe local wording within confirmed facts.
 
-- Put the point in the first one or two lines.
-- Use one main idea per sentence.
-- Prefer concrete nouns and active verbs.
-- Name the buyer, problem, action, number or mechanism when evidence supports it.
-- Keep short customer-facing copy free of em dashes.
-- Cut inflated significance, filler, vague authority and generic AI vocabulary.
-- Avoid repeated contrast formulas, padded groups of three and identical section rhythms.
-- Preserve necessary product and technical terms.
-- Use one spelling convention. Default to British English unless the project says otherwise.
+## Failure behavior
 
-## Gates
+When proof is missing, retain the qualification or mark the claim unresolved. Do not invent customers, prices, benchmarks, capabilities or testimonials. If a requested change materially alters offer/positioning rather than surface clarity, stop that copy change and request/consume the appropriate external artifact.
 
-Every changed version must pass:
+## Evaluation hooks
 
-- **Position**: at least one line says something a reasonable person could challenge.
-- **Read aloud**: it sounds like a person, not a press release or chatbot.
-- **Specificity**: a nearby product cannot inherit it by swapping one noun.
-- **Action**: the right reader knows what to do next.
-- **Trust**: every claim stays inside the evidence.
-
-For a public landing page, also test a three-second skimmer, a right-fit sceptic and a wrong-fit reader. Keep at least one judgement outside deterministic lint.
-
-## Growth Arsenal integration
-
-When `business-copy-style` is installed, use its current brief, de-AI, lint and paired-evaluation flow. Record `copyWorkflow: business-copy-style` in `capabilities.json`.
-
-When it is absent, apply this reference and record `copyWorkflow: local-rules`. Do not claim the external workflow ran.
+Changed copy must pass position, read-aloud, specificity, action and trust checks. Public landing-page copy should also survive a fast skimmer, a right-fit sceptic and a wrong-fit reader. Shorter text or lower reading grade never wins by itself.

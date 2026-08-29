@@ -1,51 +1,33 @@
-# Visual lens: generated-template feel
+# Visual lens: generated specificity and subtraction
 
-Judge the rendered surface for choices that feel interchangeable, automated or decorative rather than product-specific. This is a visual lens: do not infer exact source values, token provenance or CSS from screenshots.
+## Purpose
 
-The user's brief and established `DESIGN.md` win. A pinned pattern is not a defect merely because it is common. Common choices still earn no originality credit by themselves.
+Detect rendered choices that feel interchangeable, automated, redundant or decorative rather than product-specific, while distinguishing common-but-correct UI from actual generated-template defects.
 
-## Look for
+## Triggers
 
-### Swappable composition
+Load for every browser-grounded Review and whenever a mechanically clean surface still feels generic, repetitive, over-produced or weakly tied to the product mechanism.
 
-- a first viewport that could serve an unrelated product after changing nouns;
-- generic headline/subhead/button staging with no demonstration of the mechanism;
-- a predictable section sequence with no product-specific interruption or proof;
-- identical card grids carrying the page structure;
-- decorative metrics, icon tiles or device frames standing in for evidence.
+## Required context
 
-### Unclaimed visual defaults
+Use rendered evidence, product/surface goal, current `DESIGN.md` and explicit brief commitments. The brief wins: a pinned pattern is not a defect merely because it is common.
 
-- familiar gradient/glow/glass treatments dominating without a reason from the product world;
-- every surface rounded, elevated or translucent in the same way;
-- technical costume—monospace labels, grids, terminal chrome—without technical meaning;
-- editorial costume—serif display, hairlines, tiny labels—without content or cultural authority;
-- stock imagery or illustrations that could be swapped without changing the story;
-- motion applied uniformly to sections rather than authored around one meaningful moment.
+## Outputs and handoff
 
-### UX filler
+Report visible findings under local categories such as swappable composition, unclaimed visual defaults and UX filler. Name the region, why it could belong to another product, what user/product signal is obscured, and severity. Hand findings to Review aggregation; do not edit or infer exact source values.
 
-- headings repeating nearby copy;
-- empty states that explain absence but not the next action;
-- every action styled as primary;
-- generic trust, innovation or simplicity claims unsupported by proof;
-- modals used because a layout decision was avoided;
-- controls or interactions added only to make the page feel active.
+## Authority boundary
 
-## Test
+This leaf owns generated-specificity/subtraction judgement. Exact colour, spacing, font, DOM and token claims belong to mechanical/source evidence. It does not import an external command taxonomy or prescribe a house style.
 
-Ask:
+## Failure behavior
 
-1. What would a user remember an hour after the first viewport?
-2. Which visible decision could only belong to this product and audience?
-3. Where is the mechanism demonstrated rather than described?
-4. Which element would disappear if every decorative default were removed?
-5. Does the surface's energy come from the brief, or from the model's usual category look?
+Do not penalize familiar patterns that clearly serve an operational job. Do not reward novelty that weakens task clarity. When a pattern is intentional under the brief/`DESIGN.md`, record it as authority-backed rather than repeatedly flagging it.
 
-## Severity
+## Evaluation hooks
 
-- `blocker`: template staging hides the offer/task or primary action within the first-use window.
-- `quality`: the surface is materially swappable, generic or chrome-led.
-- `polish`: one isolated default weakens an otherwise specific system.
+Ask what a user would remember after an hour, which visible decision belongs uniquely to this product/audience, where the mechanism is demonstrated rather than described, what disappears if decorative defaults are removed, and whether energy comes from the brief or category habit. Blocker means template staging hides the primary task/action; Quality means materially swappable/generic/chrome-led; Polish is one isolated default in an otherwise specific system.
 
-Report what is visible and where. Route exact contrast, font-name, colour-value, spacing-value and DOM claims to the mechanical gate.
+## Source provenance
+
+Adopted local method slice: `pbakaus/impeccable` at revision `63b04e2530f5c7b41ea83c133daab24f34912456`, Apache-2.0. Design Studio adapts only useful anti-pattern categories that correspond to recurring local evidence and expresses them in its own product-specific taxonomy. It does not copy the upstream command framework, full prompt text or lifecycle routing.

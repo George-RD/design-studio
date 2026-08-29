@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "status": "authoritative-method-router",
+  "governingDecision": "docs/decisions/0002-owned-method-kernel.md",
+  "authorityMap": "docs/method-authority-map.json",
+  "repositoryMetadataOnly": true,
+  "selectionRule": "For each route, every signal dimension with a non-empty list is required: the current run must contain at least one matching value from each populated dimension. Empty dimensions are unconstrained. Load the union of leaves from all matching routes; never load the full specialist catalog by default.",
+  "coreAuthorities": [
+    "invocation.md",
+    "workflow.yaml",
+    "runtime-contract.md",
+    "references/context.md",
+    "references/runtime-integrity.md"
+  ],
+  "routes": [
+    {
+      "id": "studio-direction",
+      "signals": {"task": ["studio-direction", "studio-pivot"], "surface": ["persuade", "operate", "read", "experience"], "interaction": [], "evidence": []},
+      "leaves": ["references/rationale.md"],
+      "agents": ["agents/design-agent.md"],
+      "handoff": "Visual Director produces source-free, materially divergent directions; Orchestrator selects without exposing source or assignment."
+    },
+    {
+      "id": "studio-build",
+      "signals": {"task": ["studio-build", "studio-refine"], "surface": [], "interaction": [], "evidence": ["selected-direction"]},
+      "leaves": ["references/generation.md"],
+      "handoff": "Builder implements the selected visual contract and records fidelity evidence without changing direction."
+    },
+    {
+      "id": "mechanical-evidence",
+      "signals": {"task": [], "surface": [], "interaction": [], "evidence": ["mechanical-preflight", "post-fix-confirmation", "finish-confirmation"]},
+      "leaves": ["references/quality-gates.md"],
+      "handoff": "Host facts are normalized by the local mechanical runtime into one current snapshot for evaluation or acceptance."
+    },
+    {
+      "id": "overhaul",
+      "signals": {"task": ["studio-overhaul"], "surface": ["persuade", "operate", "read", "experience"], "interaction": [], "evidence": []},
+      "leaves": ["references/overhaul.md", "references/rationale.md"],
+      "handoff": "Planner separates preserved truth/behaviour from replaceable styling before source-blind direction work."
+    },
+    {
+      "id": "review-core",
+      "signals": {"task": ["review", "polish"], "surface": ["persuade", "operate", "read", "experience"], "interaction": [], "evidence": []},
+      "leaves": ["references/review/polish.md", "references/review/slop.md", "references/review/hierarchy.md", "references/review/a11y.md"],
+      "handoff": "Read-only lenses return evidence; Review aggregates a bounded fix plan and confirms once after implementation."
+    },
+    {
+      "id": "review-interaction",
+      "signals": {"task": ["review", "polish"], "surface": [], "interaction": ["controls", "forms", "stateful-ui", "keyboard-path"], "evidence": []},
+      "leaves": ["references/review/interaction.md"],
+      "handoff": "Interaction lens reports observed affordance, state, feedback and recovery defects for aggregation."
+    },
+    {
+      "id": "review-motion",
+      "signals": {"task": ["review", "polish", "motion-change"], "surface": [], "interaction": ["motion", "animation", "transition"], "evidence": []},
+      "leaves": ["references/review/interaction.md"],
+      "handoff": "Motion checks apply purpose/frequency, bounded timing and interruptibility heuristics; rejected opportunities may be recorded in run evidence."
+    },
+    {
+      "id": "copy-boundary",
+      "signals": {"task": ["copy-change"], "surface": [], "interaction": [], "evidence": []},
+      "leaves": ["references/copy.md"],
+      "handoff": "Design Studio coordinates surface copy inside confirmed facts and consumes external offer/copy artifacts without importing their method."
+    },
+    {
+      "id": "meta",
+      "signals": {"task": ["meta", "method-intake"], "surface": [], "interaction": [], "evidence": []},
+      "leaves": ["references/meta.md"],
+      "handoff": "Meta work evaluates workflow controls or method intake against evidence without changing production behavior by anecdote."
+    }
+  ],
+  "leaves": [
+    {"path": "references/rationale.md", "authorityRole": "canonical", "conceptIds": ["source-blind-direction-and-evaluation"]},
+    {"path": "references/generation.md", "authorityRole": "canonical", "conceptIds": ["implementation-fidelity"]},
+    {"path": "references/quality-gates.md", "authorityRole": "canonical", "conceptIds": ["mechanical-source-and-browser-evidence"]},
+    {"path": "references/overhaul.md", "authorityRole": "canonical", "conceptIds": ["overhaul-scope-and-settled-world"]},
+    {"path": "references/copy.md", "authorityRole": "boundary", "conceptIds": ["offer-copy-authority"]},
+    {"path": "references/meta.md", "authorityRole": "supporting", "conceptIds": ["overhaul-scope-and-settled-world"]},
+    {"path": "references/review/polish.md", "authorityRole": "canonical", "conceptIds": ["review-orchestration"]},
+    {"path": "references/review/slop.md", "authorityRole": "canonical", "conceptIds": ["generated-specificity-and-subtraction"]},
+    {"path": "references/review/hierarchy.md", "authorityRole": "canonical", "conceptIds": ["hierarchy-rhythm-and-responsive-composition"]},
+    {"path": "references/review/a11y.md", "authorityRole": "canonical", "conceptIds": ["accessibility-review"]},
+    {"path": "references/review/interaction.md", "authorityRole": "canonical", "conceptIds": ["interaction-state-and-affordance", "motion-craft-and-perceptibility"]}
+  ],
+  "adoptedExternalMethods": [
+    {"conceptId": "source-blind-direction-and-evaluation", "sourceId": "emilkowalski/skills", "methodName": "genuinely divergent prototypes compared in realistic context", "leaf": "references/rationale.md"},
+    {"conceptId": "mechanical-source-and-browser-evidence", "sourceId": "pbakaus/impeccable", "methodName": "deterministic source/browser audit checks with explicit finding severity", "leaf": "references/quality-gates.md"},
+    {"conceptId": "review-orchestration", "sourceId": "emilkowalski/skills", "methodName": "read-only expert audit followed by an executable improvement plan", "leaf": "references/review/polish.md"},
+    {"conceptId": "motion-craft-and-perceptibility", "sourceId": "emilkowalski/skills", "methodName": "purpose and frequency gate for motion", "leaf": "references/review/interaction.md"},
+    {"conceptId": "motion-craft-and-perceptibility", "sourceId": "emilkowalski/skills", "methodName": "precise motion values and interruptibility rules", "leaf": "references/review/interaction.md"},
+    {"conceptId": "motion-craft-and-perceptibility", "sourceId": "emilkowalski/skills", "methodName": "record rejected animation opportunities", "leaf": "references/review/interaction.md"},
+    {"conceptId": "generated-specificity-and-subtraction", "sourceId": "pbakaus/impeccable", "methodName": "design anti-pattern taxonomy", "leaf": "references/review/slop.md"}
+  ]
+}

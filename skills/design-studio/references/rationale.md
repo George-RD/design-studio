@@ -1,23 +1,35 @@
-# Rationale (Meta / cold path)
+# Rationale
 
-Cold-path material for the Meta lane and user education. Not required to run the Studio loop.
+## Purpose
 
-## Why This Exists
+Explain and protect the source-blind direction/evaluation split, including the local requirement that competing directions be materially different and judged in realistic product context.
 
-Without this harness, AI-generated frontends converge on safe, predictable layouts — technically functional but visually unremarkable. Three problems cause this:
+## Triggers
 
-1. **Self-evaluation is broken for subjective tasks.** When an agent evaluates its own design, it confidently praises mediocre output. No binary correctness check exists for "is this design good?"
-2. **Code-anchoring kills creativity.** An LLM that sees the current implementation before redesigning will tweak CSS instead of imagining a better layout. The strongest models are the most consistently anchored.
-3. **Single-agent loops reward incrementalism.** The same model proposes, implements, and scores; it has no incentive to take creative risks.
+Load for Studio direction generation, PIVOT work, source-blind evaluation questions, or Meta analysis of the role split. It is not required for ordinary Builder implementation.
 
-The harness fixes all three by splitting the creative process into isolated agents: a **Planner** that sets the creative frame, an **evaluator** that judges only the rendered output, a **design agent** that creates visual direction without ever seeing code, and an **implementation agent** that faithfully executes design descriptions into working code. This mirrors how design studios actually work — art directors create the vision, developers implement it.
+## Required context
 
-## Code-Anchoring Bias
+Use confirmed product truth, surface mode, success criteria, real assets/content, explicit commitments, and rendered baseline/current evidence when available. Never pass source code, implementation diffs, prior scores, or unattended assignment data into Visual Director.
 
-The most important architectural insight behind the 4-agent split. Research confirms that reading existing code before generating new designs anchors the LLM's creativity. The model shifts from "what should this look like?" to "what can I change in the existing implementation?" — producing incremental CSS tweaks instead of bold redesigns.
+## Outputs and handoff
 
-- **arXiv:2412.06593** — Demonstrates that anchoring bias in LLMs is systematic, and stronger models are MORE consistently influenced (not less). The fix is preventing exposure to the anchor entirely.
-- **arXiv:2410.02837** — Finds that separating critique generation from implementation improves both quality and originality; the design-evaluate loop is a direct application.
-- **arXiv:2501.03259** — Shows that self-evaluation in LLMs is unreliable for aesthetic tasks; external judges are essential.
+Visual Director produces exactly three equally specified viable directions unless the user pinned one complete direction. Each direction names a distinct thesis and differs materially across composition, typography, material/colour, interaction/motion, or density/rhythm. Compare directions at realistic surface scale, not as abstract style swatches. Orchestrator or the user selects; the Director does not rank its own work.
 
-The fix: the Design Agent never sees code. It receives only screenshots, the evaluator's visual critique, and the spec. Its output is a design description — a prose document describing what the page should look like, not how to implement it. The Implementation Agent then receives this description alongside the existing code and faithfully executes it.
+## Authority boundary
+
+This leaf owns the rationale and divergence rule. `agents/design-agent.md` owns Visual Director behaviour, `agents/evaluator.md` owns blind rendered judgement, and `workflow.yaml` owns selection and transitions. Do not recreate those authorities here.
+
+The separation exists because source exposure anchors redesign toward the incumbent implementation and because self-evaluation is weak for subjective visual work. Screenshots are allowed because they expose user-visible state rather than implementation structure.
+
+## Failure behavior
+
+If source or hidden assignment data reaches Visual Director, record an isolation breach and regenerate the affected direction output without that context. If candidates differ only by palette, typeface, copy, or small alignment changes, treat them as converged and replace the duplicates before handoff.
+
+## Evaluation hooks
+
+Check that each candidate is viable, equally specified, product-specific, buildable from available evidence, responsive, and materially different on at least three named axes. A candidate that needs invented claims, inaccessible task design, or unavailable core assets is invalid rather than merely lower-scoring.
+
+## Source provenance
+
+Adopted local method slice: `emilkowalski/skills` at revision `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`, MIT. Design Studio adapts only the criterion that alternatives must genuinely diverge and be compared in realistic surrounding context. It does not copy the upstream prototype harness, picker, tool-specific motion rules, or directory structure. Design Studio's source-blind role split, deterministic unattended selection, immutable evidence and Orchestrator ownership remain authoritative.

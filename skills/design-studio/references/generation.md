@@ -1,94 +1,33 @@
 # Builder contract
 
-Builder translates the selected visual contract into a working surface. It decides technical means, never a different design.
+## Purpose
 
-## Inputs
+Translate the selected source-free visual contract into a working surface without silently changing the design direction.
 
-- `roots.json`, especially `appRoot` and `contextRoot`;
-- `design-description.md` from Visual Director;
-- product truth, spec, sprint contract and surface brief;
-- copy baseline and constraints when text changes;
-- source substrate for greenfield or overhaul;
-- previous iteration site only on REFINE;
-- existing `DESIGN.md` only when the task extends or refines that system.
+## Triggers
 
-On PIVOT, start from a clean copy of product behaviour and content. Do not carry visual structure, tokens or decorative code from the abandoned direction merely because reuse is convenient.
+Load for `studio-build`, REFINE implementation, or any rendered UI change whose job is to preserve an accepted direction.
 
-## Root discipline
+## Required context
 
-Run project commands from the working directory recorded in `roots.json` or a validated `serve.json`. Do not infer the app root again inside Builder.
+Use `roots.json`, the current `design-description.md`, product truth, sprint/surface constraints, copy baseline, current source substrate, and existing `DESIGN.md` only when extending or refining that proven system. On PIVOT, do not reuse abandoned visual structure merely because it is convenient.
 
-`serve.json` must state:
+## Outputs and handoff
 
-- command and arguments;
-- working directory;
-- expected URL or port;
-- readiness condition;
-- shutdown method when needed;
-- source tree it serves.
+Write the current iteration's runnable `site/`, validated `serve.json`, and `design-flags.json`. For every material visual instruction record `implemented`, `equivalent` with reason, or `blocked` with evidence. Hand the finished iteration to mechanical preflight; do not self-score aesthetics.
 
-Reject a serve contract that points outside the recorded local repository unless the target is explicitly external.
+## Authority boundary
 
-## Immutable output
+Builder chooses technical means, not a different design. Visual Director owns the visual contract, `workflow.yaml` owns iteration paths/transitions, and product/copy authorities own factual claims. Accessibility and state completeness are implementation obligations, not permission to invent a new visual world.
 
-Write only inside the current `iterations/<N>/` directory. Earlier iteration files are read-only evidence.
+## Failure behavior
 
-Required outputs:
+Do not mutate prior iterations, self-commit, silently soften signature choices, invent claims, or substitute generic decoration for required assets. If the selected direction is technically blocked, preserve the closest safe behaviour and record the exact constraint in `design-flags.json`.
 
-- `site/`: runnable source;
-- `serve.json`: validated run contract;
-- `design-flags.json`: one entry for every material visual instruction;
-- build notes needed by Orchestrator, never blind Evaluator.
+## Evaluation hooks
 
-Never self-commit, change branches or push. Git history is not the iteration store.
+Before handoff: run the project build/tests from the recorded app root; validate `serve.json`; check every design flag against the render; exercise primary interactions and reachable states; inspect desktop/mobile for obvious breakage; verify reduced motion; remove debug controls and placeholder claims.
 
-## Fidelity
+## Procedure
 
-Translate every material instruction into a testable requirement before coding. Literal proportions, scale relationships, named colours, content order and interaction intent remain literal unless technically impossible.
-
-For each instruction, record:
-
-- `implemented`: rendered as specified;
-- `equivalent`: different technique, same visible or interactive outcome, with reason;
-- `blocked`: cannot be delivered within current constraints, with evidence and closest safe behaviour.
-
-Never silently soften scale, mute colour, conventionalise composition, omit a signature interaction or add decorative concepts absent from the direction.
-
-## Product, copy and usability floor
-
-Creative fidelity does not excuse broken product behaviour. Preserve or add as required:
-
-- confirmed product facts and claim boundaries;
-- incumbent copy unless an evaluated rewrite replaces it;
-- semantic structure and landmarks;
-- working keyboard path and visible focus;
-- labels, names, descriptions and meaningful alternatives;
-- responsive recomposition at verified viewports;
-- loading, empty, error, disabled, success and degraded states where reachable;
-- reduced-motion behaviour;
-- honest synthetic or demo labels when real content is unavailable;
-- clear action hierarchy and recoverable errors;
-- performance safeguards for expensive effects.
-
-Accessibility and state completeness are implementation obligations, not unsolicited art direction.
-
-## Tokens and assets
-
-Keep design tokens in one canonical source so codify can extract them without guessing. Use project conventions when they are compatible with direction.
-
-Author or source the assets the composition needs. Do not substitute gradients, blur, generic icon tiles or empty chrome where the contract requires real imagery, diagrams or demonstrations. Verify remote assets resolve and provide fallbacks.
-
-## Pre-handoff checks
-
-Before mechanical preflight:
-
-1. run build and basic tests from the recorded app root;
-2. verify `serve.json` from a clean shell;
-3. compare every design flag against rendered output;
-4. test primary interactions and states;
-5. verify no earlier iteration changed;
-6. inspect desktop and mobile once for obvious overflow or breakage;
-7. remove debug controls and invented claims;
-8. append completion only after output validation.
-
-Do not perform blind aesthetic scoring. Evaluator owns that pass.
+Preserve semantic landmarks, keyboard reachability, visible focus, responsive recomposition, required loading/empty/error/disabled/success states, honest demo labels, recoverable errors and performance safeguards. Keep design tokens in one canonical source. Verify remote assets and provide fallbacks. Earlier iteration trees remain immutable evidence.
