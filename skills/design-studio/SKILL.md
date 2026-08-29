@@ -32,10 +32,10 @@ Design Studio is a portable design-engineering method kernel. Keep the always-lo
 1. Load `invocation.md` to map host inputs and isolated roles.
 2. Load `workflow.yaml` for lifecycle, schemas, paths, budgets and decisions.
 3. Load `runtime-contract.md`, `references/context.md` and `references/runtime-integrity.md` for deterministic operations and current run truth.
-4. Read `method-router.json`. Match the current task, surface, interaction and evidence signals, then load only the smallest matching leaf set.
+4. Read `method-router.json`. For each route, every populated signal dimension is required; match at least one current value in each populated dimension, then load the union of leaves from all matching routes.
 5. Never load every review or specialist leaf by default. A later signal may add a leaf; it does not make the full catalog ambient context.
 
-`method-router.json` is routing data, not another method authority. Canonical ownership remains in `docs/method-authority-map.json`.
+`method-router.json` is routing data, not another method authority. Its repository authority-map/ADR paths are provenance metadata only; an installed run does not depend on repository docs being present.
 
 ## Required references
 
@@ -97,7 +97,7 @@ Studio needs file I/O, shell access and isolated roles. A visual decision also n
 
 ## Method ownership and intake
 
-Design Studio has no upstream design-method runtime dependency. Pinned research sources, dispositions and exact revisions live in `docs/method-sources.json` and `docs/method-authority-map.json`.
+Design Studio has no upstream design-method runtime dependency. Repository-level source pins and dispositions live in `docs/method-sources.json` and `docs/method-authority-map.json`; adopted leaves carry the provenance needed by the installed skill.
 
 - `adapt-local` methods are available only through the local leaf named in `method-router.json`.
 - `observe` and `reject` entries are research evidence, not permission to copy or ambient guidance.
