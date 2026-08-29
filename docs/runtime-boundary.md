@@ -33,8 +33,8 @@ The boundary is protected at observable distribution and behavior seams:
 
 1. `test/support/validate_clean_install.py` scans the complete installed skill and optional adapters and rejects positive execution/import dependencies on repository-only roots.
 2. `.github/workflows/validate-agent-skill-install.yml` retains a blocking exact-revision proof that installs the checked-out repository with pinned `skills@1.5.23`, verifies the shipped runtime and rejects repository-only or Claude-only leakage.
-3. The same workflow has a blocking `public-source-install` proof for `George-RD/design-studio#main` across Codex and Claude Code. Pull requests explicitly test merged `main`; pushes to `main` additionally require selected installed files to match the merged checkout.
-4. Its `advisory-latest-installer` job repeats the public-source proof with `skills@latest` and `continue-on-error: true`. This detects installer drift without replacing the reproducible release gate; see ADR 0004.
+3. The same workflow has a blocking `public-source-install` proof for the canonical `George-RD/design-studio` source across Codex and Claude Code. That source resolves the repository default branch `main`; pull requests explicitly test merged `main`, while pushes to `main` additionally require selected installed files to match the merged checkout.
+4. Its `advisory-latest-installer` job repeats the canonical public-source proof with `skills@latest` and `continue-on-error: true`. This detects installer drift without replacing the reproducible release gate; see ADR 0004.
 5. `.github/workflows/runtime-portability.yml` runs the mechanical runtime contract on Linux, macOS and Windows.
 
 `npx skills` is distribution tooling, not an installed-runtime requirement. Once the Agent Skill is copied, supported behavior depends on the installed files and host capabilities rather than the installer.
