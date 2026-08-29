@@ -109,9 +109,9 @@ Completed iterations are immutable. A failed or interrupted run resumes from the
 
 ## v1.6 product boundary
 
-Design Studio v1.6 has one supported runtime: the installed Agent Skill. It ships a local deterministic mechanical runtime under `skills/design-studio/runtime/`; supported behavior does not branch on whether an external design package is installed.
+Design Studio v1.6 has one self-contained Design Studio runtime: the installed Agent Skill. It ships a local deterministic mechanical runtime under `skills/design-studio/runtime/`; supported behavior does not branch on whether an external design package is installed.
 
-Impeccable and Emil Kowalski's skills are credited sources, not install requirements. Adopted methods live in the local kernel with provenance and progressive disclosure. Growth Arsenal remains a separate optional skill and composes only through the neutral artifact contract.
+External systems are research inputs, not runtime dependencies. Impeccable and Emil Kowalski's skills are credited sources, not install requirements. Adopted methods live in the local kernel with provenance and progressive disclosure. Growth Arsenal remains a separate optional skill and composes only through the neutral artifact contract. See [ADR 0002](docs/decisions/0002-owned-method-kernel.md).
 
 Codex and Claude Code are both exercised through the standard Agent Skills install in CI. The root Claude plugin remains an optional adapter over the same skill contract. See [the v1.6 acceptance record](docs/releases/v1.6.0.md).
 
