@@ -35,12 +35,13 @@ The governing architecture is [ADR 0002: Design Studio owns its method kernel](d
 - [#47 — Consolidate external design guidance into one method authority map](https://github.com/George-RD/design-studio/issues/47) — concept ownership, provenance, intake dispositions, domain boundaries and routing are recorded in [`docs/method-authority-map.json`](docs/method-authority-map.json) and [`docs/method-authority-map.md`](docs/method-authority-map.md).
 - [#49 — Separate shipped runtime helpers from benchmark and research tooling](https://github.com/George-RD/design-studio/issues/49) — current distribution boundary, clean-install dependency checks and real Agent Skill package proof are recorded in [`docs/runtime-boundary.md`](docs/runtime-boundary.md) and [`runtime-surface.json`](runtime-surface.json).
 - [#50 — Normalize product runtime script families behind the shared seam](https://github.com/George-RD/design-studio/issues/50) — the first shipped helper is the standard-library-only local mechanical runtime; historical browser/capability/benchmark families remain repository-only and the old environment-dependent detector branch is removed.
+- [#51 — Route curated design methods through progressive-disclosure leaves](https://github.com/George-RD/design-studio/issues/51) — signal-based routing, bounded leaf contracts, seven provenance-backed local method adaptations and compatibility-stub retirement are implemented through [`skills/design-studio/method-router.json`](skills/design-studio/method-router.json).
 
 The migration map classifies the pre-change product boundary. The method authority map resolves that inventory into the current one-authority-per-concept contract without making external repositories runtime dependencies. The runtime boundary records the current installed/adaptor/repository-only split without changing the frozen migration baseline.
 
 ### Next ready roadmap item
 
-- [#51 — Route curated design methods through progressive-disclosure leaves](https://github.com/George-RD/design-studio/issues/51) — first ready item in roadmap order; dependencies #46 and #47 are complete.
+- [#48 — Define a modular Design Studio ↔ Growth Arsenal composition contract](https://github.com/George-RD/design-studio/issues/48) — first ready item in roadmap order; dependency #47 is complete.
 
 ### Runtime simplification
 
@@ -49,13 +50,13 @@ The migration map classifies the pre-change product boundary. The method authori
 
 ### Method consolidation and modular composition
 
-- [#51 — Route curated design methods through progressive-disclosure leaves](https://github.com/George-RD/design-studio/issues/51) — dependencies #46 and #47 are complete
+- [#51 — Route curated design methods through progressive-disclosure leaves](https://github.com/George-RD/design-studio/issues/51) — complete; one signal router exposes bounded local authorities and adopted method slices without upstream runtime dependencies
 - [#48 — Define a modular Design Studio ↔ Growth Arsenal composition contract](https://github.com/George-RD/design-studio/issues/48) — dependency #47 is complete
 - [Growth Arsenal #34 — Make Growth Arsenal a portable Agent Skill and compose cleanly with Design Studio](https://github.com/George-RD/growth-arsenal/issues/34) — can start with inventory; final composition is blocked by Design Studio #48
 
 ### Adapter contraction and release proof
 
-- [#52 — Reduce Claude Code integration to a thin adapter and defer the standalone CLI](https://github.com/George-RD/design-studio/issues/52) — blocked by #45, #50 and #51
+- [#52 — Reduce Claude Code integration to a thin adapter and defer the standalone CLI](https://github.com/George-RD/design-studio/issues/52) — dependencies #45, #50 and #51 are complete; follow milestone order after the composition slice
 - [#53 — Prove the portable v1.6 path and contract legacy surfaces](https://github.com/George-RD/design-studio/issues/53) — blocked by #48 and #52
 
 ## Dependency sketch
