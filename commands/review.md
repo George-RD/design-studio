@@ -16,8 +16,8 @@ allowed-tools:
 
 # Design Studio: Review
 
-This command is a Claude Code adapter over the canonical Agent Skill.
+This file is an optional Claude Code adapter over the canonical Agent Skill in `skills/design-studio/`.
 
-Load `skills/design-studio/SKILL.md`, `skills/design-studio/invocation.md` and `skills/design-studio/runtime-contract.md`. Map `$ARGUMENTS` to the Review inputs defined there, using Claude Code's `Agent` tool as the host implementation of `isolated_subagents`, then execute `skills/design-studio/references/review/polish.md` through the shared runtime contract.
+Load `skills/design-studio/SKILL.md`, `skills/design-studio/invocation.md` and `skills/design-studio/runtime-contract.md`. Map `$ARGUMENTS` to the Review inputs defined by the skill, use Claude Code's `Agent` tool as the host implementation of `isolated_subagents`, and delegate execution to `skills/design-studio/references/review/polish.md` through that shared runtime contract.
 
-Do not execute `workflow.yaml`, create design directions, score originality, or return REFINE/PIVOT/SHIP. Review ends with a readiness verdict; the runtime contract owns deterministic capability/failure semantics and the skill remains the authority for visual review behavior.
+The adapter contributes invocation metadata only; the installed skill owns review behavior, routing and deterministic runtime semantics.
