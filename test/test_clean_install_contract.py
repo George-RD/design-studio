@@ -70,11 +70,14 @@ class CleanInstallContractTests(unittest.TestCase):
 
         self.assertTrue(any("plugin-only surface" in error for error in errors), errors)
 
-    def test_external_design_skill_cannot_be_required_to_start(self) -> None:
+    def test_installed_skill_cannot_require_external_design_skill(self) -> None:
         temporary, root = self.copy_repository()
         self.addCleanup(temporary.cleanup)
-        readme = root / "README.md"
-        readme.write_text(readme.read_text() + "\nImpeccable is required to start a Design Studio run.\n")
+        invocation = root / "skills" / "design-studio" / "invocation.md"
+        invocation.write_text(
+            invocation.read_text()
+            + "\nImpeccable is required to start a Design Studio run.\n"
+        )
 
         errors = self.validator.validate(root)
 
