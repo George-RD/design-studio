@@ -126,10 +126,10 @@ jobs:
         shell: bash
         run: |
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            echo "Public source George-RD/design-studio#main represents merged main; PR head ${{ github.event.pull_request.head.sha }} is not public yet. This leg verifies the public installer path against merged main."
+            echo "Public source George-RD/design-studio resolves the repository default branch main; PR head ${{ github.event.pull_request.head.sha }} is not public yet. This leg verifies the canonical public installer path against merged main."
             echo "PUBLIC_PARITY=0" >> "$GITHUB_ENV"
           else
-            echo "Public source George-RD/design-studio#main is expected to match merged main commit ${{ github.sha }}."
+            echo "Public source George-RD/design-studio is expected to resolve merged main commit ${{ github.sha }}."
             echo "PUBLIC_PARITY=1" >> "$GITHUB_ENV"
           fi
 
@@ -140,7 +140,7 @@ jobs:
           target="$(mktemp -d)"
           cd "$target"
 
-          npx --yes skills@1.5.23 add George-RD/design-studio#main \
+          npx --yes skills@1.5.23 add George-RD/design-studio \
             --skill design-studio \
             --agent "${{ matrix.agent }}" \
             --copy \
@@ -218,7 +218,7 @@ jobs:
           target="$(mktemp -d)"
           cd "$target"
 
-          npx --yes skills@latest add George-RD/design-studio#main \
+          npx --yes skills@latest add George-RD/design-studio \
             --skill design-studio \
             --agent "${{ matrix.agent }}" \
             --copy \
