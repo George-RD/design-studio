@@ -1,0 +1,46 @@
+name: Validate composition contract
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "ROADMAP.md"
+      - "docs/method-authority-map.json"
+      - "docs/method-authority-map.md"
+      - "references/**"
+      - "skills/design-studio/**"
+      - "test/fixtures/composition-contract.json"
+      - "test/test_composition_contract.py"
+      - ".github/workflows/composition-contract.yml"
+  push:
+    branches: [main]
+    paths:
+      - "ROADMAP.md"
+      - "docs/method-authority-map.json"
+      - "docs/method-authority-map.md"
+      - "references/**"
+      - "skills/design-studio/**"
+      - "test/fixtures/composition-contract.json"
+      - "test/test_composition_contract.py"
+      - ".github/workflows/composition-contract.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  composition-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out exact revision
+        uses: actions/checkout@v5
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Validate portable composition boundary
+        run: |
+          python3 -m unittest discover -s test -p 'test_composition_contract.py' -v
+          python3 -m json.tool skills/design-studio/composition-contract.json > /dev/null
+          python3 -m json.tool test/fixtures/composition-contract.json > /dev/null
+          python3 -m py_compile test/test_composition_contract.py

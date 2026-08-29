@@ -33,6 +33,7 @@ The governing architecture is [ADR 0002: Design Studio owns its method kernel](d
 - [#45 — Make the Agent Skill the canonical install and distribution surface](https://github.com/George-RD/design-studio/issues/45) — canonical Agent Skill install surface merged and verified.
 - [#46 — Establish one stable internal runtime seam before script reorganisation](https://github.com/George-RD/design-studio/issues/46) — stable runtime seam and follow-up review fixes merged and verified.
 - [#47 — Consolidate external design guidance into one method authority map](https://github.com/George-RD/design-studio/issues/47) — concept ownership, provenance, intake dispositions, domain boundaries and routing are recorded in [`docs/method-authority-map.json`](docs/method-authority-map.json) and [`docs/method-authority-map.md`](docs/method-authority-map.md).
+- [#48 — Define a modular Design Studio ↔ Growth Arsenal composition contract](https://github.com/George-RD/design-studio/issues/48) — neutral role-scoped artifact ownership, precedence/staleness rules and prompt-order-independent composition are defined in [`skills/design-studio/composition-contract.json`](skills/design-studio/composition-contract.json) and its installed reference.
 - [#49 — Separate shipped runtime helpers from benchmark and research tooling](https://github.com/George-RD/design-studio/issues/49) — current distribution boundary, clean-install dependency checks and real Agent Skill package proof are recorded in [`docs/runtime-boundary.md`](docs/runtime-boundary.md) and [`runtime-surface.json`](runtime-surface.json).
 - [#50 — Normalize product runtime script families behind the shared seam](https://github.com/George-RD/design-studio/issues/50) — the first shipped helper is the standard-library-only local mechanical runtime; historical browser/capability/benchmark families remain repository-only and the old environment-dependent detector branch is removed.
 - [#51 — Route curated design methods through progressive-disclosure leaves](https://github.com/George-RD/design-studio/issues/51) — signal-based routing, bounded leaf contracts, seven provenance-backed local method adaptations and compatibility-stub retirement are implemented through [`skills/design-studio/method-router.json`](skills/design-studio/method-router.json).
@@ -41,7 +42,7 @@ The migration map classifies the pre-change product boundary. The method authori
 
 ### Next ready roadmap item
 
-- [#48 — Define a modular Design Studio ↔ Growth Arsenal composition contract](https://github.com/George-RD/design-studio/issues/48) — first ready item in roadmap order; dependency #47 is complete.
+- [#52 — Reduce Claude Code integration to a thin adapter and defer the standalone CLI](https://github.com/George-RD/design-studio/issues/52) — dependencies #45, #50 and #51 are complete; composition #48 is complete, so adapter contraction is the next item in milestone order.
 
 ### Runtime simplification
 
@@ -51,13 +52,13 @@ The migration map classifies the pre-change product boundary. The method authori
 ### Method consolidation and modular composition
 
 - [#51 — Route curated design methods through progressive-disclosure leaves](https://github.com/George-RD/design-studio/issues/51) — complete; one signal router exposes bounded local authorities and adopted method slices without upstream runtime dependencies
-- [#48 — Define a modular Design Studio ↔ Growth Arsenal composition contract](https://github.com/George-RD/design-studio/issues/48) — dependency #47 is complete
-- [Growth Arsenal #34 — Make Growth Arsenal a portable Agent Skill and compose cleanly with Design Studio](https://github.com/George-RD/growth-arsenal/issues/34) — can start with inventory; final composition is blocked by Design Studio #48
+- [#48 — Define a modular Design Studio ↔ Growth Arsenal composition contract](https://github.com/George-RD/design-studio/issues/48) — complete; role/scope/state and provenance identify product/copy/design authority without prompt-order or filename collisions
+- [Growth Arsenal #34 — Make Growth Arsenal a portable Agent Skill and compose cleanly with Design Studio](https://github.com/George-RD/growth-arsenal/issues/34) — inventory/packaging work can continue; final composition adoption is unblocked by Design Studio #48 after this change merges
 
 ### Adapter contraction and release proof
 
-- [#52 — Reduce Claude Code integration to a thin adapter and defer the standalone CLI](https://github.com/George-RD/design-studio/issues/52) — dependencies #45, #50 and #51 are complete; follow milestone order after the composition slice
-- [#53 — Prove the portable v1.6 path and contract legacy surfaces](https://github.com/George-RD/design-studio/issues/53) — blocked by #48 and #52
+- [#52 — Reduce Claude Code integration to a thin adapter and defer the standalone CLI](https://github.com/George-RD/design-studio/issues/52) — dependencies #45, #50 and #51 are complete; next in milestone order after #48
+- [#53 — Prove the portable v1.6 path and contract legacy surfaces](https://github.com/George-RD/design-studio/issues/53) — blocked by #52; #48 is complete
 
 ## Dependency sketch
 

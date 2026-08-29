@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "scenarios": [
+    {
+      "id": "design-studio-alone",
+      "installedSkills": ["design-studio"],
+      "artifacts": [
+        {"path": "/project/PRODUCT.md", "role": "product-truth", "scope": "project", "state": "confirmed", "producer": "user"},
+        {"path": "/project/COPY.md", "role": "language-rules", "scope": "project", "state": "present", "producer": "user"},
+        {"path": "/project/DESIGN.md", "role": "visual-design", "scope": "project", "state": "accepted", "producer": "design-studio"}
+      ],
+      "expectedAuthorities": {
+        "product-truth": "/project/PRODUCT.md",
+        "visual-design": "/project/DESIGN.md"
+      }
+    },
+    {
+      "id": "design-studio-plus-growth-arsenal",
+      "installedSkills": ["growth-arsenal", "design-studio"],
+      "artifacts": [
+        {"path": "/tools/growth-arsenal/DESIGN.md", "role": "internal-report-design", "scope": "skill-internal", "state": "accepted", "producer": "growth-arsenal"},
+        {"path": "/project/OFFER.md", "role": "offer-copy", "scope": "project", "state": "approved", "producer": "growth-arsenal"},
+        {"path": "/project/PRODUCT.md", "role": "product-truth", "scope": "project", "state": "confirmed", "producer": "user"},
+        {"path": "/project/DESIGN.md", "role": "visual-design", "scope": "project", "state": "accepted", "producer": "design-studio"}
+      ],
+      "expectedAuthorities": {
+        "product-truth": "/project/PRODUCT.md",
+        "offer-copy": "/project/OFFER.md",
+        "visual-design": "/project/DESIGN.md"
+      }
+    }
+  ]
+}

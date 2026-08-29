@@ -19,6 +19,9 @@ RETIRED_POST_BASELINE_REFERENCES = {
     "skills/design-studio/references/evaluation.md",
     "skills/design-studio/references/iteration.md",
 }
+ADDED_POST_BASELINE_REFERENCES = {
+    "skills/design-studio/references/composition-contract.md",
+}
 LABEL_ACTIONS = {
     "core": "keep",
     "impeccable": "delegate",
@@ -110,6 +113,7 @@ class MilestoneZeroOwnershipInventoryTests(unittest.TestCase):
         expected = {
             path.relative_to(ROOT).as_posix()
             for path in reference_root.rglob("*.md")
+            if path.relative_to(ROOT).as_posix() not in ADDED_POST_BASELINE_REFERENCES
         }
         expected.update(RETIRED_POST_BASELINE_REFERENCES)
         expected.update(
@@ -143,6 +147,11 @@ class MilestoneZeroOwnershipInventoryTests(unittest.TestCase):
                     self.assertTrue((ROOT / path).is_file())
                 self.assertTrue(reason.strip())
                 self.assertEqual(label == "core", not target)
+
+        for path in ADDED_POST_BASELINE_REFERENCES:
+            with self.subTest(post_baseline=path):
+                self.assertTrue((ROOT / path).is_file())
+                self.assertNotIn(path, paths)
 
     def test_every_enumerated_check_family_has_members_and_an_owner(self) -> None:
         rows = self.inventory["checks"]

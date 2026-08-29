@@ -1,0 +1,164 @@
+{
+  "schemaVersion": 1,
+  "status": "authoritative-composition-contract",
+  "participants": ["design-studio", "growth-arsenal"],
+  "hostNeutral": true,
+  "runtimeDependencies": {
+    "designStudioRequiresGrowthArsenal": false,
+    "growthArsenalRequiresDesignStudio": false
+  },
+  "artifactDescriptor": {
+    "requiredFields": ["path", "role", "scope", "state"],
+    "optionalFields": ["producer", "provenance"],
+    "normalizationRule": "Before authority resolution, normalize artifact frontmatter, a sidecar manifest or another durable machine-readable record to this descriptor. A candidate missing any required field is not authoritative.",
+    "pathRule": "path identifies the artifact within the current project or tool context; basename alone never defines role.",
+    "provenanceRule": "provenance should identify approval, acceptance or explicit user designation when that evidence is required by the artifact role."
+  },
+  "authorityDomains": [
+    {
+      "id": "product-truth",
+      "owner": "shared-product-context",
+      "scope": "Confirmed audience, business outcome, capabilities, constraints, proof, terminology and settled product facts. Neither skill may silently rewrite these facts to satisfy its own output."
+    },
+    {
+      "id": "offer-copy",
+      "owner": "growth-arsenal",
+      "scope": "Offer, positioning, persuasion strategy, claims, authoritative commercial copy and the constraints attached to that copy."
+    },
+    {
+      "id": "visual-design",
+      "owner": "design-studio",
+      "scope": "Visual direction, design implementation, rendered evaluation, accepted visual-system output and design-side surface coordination."
+    }
+  ],
+  "artifactRoles": [
+    {
+      "role": "product-truth",
+      "owner": "shared-product-context",
+      "defaultPaths": ["PRODUCT.md"],
+      "requiredState": "confirmed",
+      "scope": "project",
+      "authorityEvidence": [
+        "explicit-current-user-confirmation",
+        "declared-composition-role-and-scope",
+        "design-studio-product-schema-in-current-context-root"
+      ],
+      "whenOwnerAbsent": "Use confirmed project or user product truth. Missing facts stay unresolved; neither skill may invent them."
+    },
+    {
+      "role": "offer-copy",
+      "owner": "growth-arsenal",
+      "defaultPaths": ["OFFER.md", "COPY.md"],
+      "requiredState": "approved",
+      "scope": "project",
+      "authorityEvidence": [
+        "explicit-current-user-approval",
+        "declared-composition-role-and-scope",
+        "growth-arsenal-approved-export-provenance"
+      ],
+      "whenOwnerAbsent": "Design Studio remains fully usable with user-supplied or repository copy and its local surface-copy coordination rules. That fallback does not claim Growth Arsenal methodology or strategy authority."
+    },
+    {
+      "role": "visual-design",
+      "owner": "design-studio",
+      "defaultPaths": ["DESIGN.md"],
+      "requiredState": "accepted",
+      "scope": "project",
+      "authorityEvidence": [
+        "explicit-current-user-designation",
+        "declared-composition-role-and-scope",
+        "design-studio-finish-acceptance-provenance"
+      ],
+      "whenOwnerAbsent": "Growth Arsenal remains fully usable without Design Studio. It may format its own reports, but those internal presentation assets do not become project visual-design authority."
+    }
+  ],
+  "resolution": {
+    "selectionOrder": [
+      "declared-role-and-scope",
+      "explicit-approval-or-acceptance-provenance",
+      "canonical-project-context-location"
+    ],
+    "basenameAloneAuthoritative": false,
+    "promptOrderAuthoritative": false,
+    "mtimeAuthoritative": false,
+    "ambiguousSameRole": "unresolved"
+  },
+  "precedence": [
+    {
+      "rank": 1,
+      "authority": "explicit-current-user-instruction",
+      "appliesTo": ["product-truth", "offer-copy", "visual-design"]
+    },
+    {
+      "rank": 2,
+      "authority": "confirmed-product-truth",
+      "appliesTo": ["product-truth", "offer-copy", "visual-design"]
+    },
+    {
+      "rank": 3,
+      "authority": "approved-growth-arsenal-offer-copy",
+      "appliesTo": ["offer-copy", "surface-copy-coordination"]
+    },
+    {
+      "rank": 4,
+      "authority": "current-surface-brief",
+      "appliesTo": ["surface-strategy"]
+    },
+    {
+      "rank": 5,
+      "authority": "accepted-design-system-or-selected-direction",
+      "appliesTo": ["visual-design"],
+      "modeRule": "For preserve-world work, accepted project DESIGN.md governs visual decisions. For greenfield or explicit redesign work, the selected direction governs active visual choices while retained product and brand commitments still apply."
+    }
+  ],
+  "conflicts": [
+    {
+      "id": "copy-vs-product-truth",
+      "winner": "confirmed-product-truth",
+      "effect": "Mark the conflicting offer/copy artifact stale or unresolved and return the contradiction to the copy authority or user. Never change confirmed facts to fit copy."
+    },
+    {
+      "id": "product-change-vs-downstream",
+      "winner": "newly-confirmed-product-truth",
+      "effect": "Mark affected offer/copy claims and visual assumptions stale. Revalidate dependent artifacts before acceptance."
+    },
+    {
+      "id": "copy-vs-visual-capacity",
+      "winner": "domain-split",
+      "effect": "Design Studio may adapt composition within accepted visual authority, but it must not silently truncate, weaken or rewrite strategic copy. If the trade-off cannot be satisfied in both domains, return it to the copy authority or user."
+    },
+    {
+      "id": "design-vs-offer-copy",
+      "winner": "domain-split",
+      "effect": "Growth Arsenal decides authoritative wording and claims; Design Studio decides visual expression. A cross-domain decision with no compatible solution remains unresolved for the user rather than being won by prompt order."
+    },
+    {
+      "id": "duplicate-role-artifacts",
+      "winner": "unresolved",
+      "effect": "Apply the role/scope/provenance resolution order. If more than one candidate still has equal authority, halt the dependent decision and request an explicit designation instead of guessing."
+    }
+  ],
+  "stalenessRules": [
+    {
+      "trigger": "confirmed-product-truth-changes",
+      "invalidates": ["offer-copy assumptions that depend on the changed fact", "visual assumptions that depend on the changed fact"],
+      "preserves": ["unrelated confirmed product truth"]
+    },
+    {
+      "trigger": "approved-offer-copy-changes",
+      "invalidates": ["surface briefs and layouts that depend on superseded wording"],
+      "preserves": ["confirmed product truth", "accepted visual system unless the user explicitly reopens it"]
+    },
+    {
+      "trigger": "accepted-visual-system-changes",
+      "invalidates": ["surface-specific visual assumptions tied to the superseded system"],
+      "preserves": ["confirmed product truth", "approved offer/copy"]
+    }
+  ],
+  "integrationRules": [
+    "Design Studio consumes compatible approved offer/copy artifacts by declared role, project scope and approval evidence; it does not invoke, copy or reimplement Growth Arsenal internal methods.",
+    "Growth Arsenal remains independently usable and is not expected to duplicate Design Studio visual direction, implementation or rendered-evaluation methods.",
+    "A Growth Arsenal repository-internal DESIGN.md or token file is report/tooling presentation state unless it is explicitly exported as project visual-design authority and accepted by Design Studio or the user.",
+    "Skill installation order, prompt order, filename alone and file modification time never create authority."
+  ]
+}

@@ -60,7 +60,13 @@
       "id": "copy-boundary",
       "signals": {"task": ["copy-change"], "surface": [], "interaction": [], "evidence": []},
       "leaves": ["references/copy.md"],
-      "handoff": "Design Studio coordinates surface copy inside confirmed facts and consumes external offer/copy artifacts without importing their method."
+      "handoff": "Design Studio coordinates standalone surface copy inside confirmed facts without claiming offer or persuasion strategy authority."
+    },
+    {
+      "id": "composition-boundary",
+      "signals": {"task": [], "surface": [], "interaction": [], "evidence": ["composition-artifacts"]},
+      "leaves": ["references/copy.md"],
+      "handoff": "Resolve role-scoped product/offer-copy/visual artifacts through composition-contract.json; consume approved external outputs without importing another skill's methods."
     },
     {
       "id": "meta",
