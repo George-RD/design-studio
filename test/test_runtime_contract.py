@@ -78,11 +78,18 @@ class RuntimeContractTests(unittest.TestCase):
         quality_gate = QUALITY_GATE_PATH.read_text()
 
         self.assertTrue(MECHANICAL_RUNTIME_PATH.is_file())
-        self.assertIn("detector: { enum: [design-studio] }", workflow)
         self.assertNotIn("impeccable_cli", workflow)
         self.assertIn("node runtime/mechanical/index.mjs", quality_gate)
         self.assertIn("External detector availability must not change the supported rule set", quality_gate)
         self.assertNotIn("npx impeccable", quality_gate)
+
+    def test_legacy_detector_artifacts_remain_readable_for_resume(self) -> None:
+        contract = self.contract_text()
+        workflow = WORKFLOW_PATH.read_text()
+
+        self.assertIn("detector: { enum: [design-studio, impeccable, fallback] }", workflow)
+        self.assertIn("legacy detector values remain schema-readable", contract)
+        self.assertIn("current helper emits only `design-studio`", contract)
 
     def test_contract_excludes_research_only_concepts(self) -> None:
         contract = self.contract_text()
