@@ -10,7 +10,7 @@ Load for `mechanical-preflight`, post-fix confirmation, finish confirmation, or 
 
 ## Required context
 
-The host supplies current source facts and zero or more browser passes from the actual target. A completed source pass records title/language, heading validity, motion/reduced-motion source handling, and explicit semantic/name/alt/landmark/focus/placeholder/debug failures. A browser pass records requested/actual viewport, overflow measurements, reduced-motion verification, and explicit contrast/clipping/keyboard/focus/touch/resource/console failures.
+The host supplies current source facts and zero or more browser passes from the actual target. Completed source evidence uses `pageTitle`, `language`, `headingOrderValid`, `primaryHeadingCount`, `motionPresent`, `reducedMotionHandled` and the failure arrays `semanticControlFailures`, `accessibleNameFailures`, `altTextFailures`, `landmarkFailures`, `focusVisibilityFailures`, `placeholderLinkFailures`, `debugControlFailures`. Completed browser evidence uses `requestedViewport`, `actualViewport`, `scrollWidth`, `clientWidth`, `motionPresent`, `reducedMotionVerified` and `contrastFailures`, `clippedContentFailures`, `keyboardFailures`, `focusFailures`, `touchTargetFailures`, `resourceFailures`, `fatalConsoleErrors`. Each explicit failure carries `location`, `value` and human-readable `evidence`.
 
 ## Outputs and handoff
 
