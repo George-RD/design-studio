@@ -48,7 +48,7 @@ When a request mixes audit and redesign, Studio owns the task unless the user ex
 
 ## Context and run integrity
 
-Load `references/invocation.md` to map host input and isolated roles. Then load `references/context.md` and `references/runtime-integrity.md` before planning.
+Load `invocation.md` to map host input and isolated roles. Then load `references/context.md` and `references/runtime-integrity.md` before planning.
 
 - `roots.json` records repository, app and context roots with evidence.
 - `capabilities.json` records the browser, runnable target, detector, question and copy tools that actually exist.
@@ -162,7 +162,7 @@ Execute `references/review/polish.md` without `workflow.yaml`.
 
 | Need | File |
 |---|---|
-| Host input mapping and isolated-role invocation | `references/invocation.md` |
+| Host input mapping and isolated-role invocation | `invocation.md` |
 | Product, copy, design and surface context | `references/context.md` |
 | Roots, capabilities, resume, assignment and acceptance | `references/runtime-integrity.md` |
 | Machine workflow, paths and decisions | `workflow.yaml` |
