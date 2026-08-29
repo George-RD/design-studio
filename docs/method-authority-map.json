@@ -1,0 +1,565 @@
+{
+  "schemaVersion": 1,
+  "status": "authoritative-method-map",
+  "governingDecision": "docs/decisions/0002-owned-method-kernel.md",
+  "sourceRegistry": "docs/method-sources.json",
+  "migrationInput": "docs/migration-map.json",
+  "externalRuntimeDependencyAllowed": false,
+  "permittedExternalDispositions": [
+    "reject",
+    "observe",
+    "adapt-local",
+    "vendor-slice"
+  ],
+  "provenanceContract": {
+    "sourceMetadataResolution": "Each external overlap resolves source repository, exact reviewed revision, licence, and runtime-dependency status by sourceId through docs/method-sources.json.",
+    "candidateImplementationRule": "An adapt-local or vendor-slice candidate is not adopted code or guidance until a focused implementation PR cites the sourceId and exact revision, records modifications, preserves required notices, and adds evidence or tests for the retained benefit.",
+    "observationRule": "Observe and reject entries are not runtime dependencies and do not authorize copying upstream material."
+  },
+  "domainBoundaries": [
+    {
+      "domain": "design-engineering",
+      "owner": "design-studio",
+      "scope": "Generic visual design engineering methods and specialist review guidance."
+    },
+    {
+      "domain": "orchestration-runtime",
+      "owner": "design-studio",
+      "scope": "Lifecycle, role isolation, evidence, routing, acceptance, resume, and supported runtime behaviour."
+    },
+    {
+      "domain": "copy-offer",
+      "owner": "growth-arsenal",
+      "scope": "Offer, positioning, persuasion strategy, and authoritative copy. Design Studio consumes approved artifacts through skills/design-studio/references/copy.md."
+    }
+  ],
+  "targetedComparisons": [],
+  "duplicateResolutions": [
+    {
+      "duplicatePath": "references/methodology.md",
+      "action": "delete-after",
+      "retainedAuthorities": [
+        "skills/design-studio/references/rationale.md",
+        "skills/design-studio/references/context.md",
+        "skills/design-studio/references/generation.md",
+        "skills/design-studio/references/quality-gates.md",
+        "skills/design-studio/references/evaluation.md",
+        "skills/design-studio/references/review/polish.md",
+        "skills/design-studio/references/copy.md",
+        "skills/design-studio/references/overhaul.md",
+        "skills/design-studio/references/meta.md",
+        "skills/design-studio/references/runtime-integrity.md"
+      ],
+      "condition": "Delete after issues #48 and #51 migrate every supported routing/reference that still depends on this legacy methodology document and clean-install validation proves no runtime path requires it."
+    }
+  ],
+  "concepts": [
+    {
+      "conceptId": "source-blind-direction-and-evaluation",
+      "domain": "design-engineering",
+      "authority": {
+        "owner": "design-studio",
+        "kind": "canonical-local",
+        "canonicalPath": "skills/design-studio/references/rationale.md"
+      },
+      "supportingReferences": [
+        "skills/design-studio/agents/design-agent.md",
+        "skills/design-studio/agents/evaluator.md",
+        "skills/design-studio/references/evaluation.md"
+      ],
+      "routing": {
+        "mode": "routed",
+        "triggers": [
+          "Generating competing visual directions before implementation",
+          "Evaluating a direction or implementation without exposing source identity"
+        ]
+      },
+      "upstreamRuntimeRequired": false,
+      "externalOverlaps": [
+        {
+          "sourceId": "emilkowalski/skills",
+          "methodName": "genuinely divergent prototypes compared in realistic context",
+          "upstreamPathAtRevision": "skills/prototype/SKILL.md",
+          "disposition": "adapt-local",
+          "implementationStatus": "candidate",
+          "modificationProvenance": "Adapt only the divergence criterion and realistic-context comparison. Preserve Design Studio's source-blind role split, evidence model, and local routing; do not copy the upstream prototype directory structure or tooling.",
+          "evidenceBasis": [
+            "issue #43 source-blind direction contract",
+            "docs/migration-map.json concept source-blind-direction-and-evaluation",
+            "exact pinned upstream skill review"
+          ]
+        }
+      ]
+    },
+    {
+      "conceptId": "runtime-integrity-and-immutable-evidence",
+      "domain": "orchestration-runtime",
+      "authority": {
+        "owner": "design-studio",
+        "kind": "canonical-local",
+        "canonicalPath": "skills/design-studio/references/runtime-integrity.md"
+      },
+      "supportingReferences": [
+        "skills/design-studio/references/iteration.md"
+      ],
+      "routing": {
+        "mode": "always",
+        "triggers": [
+          "Every supported run and resume boundary",
+          "Before evidence mutation, transition, or acceptance"
+        ]
+      },
+      "upstreamRuntimeRequired": false,
+      "externalOverlaps": []
+    },
+    {
+      "conceptId": "product-context-and-planning",
+      "domain": "design-engineering",
+      "authority": {
+        "owner": "design-studio",
+        "kind": "canonical-local",
+        "canonicalPath": "skills/design-studio/references/context.md"
+      },
+      "supportingReferences": [
+        "skills/design-studio/references/planning.md"
+      ],
+      "routing": {
+        "mode": "always",
+        "triggers": [
+          "Run setup and resume",
+          "Before direction work relies on product facts, constraints, or existing state"
+        ]
+      },
+      "upstreamRuntimeRequired": false,
+      "externalOverlaps": [
+        {
+          "sourceId": "pbakaus/impeccable",
+          "methodName": "design command taxonomy as lifecycle routing",
+          "upstreamPathAtRevision": ".agent/skills/impeccable/SKILL.md",
+          "disposition": "reject",
+          "implementationStatus": "not-adopted",
+          "modificationProvenance": "No upstream lifecycle or command taxonomy is imported. Design Studio retains its own phase model and progressively disclosed local references.",
+          "evidenceBasis": [
+            "issue #43 one-supported-runtime decision",
+            "ADR 0002 local method kernel",
+            "docs/migration-map.json product-context-and-planning"
+          ]
+        }
+      ]
+    },
+    {
+      "conceptId": "implementation-fidelity",
+      "domain": "design-engineering",
+      "authority": {
+        "owner": "design-studio",
+        "kind": "canonical-local",
+        "canonicalPath": "skills/design-studio/references/generation.md"
+      },
+      "supportingReferences": [],
+      "routing": {
+        "mode": "routed",
+        "triggers": [
+          "Implementing an accepted direction",
+          "Changing rendered UI while preserving the accepted design intent"
+        ]
+      },
+      "upstreamRuntimeRequired": false,
+      "externalOverlaps": []
+    },
+    {
+      "conceptId": "mechanical-source-and-browser-evidence",
+      "domain": "orchestration-runtime",
+      "authority": {
+        "owner": "design-studio",
+        "kind": "canonical-local",
+        "canonicalPath": "skills/design-studio/references/quality-gates.md"
+      },
+      "supportingReferences": [],
+      "routing": {
+        "mode": "routed",
+        "triggers": [
+          "Collecting source or browser evidence before visual evaluation",
+          "Re-checking a changed implementation after review fixes"
+        ]
+      },
+      "upstreamRuntimeRequired": false,
+      "externalOverlaps": [
+        {
+          "sourceId": "pbakaus/impeccable",
+          "methodName": "deterministic source/browser audit checks with explicit finding severity",
+          "upstreamPathAtRevision": ".agent/skills/impeccable/reference/audit.md",
+          "disposition": "adapt-local",
+          "implementationStatus": "candidate",
+          "modificationProvenance": "Adapt only repeatable checks and finding semantics that can be implemented locally and protected by tests. Keep Design Studio's evidence schema and do not require the Impeccable CLI or prompt library at runtime.",
+          "evidenceBasis": [
+            "issue #50 deterministic local quality-gate follow-up",
+            "docs/migration-map.json mechanical-source-and-browser-evidence",
+            "exact pinned audit-method review"
+          ]
+        },
+        {
+          "sourceId": "pbakaus/impeccable",
+          "methodName": "mechanical evidence separated from visual judgement",
+          "upstreamPathAtRevision": ".agent/skills/impeccable/reference/audit.md",
+          "disposition": "reject",
+          "implementationStatus": "not-adopted",
+          "modificationProvenance": "No separate upstream authority is imported because the local quality-gate and evaluation contracts already make this separation explicit.",
+          "evidenceBasis": [
+            "skills/design-studio/references/quality-gates.md",
+            "skills/design-studio/references/evaluation.md",
+            "ADR 0002 one-authority rule"
+          ]
+        }
+      ]
+    },
+    {
+      "conceptId": "review-orchestration",
+      "domain": "orchestration-runtime",
+      "authority": {
+        "owner": "design-studio",
+        "kind": "canonical-local",
+        "canonicalPath": "skills/design-studio/references/review/polish.md"
+      },
+      "supportingReferences": [
+        "skills/design-studio/references/evaluation.md"
+      ],
+      "routing": {
+        "mode": "routed",
+        "triggers": [
+          "Iterating after evaluator or orchestrator findings",
+          "Performing final design review on a visually mature implementation"
+        ]
+      },
+      "upstreamRuntimeRequired": false,
+      "externalOverlaps": [
+        {
+          "sourceId": "emilkowalski/skills",
+          "methodName": "read-only expert audit followed by an executable improvement plan",
+          "upstreamPathAtRevision": "skills/improve-animations/SKILL.md",
+          "disposition": "adapt-local",
+          "implementationStatus": "candidate",
+          "modificationProvenance": "Adapt the audit-to-plan handoff shape only. Preserve source-blind evaluation, immutable evidence, and orchestrator decision ownership; reviewers do not gain acceptance authority.",
+          "evidenceBasis": [
+            "issue #43 role isolation contract",
+            "docs/migration-map.json review-orchestration",
+            "exact pinned improve-animations review"
+          ]
+        },
+        {
+          "sourceId": "pbakaus/impeccable",
+          "methodName": "broad design command taxonomy for review routing",
+          "upstreamPathAtRevision": ".agent/skills/impeccable/SKILL.md",
+          "disposition": "reject",
+          "implementationStatus": "not-adopted",
+          "modificationProvenance": "Do not import a parallel command framework. Existing local review leaves remain the routing surface, with future compression handled by issue #51.",
+          "evidenceBasis": [
+            "issue #51 progressive-disclosure follow-up",
+            "ADR 0002 duplicate-authority rule",
+            "docs/migration-map.json review-orchestration"
+          ]
+        }
+      ]
+    },
+    {
+      "conceptId": "accessibility-review",
+      "domain": "design-engineering",
+      "authority": {
+        "owner": "design-studio",
+        "kind": "canonical-local",
+        "canonicalPath": "skills/design-studio/references/review/a11y.md"
+      },
+      "supportingReferences": [],
+      "routing": {
+        "mode": "routed",
+        "triggers": [
+          "Reviewing interactive, navigable, form, or public-facing UI",
+          "Evidence indicates contrast, focus, semantics, target-size, or reduced-motion risk"
+        ]
+      },
+      "upstreamRuntimeRequired": false,
+      "externalOverlaps": [
+        {
+          "sourceId": "pbakaus/impeccable",
+          "methodName": "accessibility audit checklist",
+          "upstreamPathAtRevision": ".agent/skills/impeccable/reference/audit.md",
+          "disposition": "observe",
+          "implementationStatus": "not-adopted",
+          "modificationProvenance": "Keep as a comparison source only. The local accessibility leaf remains canonical unless a specific missing defect class is demonstrated.",
+          "evidenceBasis": [
+            "docs/migration-map.json accessibility-review",
+            "local a11y review leaf already exists",
+            "exact pinned audit-method review"
+          ]
+        }
+      ]
+    },
+    {
+      "conceptId": "hierarchy-rhythm-and-responsive-composition",
+      "domain": "design-engineering",
+      "authority": {
+        "owner": "design-studio",
+        "kind": "canonical-local",
+        "canonicalPath": "skills/design-studio/references/review/hierarchy.md"
+      },
+      "supportingReferences": [],
+      "routing": {
+        "mode": "routed",
+        "triggers": [
+          "Reviewing hierarchy, spacing rhythm, density, or responsive composition",
+          "Rendered evidence shows layout ambiguity or breakpoint degradation"
+        ]
+      },
+      "upstreamRuntimeRequired": false,
+      "externalOverlaps": [
+        {
+          "sourceId": "pbakaus/impeccable",
+          "methodName": "hierarchy and responsive audit checklist",
+          "upstreamPathAtRevision": ".agent/skills/impeccable/reference/audit.md",
+          "disposition": "observe",
+          "implementationStatus": "not-adopted",
+          "modificationProvenance": "Retain only as a pinned comparison source. No local material is replaced until a targeted missing rule is evidenced.",
+          "evidenceBasis": [
+            "docs/migration-map.json hierarchy-rhythm-and-responsive-composition",
+            "local hierarchy review leaf already exists",
+            "exact pinned audit-method review"
+          ]
+        }
+      ]
+    },
+    {
+      "conceptId": "interaction-state-and-affordance",
+      "domain": "design-engineering",
+      "authority": {
+        "owner": "design-studio",
+        "kind": "canonical-local",
+        "canonicalPath": "skills/design-studio/references/review/interaction.md"
+      },
+      "supportingReferences": [],
+      "routing": {
+        "mode": "routed",
+        "triggers": [
+          "Reviewing interactive states, affordances, feedback, or control behaviour",
+          "Rendered evidence shows unclear hover, focus, active, loading, empty, or error state behaviour"
+        ]
+      },
+      "upstreamRuntimeRequired": false,
+      "externalOverlaps": [
+        {
+          "sourceId": "pbakaus/impeccable",
+          "methodName": "interaction-state audit checklist",
+          "upstreamPathAtRevision": ".agent/skills/impeccable/reference/audit.md",
+          "disposition": "observe",
+          "implementationStatus": "not-adopted",
+          "modificationProvenance": "Retain as a pinned comparison source. The local interaction leaf is the sole authority unless a specific missing state pattern is demonstrated.",
+          "evidenceBasis": [
+            "docs/migration-map.json interaction-state-and-affordance",
+            "local interaction review leaf already exists",
+            "exact pinned audit-method review"
+          ]
+        }
+      ]
+    },
+    {
+      "conceptId": "motion-craft-and-perceptibility",
+      "domain": "design-engineering",
+      "authority": {
+        "owner": "design-studio",
+        "kind": "canonical-local",
+        "canonicalPath": "skills/design-studio/references/review/interaction.md"
+      },
+      "supportingReferences": [
+        "skills/design-studio/references/review/polish.md"
+      ],
+      "routing": {
+        "mode": "routed",
+        "triggers": [
+          "Adding, changing, or reviewing UI motion",
+          "Motion affects hierarchy, feedback, interruption, perceived responsiveness, or reduced-motion behaviour"
+        ]
+      },
+      "upstreamRuntimeRequired": false,
+      "externalOverlaps": [
+        {
+          "sourceId": "emilkowalski/skills",
+          "methodName": "purpose and frequency gate for motion",
+          "upstreamPathAtRevision": "skills/improve-animations/SKILL.md",
+          "disposition": "adapt-local",
+          "implementationStatus": "candidate",
+          "modificationProvenance": "Adapt the explicit purpose/frequency decision gate into the local motion review path. Preserve product context and reduced-motion requirements; do not turn upstream preferences into universal rules.",
+          "evidenceBasis": [
+            "docs/migration-map.json motion-craft-and-perceptibility",
+            "exact pinned improve-animations review",
+            "issue #43 selective-intake policy"
+          ]
+        },
+        {
+          "sourceId": "emilkowalski/skills",
+          "methodName": "precise motion values and interruptibility rules",
+          "upstreamPathAtRevision": "skills/animate/SKILL.md",
+          "disposition": "adapt-local",
+          "implementationStatus": "candidate",
+          "modificationProvenance": "Adapt bounded value ranges and interruptibility checks as contextual review heuristics, not fixed framework-specific prescriptions.",
+          "evidenceBasis": [
+            "docs/migration-map.json motion-craft-and-perceptibility",
+            "exact pinned animate skill review",
+            "issue #43 selective-intake policy"
+          ]
+        },
+        {
+          "sourceId": "emilkowalski/skills",
+          "methodName": "record rejected animation opportunities",
+          "upstreamPathAtRevision": "skills/improve-animations/SKILL.md",
+          "disposition": "adapt-local",
+          "implementationStatus": "candidate",
+          "modificationProvenance": "When a motion audit is routed, record concise negative decisions in run evidence so future passes do not re-propose purposeless motion. Do not create permanent documentation noise for ordinary runs.",
+          "evidenceBasis": [
+            "exact pinned improve-animations review",
+            "issue #43 durable evidence contract",
+            "docs/migration-map.json motion-craft-and-perceptibility"
+          ]
+        },
+        {
+          "sourceId": "pbakaus/impeccable",
+          "methodName": "generic motion guidance inside the wider design method",
+          "upstreamPathAtRevision": ".agent/skills/impeccable/SKILL.md",
+          "disposition": "observe",
+          "implementationStatus": "not-adopted",
+          "modificationProvenance": "Observe only; the bounded Emil motion methods are the clearer intake candidates and the local interaction leaf remains canonical.",
+          "evidenceBasis": [
+            "docs/migration-map.json motion-craft-and-perceptibility",
+            "ADR 0002 smallest-coherent-method rule"
+          ]
+        }
+      ]
+    },
+    {
+      "conceptId": "generated-specificity-and-subtraction",
+      "domain": "design-engineering",
+      "authority": {
+        "owner": "design-studio",
+        "kind": "canonical-local",
+        "canonicalPath": "skills/design-studio/references/review/slop.md"
+      },
+      "supportingReferences": [
+        "skills/design-studio/references/review/polish.md"
+      ],
+      "routing": {
+        "mode": "routed",
+        "triggers": [
+          "Reviewing generated UI for generic, repetitive, redundant, or over-produced patterns",
+          "Rendered evidence feels synthetic despite meeting mechanical checks"
+        ]
+      },
+      "upstreamRuntimeRequired": false,
+      "externalOverlaps": [
+        {
+          "sourceId": "pbakaus/impeccable",
+          "methodName": "design anti-pattern taxonomy",
+          "upstreamPathAtRevision": ".agent/skills/impeccable/SKILL.md",
+          "disposition": "adapt-local",
+          "implementationStatus": "candidate",
+          "modificationProvenance": "Adapt only defect categories that map to recurring local evidence. Keep Design Studio terminology and product-specific judgement; do not import the upstream command framework or full prompt text.",
+          "evidenceBasis": [
+            "Horaxon dogfood findings referenced by issue #43",
+            "docs/migration-map.json generated-specificity-and-subtraction",
+            "ADR 0002 selective-intake rule"
+          ]
+        }
+      ]
+    },
+    {
+      "conceptId": "design-system-codification",
+      "domain": "design-engineering",
+      "authority": {
+        "owner": "design-studio",
+        "kind": "canonical-local",
+        "canonicalPath": "skills/design-studio/assets/design-system-skill/SKILL.md.template"
+      },
+      "supportingReferences": [],
+      "routing": {
+        "mode": "routed",
+        "triggers": [
+          "Codifying an accepted visual direction into reusable design-system guidance",
+          "A project requests or benefits from durable tokens, components, or design-system skill output"
+        ]
+      },
+      "upstreamRuntimeRequired": false,
+      "externalOverlaps": [
+        {
+          "sourceId": "pbakaus/impeccable",
+          "methodName": "design-system and token audit guidance",
+          "upstreamPathAtRevision": ".agent/skills/impeccable/reference/audit.md",
+          "disposition": "observe",
+          "implementationStatus": "not-adopted",
+          "modificationProvenance": "Retain as a pinned comparison source only. The local design-system template remains canonical until a concrete missing codification behaviour is demonstrated.",
+          "evidenceBasis": [
+            "docs/migration-map.json design-system-codification",
+            "local design-system template already exists",
+            "exact pinned audit-method review"
+          ]
+        }
+      ]
+    },
+    {
+      "conceptId": "offer-copy-authority",
+      "domain": "copy-offer",
+      "authority": {
+        "owner": "growth-arsenal",
+        "kind": "external-domain",
+        "localBoundaryPath": "skills/design-studio/references/copy.md"
+      },
+      "supportingReferences": [],
+      "routing": {
+        "mode": "composition",
+        "triggers": [
+          "Inputs include approved offer, positioning, or copy artifacts",
+          "Design work needs copy truth without inventing persuasion strategy"
+        ]
+      },
+      "upstreamRuntimeRequired": false,
+      "externalOverlaps": []
+    },
+    {
+      "conceptId": "overhaul-scope-and-settled-world",
+      "domain": "orchestration-runtime",
+      "authority": {
+        "owner": "design-studio",
+        "kind": "canonical-local",
+        "canonicalPath": "skills/design-studio/references/overhaul.md"
+      },
+      "supportingReferences": [
+        "skills/design-studio/references/meta.md"
+      ],
+      "routing": {
+        "mode": "routed",
+        "triggers": [
+          "The user explicitly asks for broad overhaul or reinvention",
+          "Evidence shows the settled visual world must be reopened rather than locally polished"
+        ]
+      },
+      "upstreamRuntimeRequired": false,
+      "externalOverlaps": []
+    },
+    {
+      "conceptId": "visual-evaluation-contract",
+      "domain": "orchestration-runtime",
+      "authority": {
+        "owner": "design-studio",
+        "kind": "canonical-local",
+        "canonicalPath": "skills/design-studio/references/evaluation.md"
+      },
+      "supportingReferences": [
+        "skills/design-studio/agents/evaluator.md"
+      ],
+      "routing": {
+        "mode": "always",
+        "triggers": [
+          "Every rendered direction or implementation decision",
+          "Final acceptance and evidence review"
+        ]
+      },
+      "upstreamRuntimeRequired": false,
+      "externalOverlaps": []
+    }
+  ]
+}
