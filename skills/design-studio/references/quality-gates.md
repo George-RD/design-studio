@@ -4,35 +4,84 @@ This gate owns deterministic source and browser-computed facts. It runs before b
 
 It does not choose a direction, award Design Quality or Originality, or replace browser critique.
 
-## Preferred path: Impeccable detector
+## One supported local gate
 
-When the `impeccable` CLI is available, run three JSON passes from `roots.appRoot`:
+Supported runs use the installed Design Studio mechanical runtime. From the installed skill root:
 
-```bash
-npx impeccable detect --json <source-path> > <iteration>/mechanical-source.json
-npx impeccable detect --json --viewport 1440x900 <served-url> > <iteration>/mechanical-desktop.json
-npx impeccable detect --json --viewport 390x844 <served-url> > <iteration>/mechanical-mobile.json
+```text
+node runtime/mechanical/index.mjs <input-json> <mechanical-findings-json>
 ```
 
-Use the installed CLI help when syntax differs by version. Record version, exact commands, roots and exit status. Do not silently fall back after a detector crash. Record the failure, then run fallback explicitly.
+The helper is Node-standard-library only and ships with the Agent Skill. External detector availability must not change the supported rule set or result semantics.
+
+The host still owns source access, serving and browser automation. Gather facts from the actual current target, then give those facts to the helper. Do not infer a clean result from missing evidence.
+
+## Evidence input
+
+The input uses `schemaVersion: 1` and contains one source pass plus zero or more browser passes.
+
+A completed source pass provides:
+
+- `pageTitle` and `language`;
+- `headingOrderValid` and `primaryHeadingCount`;
+- `motionPresent` and `reducedMotionHandled`;
+- arrays named `semanticControlFailures`, `accessibleNameFailures`, `altTextFailures`, `landmarkFailures`, `focusVisibilityFailures`, `placeholderLinkFailures` and `debugControlFailures`.
+
+A completed browser pass provides:
+
+- `requestedViewport` and the measured `actualViewport`;
+- `scrollWidth` and `clientWidth`;
+- `primaryActionUsable`, `motionPresent` and `reducedMotionVerified`;
+- arrays named `contrastFailures`, `clippedContentFailures`, `keyboardFailures`, `focusFailures`, `touchTargetFailures`, `resourceFailures` and `fatalConsoleErrors`.
+
+Each explicit failure item contains `location`, `value` and exact human-readable `evidence`. Record only observed failures; an empty array means that check was actually completed and no failure was observed.
+
+When source or browser evidence cannot be collected, set that pass to `completed: false` with an exact `reason`. An incomplete pass is evidence of a limitation, not evidence that the target is clean. Studio still follows the workflow rule that no visual winner can be selected without both required browser viewports. Review returns `visual_status: unverified` when browser evidence is unavailable.
+
+## Local deterministic rules
+
+The runtime turns current facts into primary findings for:
+
+### Source
+
+- missing page title or declared document language;
+- invalid heading order or a primary-heading count other than one for the document context;
+- semantic-control, accessible-name, alternative-text and landmark failures;
+- removed or ineffective focus visibility;
+- motion without a reduced-motion source path;
+- unresolved placeholder links and debug controls.
+
+### Browser
+
+- requested versus actual viewport mismatch;
+- horizontal document overflow;
+- measured contrast or meaningful-content clipping failures;
+- keyboard reachability or visible-focus failures;
+- undersized relevant touch targets;
+- resource-load failures or fatal console errors;
+- unusable primary action;
+- rendered motion that remains materially active under reduced-motion emulation.
+
+Keep judgement-heavy categories such as visual hierarchy, generic-template feel, token-system quality and aesthetic anti-patterns in the routed review/evaluation methods. They are not deterministic merely because they can be expressed as a checklist.
 
 ## Current-snapshot rule
 
 Every invocation writes a complete snapshot of the target as it exists now.
 
-- Generate a stable signature from rule ID, target, normalised location and relevant value.
+- Stable finding identity is derived from rule ID, target, normalised location and relevant value.
 - Current findings begin as `open` or `waived`.
-- Compare with the previous snapshot only to record `resolved` or `not-reproduced` history.
-- Do not union previous open findings into the current open set.
-- If a fixed signature appears again, it is open again.
-- A waiver applies only when its rule, scope, value and authority still match.
+- Evidence wording and timestamps do not change finding identity.
+- A previous snapshot is comparison evidence only.
+- Previous findings absent now are reported as `not-reproduced`; they are not copied into the current open set.
+- If the same signature appears again, it is open again unless the current exact waiver still matches.
 
-Normalise all results into `mechanical-findings.json`:
+The normalized output is `mechanical-findings.json`:
 
 ```json
 {
-  "detector": "impeccable",
-  "version": "x.y.z",
+  "schemaVersion": 1,
+  "detector": "design-studio",
+  "version": 1,
   "snapshotId": "sha256:...",
   "generatedAt": "...",
   "comparisonSnapshotId": "sha256:...",
@@ -43,59 +92,41 @@ Normalise all results into `mechanical-findings.json`:
   ],
   "findings": [
     {
-      "signature": "...",
-      "ruleId": "low-contrast",
+      "signature": "sha256:...",
+      "ruleId": "horizontal-overflow",
       "severity": "primary",
       "status": "open",
-      "evidence": "...",
+      "target": "390x844",
+      "location": "document",
+      "value": { "scrollWidth": 412, "clientWidth": 390 },
+      "evidence": "Document scroll width 412px exceeds client width 390px.",
       "authority": null,
       "reason": null
     }
-  ]
+  ],
+  "notReproduced": []
 }
 ```
 
-Impeccable project configuration, inline ignores and `DESIGN.md` context are authoritative for intentional exceptions. Keep advisory evidence, but never treat it as a failure. A primary finding is resolved by a fix or a waiver naming the pinned brief or design-system rule it serves.
+## Waivers
 
-Detector rules are fallible. A finding that depends on broad syntax matching must be confirmed against the actual utility, value and element context before it blocks the run.
+A waiver applies only when `ruleId`, target, location and value exactly match the current finding and the waiver names both an `authority` and a `reason`.
 
-## Fallback path
-
-When Impeccable is unavailable, record `detector: fallback` and run a smaller deterministic gate.
-
-### Source checks
-
-- one page title and language declaration;
-- sensible heading order and one primary heading per document or screen context;
-- semantic controls rather than click handlers on inert elements;
-- programmatic labels, alternative text and landmarks;
-- no removed focus outline without a replacement;
-- reduced-motion handling when motion exists;
-- tokenised colours, type and spacing where the project supports tokens;
-- no unresolved placeholder links, debug controls or false claims;
-- no decorative defaults used against the selected direction: gradient text, purposeless blur or glow, nested card shells, emoji used as icons, or identical icon-card grids as page structure.
-
-### Browser-computed checks
-
-At verified desktop and mobile viewports:
-
-- `window.innerWidth` equals the requested width;
-- document scroll width does not exceed client width unless horizontal scrolling is explicit;
-- text and component contrast meet the required standard;
-- text containers do not clip meaningful content;
-- interactive targets are keyboard reachable and visibly focused;
-- important touch targets are at least 44×44 CSS pixels where relevant;
-- critical resources and scripts load without fatal console errors;
-- primary action or task is present and usable;
-- reduced-motion emulation removes or simplifies non-essential motion.
-
-Fallback coverage is not equivalent to Impeccable. State that limitation in the run report.
+Use a pinned brief, `COPY.md` or `DESIGN.md` rule as authority for an intentional exception. Do not suppress the underlying evidence. If scope or value changes, the old waiver no longer applies.
 
 ## Severity and score effects
 
-- **Primary**: objective accessibility, overflow, interaction, resource or prohibited-pattern failure. Must be fixed or waived. An open primary caps affected Craft and Functionality at 5.
-- **Advisory**: possible issue requiring context. It never blocks or changes a score by itself.
-- **Waived**: intentional exception supported by the current brief, `COPY.md` or `DESIGN.md`. Record authority and reason; do not delete evidence.
-- **Resolved / not-reproduced**: historical comparison only. These statuses do not count as current open findings.
+The installed runtime emits **primary** findings only for the repeatable rules above.
 
-Never convert a detector count into an aesthetic score. A zero-finding page can still be generic, incoherent or wrong for the user.
+- **Primary**: objective accessibility, overflow, interaction, resource or explicitly prohibited-state failure. Must be fixed or waived. An open primary caps affected Craft and Functionality at 5.
+- **Waived**: intentional exception supported by current authority. Preserve the finding plus authority and reason.
+- **Not reproduced**: comparison history only. It does not count as a current open finding.
+- **Advisory evidence** from a host or research tool may be preserved separately, but it never blocks or changes a score by itself.
+
+Never convert a mechanical finding count into an aesthetic score. A zero-finding page can still be generic, incoherent or wrong for the user.
+
+## Provenance and research boundary
+
+The repeatable-check and explicit-finding model is consistent with the pinned Impeccable research review recorded in `docs/method-sources.json`, but this runtime is a local implementation of Design Studio's existing mechanical contract. No upstream CLI, prompt library or source file is required or copied into the supported runtime.
+
+Historical browser/capability probes remain repository research tooling. Reliability work tracked in issue #42 stays on that research surface and must not become a reason to bundle its browser-launch or comparison machinery into the Agent Skill.
