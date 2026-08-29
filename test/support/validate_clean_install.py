@@ -225,6 +225,7 @@ def validate(root: Path) -> list[str]:
     workflow_text = read_text(workflow_path, errors)
     runtime_paths = files_under(skill_root)
     runtime_paths.update({skill_path, workflow_path, invocation_path})
+    required_runtime_paths = {skill_path, workflow_path, invocation_path}
 
     if skill_text:
         if not skill_text.startswith("---\n"):
@@ -250,6 +251,7 @@ def validate(root: Path) -> list[str]:
             if not path_is_inside(resolved, skill_root):
                 errors.append(f"required reference escapes the skill package: {reference}")
                 continue
+            required_runtime_paths.add(resolved)
             if not resolved.is_file():
                 errors.append(f"missing required reference: {reference}")
 
@@ -259,8 +261,10 @@ def validate(root: Path) -> list[str]:
             resolved = skill_root / procedure
             if not path_is_inside(resolved, skill_root):
                 errors.append(f"workflow procedure escapes the skill package: {procedure}")
-            elif not resolved.is_file():
-                errors.append(f"missing workflow procedure: {procedure}")
+            else:
+                required_runtime_paths.add(resolved)
+                if not resolved.is_file():
+                    errors.append(f"missing workflow procedure: {procedure}")
 
         capability_match = re.search(r"^\s*required:\s*\[([^\]]*)\]", workflow_text, re.M)
         if capability_match is None:
@@ -290,11 +294,12 @@ def validate(root: Path) -> list[str]:
         text = path.read_text(errors="replace")
         errors.extend(external_dependency_errors(relative, text))
         errors.extend(repository_only_dependency_errors(relative, text, repository_only_roots))
-        for marker in PLUGIN_ONLY_MARKERS:
-            if marker in text:
-                errors.append(
-                    f"plugin-only surface dependency inside runtime graph: {relative} contains {marker!r}"
-                )
+        if path in required_runtime_paths:
+            for marker in PLUGIN_ONLY_MARKERS:
+                if marker in text:
+                    errors.append(
+                        f"plugin-only surface dependency inside runtime graph: {relative} contains {marker!r}"
+                    )
 
     adapter_paths: set[Path] = set()
     for relative_root in adapter_roots:
