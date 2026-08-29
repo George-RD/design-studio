@@ -40,7 +40,6 @@ function cleanBrowser(target, width, height, overrides = {}) {
     actualViewport: { width, height },
     scrollWidth: width,
     clientWidth: width,
-    primaryActionUsable: true,
     motionPresent: true,
     reducedMotionVerified: true,
     contrastFailures: [],
