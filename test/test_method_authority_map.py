@@ -20,7 +20,7 @@ EXPECTED_DOMAINS = {
 
 
 class MethodAuthorityMapTests(unittest.TestCase):
-    """Protect the concept-level authority and provenance contract from #47."""
+    """Protect the concept-level authority and provenance contract from #47/#51."""
 
     @staticmethod
     def load(path: Path) -> dict:
@@ -110,12 +110,10 @@ class MethodAuthorityMapTests(unittest.TestCase):
                     self.assertTrue(overlap["upstreamPathAtRevision"].strip())
                     self.assertTrue(overlap["modificationProvenance"].strip())
                     self.assertTrue(overlap["evidenceBasis"])
-                    expected_status = (
-                        "candidate"
-                        if overlap["disposition"] in {"adapt-local", "vendor-slice"}
-                        else "not-adopted"
-                    )
-                    self.assertEqual(expected_status, overlap["implementationStatus"])
+                    if overlap["disposition"] in {"adapt-local", "vendor-slice"}:
+                        self.assertIn(overlap["implementationStatus"], {"candidate", "adopted"})
+                    else:
+                        self.assertEqual("not-adopted", overlap["implementationStatus"])
 
         self.assertTrue(seen)
 
