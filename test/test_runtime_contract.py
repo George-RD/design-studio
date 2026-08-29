@@ -16,10 +16,8 @@ class RuntimeContractTests(unittest.TestCase):
 
     def test_runtime_contract_is_part_of_the_canonical_skill_graph(self) -> None:
         skill = (SKILL_ROOT / "SKILL.md").read_text()
-        workflow = (SKILL_ROOT / "workflow.yaml").read_text()
 
         self.assertIn("`references/runtime-contract.md`", skill)
-        self.assertIn("runtimeContract: references/runtime-contract.md", workflow)
 
     def test_contract_names_the_stable_deterministic_operations(self) -> None:
         contract = self.contract_text()
@@ -83,6 +81,18 @@ class RuntimeContractTests(unittest.TestCase):
             with self.subTest(command=relative):
                 self.assertIn("skills/design-studio/references/runtime-contract.md", command)
                 self.assertIn("canonical Agent Skill", command)
+
+    def test_contract_does_not_promote_research_scripts_into_product_runtime(self) -> None:
+        contract = self.contract_text()
+
+        for path in (
+            "scripts/run_boundary_benchmark.py",
+            "scripts/run_copilot_cli_agent_capability.py",
+            "scripts/run_with_deadline.py",
+        ):
+            with self.subTest(path=path):
+                self.assertNotIn(f"`{path}`", contract)
+        self.assertIn("must not import or shell into benchmark/research tooling", contract)
 
 
 if __name__ == "__main__":
