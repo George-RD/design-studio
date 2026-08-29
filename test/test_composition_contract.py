@@ -29,6 +29,15 @@ class CompositionContractTests(unittest.TestCase):
         self.assertIs(contract["runtimeDependencies"]["designStudioRequiresGrowthArsenal"], False)
         self.assertIs(contract["runtimeDependencies"]["growthArsenalRequiresDesignStudio"], False)
 
+    def test_artifact_descriptor_is_a_stable_neutral_envelope(self) -> None:
+        descriptor = self.load(CONTRACT_PATH)["artifactDescriptor"]
+        self.assertEqual(["path", "role", "scope", "state"], descriptor["requiredFields"])
+        self.assertEqual(["producer", "provenance"], descriptor["optionalFields"])
+        self.assertIn("normalize", descriptor["normalizationRule"].lower())
+        self.assertIn("missing any required field", descriptor["normalizationRule"])
+        self.assertIn("basename alone never defines role", descriptor["pathRule"])
+        self.assertIn("approval, acceptance or explicit user designation", descriptor["provenanceRule"])
+
     def test_domain_owners_and_artifact_roles_are_explicit(self) -> None:
         contract = self.load(CONTRACT_PATH)
         domains = {item["id"]: item["owner"] for item in contract["authorityDomains"]}
@@ -95,12 +104,41 @@ class CompositionContractTests(unittest.TestCase):
         )
         self.assertEqual("confirmed-product-truth", conflicts["copy-vs-product-truth"]["winner"])
         self.assertEqual("unresolved", conflicts["duplicate-role-artifacts"]["winner"])
-        self.assertEqual(3, len(contract["stalenessRules"]))
+
+        staleness = {item["trigger"]: item for item in contract["stalenessRules"]}
+        self.assertEqual(
+            {
+                "confirmed-product-truth-changes",
+                "approved-offer-copy-changes",
+                "accepted-visual-system-changes",
+            },
+            set(staleness),
+        )
+        self.assertEqual(
+            {
+                "offer-copy assumptions that depend on the changed fact",
+                "visual assumptions that depend on the changed fact",
+            },
+            set(staleness["confirmed-product-truth-changes"]["invalidates"]),
+        )
+        self.assertEqual(
+            ["surface briefs and layouts that depend on superseded wording"],
+            staleness["approved-offer-copy-changes"]["invalidates"],
+        )
+        self.assertEqual(
+            ["surface-specific visual assumptions tied to the superseded system"],
+            staleness["accepted-visual-system-changes"]["invalidates"],
+        )
+        self.assertIn(
+            "approved offer/copy",
+            staleness["accepted-visual-system-changes"]["preserves"],
+        )
 
     def test_composition_fixture_resolves_the_same_authorities_regardless_of_input_order(self) -> None:
         contract = self.load(CONTRACT_PATH)
         fixture = self.load(FIXTURE_PATH)
         role_contract = {item["role"]: item for item in contract["artifactRoles"]}
+        required = set(contract["artifactDescriptor"]["requiredFields"])
 
         def resolve(artifacts: list[dict]) -> dict[str, str]:
             resolved: dict[str, str] = {}
@@ -108,7 +146,8 @@ class CompositionContractTests(unittest.TestCase):
                 candidates = [
                     item
                     for item in artifacts
-                    if item.get("role") == role
+                    if required.issubset(item)
+                    and item.get("role") == role
                     and item.get("scope") == role_rule["scope"]
                     and item.get("state") == role_rule["requiredState"]
                 ]
@@ -139,6 +178,7 @@ class CompositionContractTests(unittest.TestCase):
         self.assertIn("Design Studio owns visual direction, design implementation, rendered evaluation and accepted visual-system output", text)
         self.assertIn("does not invoke, copy or reimplement Growth Arsenal methods", text)
         self.assertIn("Prompt order, file modification time and basename alone never establish authority", text)
+        self.assertIn("required: `path`, `role`, `scope`, `state`", text)
 
 
 if __name__ == "__main__":

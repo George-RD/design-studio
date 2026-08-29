@@ -8,6 +8,15 @@ Growth Arsenal owns offer, positioning, persuasion strategy and authoritative co
 
 Each skill remains useful alone. Design Studio does not require Growth Arsenal to plan, build, review or accept design work. Growth Arsenal does not require Design Studio to produce offer/copy work. Composition adds durable decisions; it does not add a runtime dependency.
 
+## Neutral artifact descriptor
+
+Before resolving authority, normalize each candidate artifact to the descriptor defined by `artifactDescriptor` in `../composition-contract.json`:
+
+- required: `path`, `role`, `scope`, `state`;
+- optional: `producer`, `provenance`.
+
+The physical serialization may be artifact frontmatter, a sidecar manifest or another durable machine-readable record. The semantic envelope does not vary: a candidate missing any required descriptor field is not authoritative. `provenance` should carry the approval, acceptance or explicit user designation required by that role.
+
 ## Identify artifacts by role, not filename
 
 Resolve project artifacts in this order:
@@ -59,7 +68,7 @@ When no Growth Arsenal artifact exists, Design Studio continues with confirmed p
 
 ## Growth Arsenal handoff expectation
 
-A compatible Growth Arsenal export should identify project scope, artifact role, approval state and enough provenance to distinguish it from internal report assets. The exact storage mechanism may be frontmatter, an adjacent manifest or another durable machine-readable record, provided those role/scope/state semantics are preserved.
+A compatible Growth Arsenal export must normalize to the shared descriptor: project scope, `offer-copy` role, `approved` state and enough provenance to establish approval. The export may use frontmatter, a sidecar manifest or another durable machine-readable record, but consumers resolve the normalized descriptor rather than a Growth-Arsenal-specific prompt or implementation detail.
 
 Growth Arsenal is not expected to reproduce Design Studio's source-blind direction generation, implementation orchestration, browser evaluation or accepted design-system codification. Its adoption work is tracked in `George-RD/growth-arsenal#34`.
 

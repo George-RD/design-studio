@@ -7,6 +7,13 @@
     "designStudioRequiresGrowthArsenal": false,
     "growthArsenalRequiresDesignStudio": false
   },
+  "artifactDescriptor": {
+    "requiredFields": ["path", "role", "scope", "state"],
+    "optionalFields": ["producer", "provenance"],
+    "normalizationRule": "Before authority resolution, normalize artifact frontmatter, a sidecar manifest or another durable machine-readable record to this descriptor. A candidate missing any required field is not authoritative.",
+    "pathRule": "path identifies the artifact within the current project or tool context; basename alone never defines role.",
+    "provenanceRule": "provenance should identify approval, acceptance or explicit user designation when that evidence is required by the artifact role."
+  },
   "authorityDomains": [
     {
       "id": "product-truth",
