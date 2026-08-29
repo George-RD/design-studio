@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "surface": "paginated-artifact",
+  "rendererNeutral": true,
+  "provenance": {
+    "visualSource": "George-RD/horaxon-web#105",
+    "contentCase": "George-RD/avancus#11",
+    "fixture": "horaxon-foundation-sprint-quote"
+  },
+  "page": {
+    "defaultSize": "A4",
+    "sizes": {
+      "A4": {"widthMm": 210, "heightMm": 297}
+    },
+    "margins": {"topMm": 18, "rightMm": 16, "bottomMm": 18, "leftMm": 16},
+    "grid": {"columns": 12, "gutterMm": 4, "bodyColumns": 8, "metadataColumns": 4}
+  },
+  "typography": {
+    "roles": {
+      "display": {"familyIntent": "IBM Plex Sans", "weight": 600},
+      "body": {"familyIntent": "IBM Plex Sans", "weight": 400},
+      "metadata": {"familyIntent": "IBM Plex Mono", "weight": 400},
+      "numeric": {"familyIntent": "IBM Plex Mono", "tabular": true}
+    }
+  },
+  "colour": {
+    "roles": {
+      "paper": "warm working-sheet",
+      "ink": "Horizon Ink",
+      "accent": "Dune Gold",
+      "rule": "Horizon Ink at reduced emphasis"
+    },
+    "grayscale": {
+      "colourIndependentMeaning": true,
+      "accentMustRetainHierarchyWithoutColour": true
+    }
+  },
+  "spacing": {
+    "rhythm": {"baseMm": 2, "sectionStepMm": 8, "rowStepMm": 4}
+  },
+  "furniture": {
+    "firstPage": ["title", "client", "document-metadata"],
+    "running": ["document-id", "status-version", "page-number"],
+    "finalPage": ["acceptance-or-signature-zone-when-confirmed"]
+  },
+  "components": {
+    "table": {"style": "open ruled rows", "numericAlignment": "right", "repeatHeadingOnContinuation": true},
+    "totals": {"style": "rule-separated emphasis without promotional discount treatment"},
+    "note": {"style": "typographic inset, no generic SaaS card"},
+    "signature": {"style": "open working area tied to confirmed acceptance content"}
+  },
+  "pagination": {
+    "keepTogether": ["heading-with-first-paragraph", "table-total-row", "signature-zone", "figure-with-caption"],
+    "orphanWidow": {"minimumLines": 2, "avoidHeadingOrphan": true},
+    "repeatedHeadings": "Repeat table headings on continued pages and preserve section context where needed",
+    "continuation": "Use restrained continuation labels when a table or section crosses a page boundary",
+    "breakPriority": ["meaning", "association", "scanability", "visual-balance"]
+  },
+  "variants": {
+    "quote": {"density": "working-document", "commercialTable": true}
+  },
+  "qa": {
+    "visualLenses": ["hierarchy", "generated-specificity", "pagination", "tables", "furniture", "print"],
+    "mechanicalRules": ["printable-area-overflow", "page-content-clipping", "document-furniture", "print-contrast"],
+    "representativeFixtures": ["horaxon-foundation-sprint-quote"]
+  },
+  "adapters": []
+}

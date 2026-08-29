@@ -1,43 +1,39 @@
 ---
 name: design-studio
 description: >-
-  Multi-agent frontend design workflow for new surfaces, full redesigns and high-value visual iteration.
-  Separates product framing, visual direction, implementation and blind browser evaluation; roots the target
-  before work starts; preserves immutable iterations; resumes from recorded evidence; and documents the
-  accepted visual system. Use Review for audit or polish without redesign.
+  Multi-agent visual design workflow for new surfaces, redesigns, paginated artifacts and high-value
+  iteration. Separates product framing, visual direction, implementation and blind rendered evaluation.
 version: 1.6.0
 ---
 
 # Design Studio
 
-Design Studio is a portable design-engineering method kernel. Keep the always-loaded layer small: lifecycle, source-visibility boundaries, routing, evidence and acceptance authority live here; specialist methods load only when their signals match.
+Design Studio is a portable design-engineering kernel. Lifecycle, source boundaries, routing, evidence and acceptance stay small here; specialist methods load only when signals match.
 
 ## Role boundaries
 
-| Role | May see source | May see prior scores | Owns |
+| Role | Source | Prior scores | Owns |
 |---|---:|---:|---|
 | Planner | yes | no | scope and success criteria |
-| Visual Director | no | no | visual proposals and selected visual contract |
+| Visual Director | no | no | visual directions and selected visual contract |
 | Builder | yes | no | implementation fidelity |
-| Evaluator | no | no | observations and scores |
+| Evaluator | no | no | rendered observations and scores |
 | Orchestrator | as needed | yes | SELECT / REFINE / PIVOT / SHIP / HALT |
 
-- Visual Director never receives HTML, CSS, JSX, component names, selectors, implementation diffs or an unattended assignment index.
-- Evaluator never receives source, implementation effort, the full design description or prior scores.
-- Builder may add semantics, accessibility, responsive behaviour and required states, but may not replace the selected direction with a safer one.
-- Orchestrator is the sole decision owner. Reviewer or evaluator output cannot accept, pivot or ship a build.
+- Visual Director never receives HTML, CSS, JSX, selectors, implementation diffs or the unattended assignment index.
+- Evaluator never receives source, implementation effort, full design description or prior scores. Document evaluation also excludes renderer identity/build metadata.
+- Builder implements the selected direction; it may not quietly replace it with a safer one.
+- Orchestrator is the sole decision owner. Evaluators/reviewers provide evidence, not workflow decisions.
 
 ## Load and route
 
-1. Load `invocation.md` to map host inputs and isolated roles.
-2. Load `workflow.yaml` for lifecycle, schemas, paths, budgets and decisions.
-3. Load `runtime-contract.md`, `references/context.md` and `references/runtime-integrity.md` for deterministic operations and current run truth.
-4. Read `method-router.json`. For each route, every populated signal dimension is required; match at least one current value in each populated dimension, then load the union of leaves from all matching routes.
-5. Never load every review or specialist leaf by default. A later signal may add a leaf; it does not make the full catalog ambient context.
+1. Load `invocation.md` for host input mapping and isolated-role rules.
+2. Load `workflow.yaml` for the interactive Studio lifecycle and shared schemas/budgets/decisions.
+3. Load `runtime-contract.md`, `references/context.md` and `references/runtime-integrity.md` for deterministic operations and run truth.
+4. Read `method-router.json`. Every populated signal dimension on a route is required; load the union of matching `leaves`. If the route declares `procedure`, run that progressively disclosed procedure after its leaves.
+5. Never load the full specialist catalog by default.
 
-`method-router.json` is routing data, not another method authority. Its repository authority-map/ADR paths are provenance metadata only; an installed run does not depend on repository docs being present.
-
-When context discovery identifies compatible role-scoped composition artifacts, emit `composition-artifacts`; the routed copy boundary then applies `composition-contract.json` without making Growth Arsenal an always-loaded or runtime dependency.
+`method-router.json` is routing data, not method authority. Repository ADR/authority-map paths are provenance metadata only; installed runs do not depend on repository docs.
 
 ## Required references
 
@@ -47,63 +43,70 @@ When context discovery identifies compatible role-scoped composition artifacts, 
 - `method-router.json`
 - `references/context.md`
 - `references/runtime-integrity.md`
+- Conditional Document procedure: `references/document/document.md`
 
-These are the installed kernel contract. Specialist leaves named by `method-router.json` are conditional, not always-loaded required references.
+The first six entries are the installed kernel. Document and specialist methods are conditional.
 
 ## Lanes
 
-| Lane | Trigger | Execution authority |
+| Lane | Trigger | Authority |
 |---|---|---|
-| **Studio** | new surface, material redesign or replacement visual world | `workflow.yaml` |
-| **Review** | audit or polish while preserving the current visual world | routed `references/review/polish.md` |
-| **Design system** | codify or extend an accepted system | codify step in `workflow.yaml` and the design-system template |
-| **Meta** | improve Design Studio itself | routed `references/meta.md` plus run evidence |
+| **Studio** | new interactive surface or material redesign | `workflow.yaml` |
+| **Review** | audit/polish while preserving an interactive visual world | routed `references/review/polish.md` |
+| **Document** | quote, invoice, SOW, proposal, report, brief, print/PDF or other paginated artifact | routed `references/document/document.md` |
+| **Design system** | codify an accepted system | Studio codify or accepted Document contract |
+| **Meta** | improve Design Studio | routed `references/meta.md` |
 
-A narrow component/CSS correction does not require a full Studio run. When audit and redesign are mixed, Studio owns unless the user explicitly asks for report-only review first.
+An interactive report remains Studio/Review even if it can export PDF. Page/print intent and pagination route to Document. A narrow component/CSS correction does not require Studio.
 
-## Studio kernel
+## Studio
 
 Execute `workflow.yaml` end to end.
 
-- Root the repository, runnable app and governing context before planning; probe real capabilities rather than assuming them.
-- Keep product truth, copy authority, current surface strategy and proven visual authority separate.
-- Before unattended direction generation, commit the deterministic candidate assignment and keep it hidden from Visual Director.
-- Generate genuinely different, equally viable directions; the user or precommitted assignment selects. Builder then implements the selected source-free contract.
-- Run local deterministic mechanical evidence before blind browser evaluation. Mechanics are a floor, never an aesthetic score.
-- Evaluator interacts with the live render at required viewports without source or prior scores. Orchestrator alone applies the workflow decision table.
-- Preserve every evaluated build and evidence record. Finish chooses the strongest eligible build, verifies the final tree and records acceptance before codification.
+- Prove repository/app/context roots and actual capabilities before planning.
+- Separate product truth, copy authority and proven visual authority.
+- Commit unattended candidate assignment before direction generation and hide it from Visual Director.
+- Generate materially different viable directions; user choice or precommitted assignment selects.
+- Builder implements the source-free direction. Local mechanical evidence runs before blind browser evaluation.
+- Evaluator uses required live viewports without source/prior scores. Orchestrator alone decides.
+- Preserve evaluated builds/evidence. Acceptance names the final tree before codification.
 
-The brief wins. Redesign replaces the visual world while preserving confirmed product truth, behaviour and explicit commitments; refinement preserves the established world.
+The brief wins. Redesign replaces the visual world while preserving confirmed truth/behaviour; refinement preserves the established world.
 
-## Review kernel
+## Document
 
-Review never runs the Studio create loop. Route through `references/review/polish.md`, then add only the lenses whose signals match. Reviewers report evidence first; implementation receives one bounded fix plan. Missing browser evidence produces `visual_status: unverified`, not a clean visual verdict.
+Execute `references/document/document.md`; do not force pages through the browser viewport graph. Reuse the same root, capability, assignment, mechanical-snapshot, evidence, decision and acceptance primitives over complete ordered rendered pages.
 
-## Evidence and acceptance
+- A4 is default; Letter and explicit physical sizes are supported without binding the visual model to a renderer.
+- Visual Director/Evaluator may receive rendered page images, never document source, renderer identity or implementation rationale.
+- Reuse hierarchy and generated-specificity methods, then the Document pagination, table, furniture and print lenses. Interaction/motion review does not apply.
+- Rendering/export is optional host capability. Without complete page evidence, creation preserves one build and halts unselected; review returns visual status unverified.
+- Accepted Document work may emit `harness-output/design-system/document-visual-contract.json` for downstream document-generation skills.
 
-- `roots.json` and `capabilities.json` are operational truth.
-- `events.jsonl` is the append-only recovery source; resume validates artifacts before trusting completion.
-- `PRODUCT.md` stores confirmed durable product truth. `COPY.md` stores durable language rules when present. `DESIGN.md` stores a proven visual system only after acceptance.
-- Mechanical snapshots are complete current-state evidence. Missing evidence is explicit and never converted into pass.
-- Only `finish/acceptance.json` proves which final tree became authoritative. Directory existence or a high score is not acceptance.
+Design Studio owns visual page-system intent and rendered-page judgement. It does not own transcript interpretation, business voice, accounting truth, binding commercial/legal terms or the renderer/generator.
 
-## Degradation
+## Review
 
-Studio needs file I/O, shell access and isolated roles. A visual decision also needs a runnable target and browser automation.
+Review does not run the Studio create loop. Route through `references/review/polish.md`, then add only matching lenses. Reviewers report evidence first; implementation receives one bounded fix plan. Missing rendered evidence is `unverified`, not a clean verdict.
 
-- No browser or runnable target in Studio: keep one build and mechanical evidence, then halt without a visual winner.
-- Missing either required viewport in Review: return mechanical/partial evidence with visual status `unverified`.
-- No user-answer mechanism: use the precommitted deterministic assignment.
-- No image generation: use equally specified text directions; never fabricate comps.
-- Missing evidence or a failed deterministic operation is recorded with its exact reason.
+## Evidence and degradation
 
-## Method ownership and intake
+- `roots.json`/`capabilities.json` are operational truth; `events.jsonl` is append-only recovery truth.
+- `PRODUCT.md` stores confirmed product truth; `COPY.md` durable language rules; `DESIGN.md` only proven accepted visual authority.
+- Mechanical snapshots are complete current-state evidence. Missing evidence is explicit, never a pass.
+- Acceptance, not directory existence or a high score, proves authority.
 
-Design Studio has no upstream design-method runtime dependency. Repository-level source pins and dispositions live in `docs/method-sources.json` and `docs/method-authority-map.json`; adopted leaves carry the provenance needed by the installed skill.
+All create lanes need file I/O, shell and isolated roles. Interactive visual decisions additionally need a runnable target/browser; Document decisions need complete rendered page evidence from an existing artifact or host-supplied renderer.
 
-- `adapt-local` methods are available only through the local leaf named in `method-router.json`.
-- `observe` and `reject` entries are research evidence, not permission to copy or ambient guidance.
-- Do not import another command taxonomy, prompt library or fallback runtime around the local kernel.
-- Growth Arsenal owns offer, positioning, persuasion strategy and authoritative copy. Design Studio consumes approved role-scoped composition artifacts through `composition-contract.json` and its local copy boundary; it does not reproduce Growth Arsenal methods.
+- Missing browser in Studio: one build + mechanical evidence, then halt without winner.
+- Missing interactive viewport in Review: partial evidence, visual status unverified.
+- Missing complete pages in Document: never infer quality from source; follow the Document failure contract.
+- No user-answer mechanism: use precommitted deterministic assignment.
+- No image generation: use equally specified text directions.
+- Any failed/missing operation is recorded with exact reason.
 
-A new method must name a reusable gap, fit an existing authority or justify a new one, pin source/licence when external, adapt the smallest coherent slice, record modifications and prove benefit with an eval, contract test or dogfood evidence.
+## Method ownership
+
+Design Studio has no upstream design-method runtime dependency. Adopted external ideas live as routed local methods with provenance; observation/rejection records are research evidence only. Do not import another command taxonomy, prompt library or fallback runtime.
+
+Growth Arsenal remains outside this method kernel and may provide approved role-scoped offer/copy artifacts through the composition boundary. A new method must name a reusable gap, fit or justify authority, pin external source/licence when relevant, adapt the smallest coherent slice and prove benefit with an eval/contract/dogfood result.

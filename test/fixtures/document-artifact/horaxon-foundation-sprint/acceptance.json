@@ -1,0 +1,59 @@
+{
+  "mustDeliver": [
+    "An A4 page-system direction grounded in the Horaxon working-sheet visual substrate",
+    "Complete ordered rendered-page evidence before a visual winner can be selected",
+    "Document-specific findings for pagination, dense tables, repeated furniture and print legibility",
+    "An accepted renderer-neutral document-visual-contract.json consumable by downstream document-generation skills"
+  ],
+  "mustNot": [
+    "Make HTML-to-PDF, DOCX, native PDF or any other renderer the visual source of truth",
+    "Expose source or renderer identity to Visual Director or Evaluator",
+    "Invent or silently confirm commercial, accounting, tax, legal or acceptance facts",
+    "Treat the quote as a browser viewport or load interaction and motion review methods"
+  ],
+  "functionalChecks": [
+    {
+      "id": "page-size",
+      "action": "Resolve the physical page contract",
+      "expected": "A4 is explicit and downstream rendering receives physical page dimensions rather than a browser viewport assumption"
+    },
+    {
+      "id": "pagination",
+      "action": "Inspect section, heading, table and final-page breaks across the complete page set",
+      "expected": "Orphans, accidental near-empty pages and broken continuation are surfaced with page evidence"
+    },
+    {
+      "id": "table",
+      "action": "Inspect the commercial/dense table treatment",
+      "expected": "Headers remain attributable, numeric columns scan consistently and totals remain visually distinct without promotional discount styling"
+    },
+    {
+      "id": "furniture",
+      "action": "Inspect required repeated document furniture",
+      "expected": "Metadata, status/version and page-number treatment is consistent and missing confirmed fields are reported rather than invented"
+    },
+    {
+      "id": "print",
+      "action": "Inspect colour and grayscale page legibility",
+      "expected": "Hierarchy and meaning remain legible without relying on Dune Gold or other colour alone"
+    },
+    {
+      "id": "blind-evaluation",
+      "action": "Prepare Visual Director and Evaluator contexts",
+      "expected": "They contain complete rendered-page evidence and visual constraints but no source, renderer identity or build rationale"
+    },
+    {
+      "id": "contract-consumption",
+      "action": "Load the accepted design-system artifact in a downstream document-generation context",
+      "expected": "The renderer-neutral contract supplies page geometry, typography roles, furniture, component recipes, pagination and QA without rerunning creative direction"
+    }
+  ],
+  "evaluationFocus": [
+    "professional operational reading rather than brochure polish",
+    "page hierarchy and reading flow",
+    "financial and dense-data scanability",
+    "repeated furniture and continuation",
+    "print/grayscale robustness",
+    "Horaxon-specific visual character without website imitation"
+  ]
+}

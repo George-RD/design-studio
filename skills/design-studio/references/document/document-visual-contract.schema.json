@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://design-studio.local/schemas/document-visual-contract.schema.json",
+  "title": "Design Studio Document Visual Contract",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["schemaVersion", "surface", "rendererNeutral", "page", "typography", "colour", "spacing", "furniture", "components", "pagination", "qa"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "surface": {"const": "paginated-artifact"},
+    "rendererNeutral": {"const": true},
+    "provenance": {"type": "object"},
+    "page": {
+      "type": "object",
+      "required": ["defaultSize", "sizes", "margins", "grid"],
+      "properties": {
+        "defaultSize": {"type": "string"},
+        "sizes": {"type": "object", "minProperties": 1},
+        "margins": {"type": "object"},
+        "grid": {"type": "object"}
+      }
+    },
+    "typography": {"type": "object", "required": ["roles"]},
+    "colour": {"type": "object", "required": ["roles", "grayscale"]},
+    "spacing": {"type": "object", "required": ["rhythm"]},
+    "furniture": {"type": "object"},
+    "components": {"type": "object"},
+    "pagination": {
+      "type": "object",
+      "required": ["keepTogether", "orphanWidow", "repeatedHeadings", "continuation", "breakPriority"]
+    },
+    "variants": {"type": "object"},
+    "qa": {"type": "object", "required": ["visualLenses", "mechanicalRules", "representativeFixtures"]},
+    "adapters": {"type": "array", "description": "Optional subordinate implementation examples; never the visual source of truth."}
+  }
+}

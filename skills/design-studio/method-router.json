@@ -4,7 +4,7 @@
   "governingDecision": "docs/decisions/0002-owned-method-kernel.md",
   "authorityMap": "docs/method-authority-map.json",
   "repositoryMetadataOnly": true,
-  "selectionRule": "For each route, every signal dimension with a non-empty list is required: the current run must contain at least one matching value from each populated dimension. Empty dimensions are unconstrained. Load the union of leaves from all matching routes; never load the full specialist catalog by default.",
+  "selectionRule": "For each route, every signal dimension with a non-empty list is required: the current run must contain at least one matching value from each populated dimension. Empty dimensions are unconstrained. Load the union of leaves from all matching routes; when a route declares procedure, execute that progressively disclosed lane procedure after its leaves. Never load the full specialist catalog by default.",
   "coreAuthorities": [
     "invocation.md",
     "workflow.yaml",
@@ -25,6 +25,14 @@
       "signals": {"task": ["studio-build", "studio-refine"], "surface": [], "interaction": [], "evidence": ["selected-direction"]},
       "leaves": ["references/generation.md"],
       "handoff": "Builder implements the selected visual contract and records fidelity evidence without changing direction."
+    },
+    {
+      "id": "document-artifact",
+      "signals": {"task": ["document-create", "document-review"], "surface": ["paginated-artifact"], "interaction": [], "evidence": []},
+      "leaves": ["references/review/slop.md", "references/review/hierarchy.md"],
+      "agents": ["agents/design-agent.md", "agents/evaluator.md"],
+      "procedure": "references/document/document.md",
+      "handoff": "Run the renderer-neutral Document procedure; reuse hierarchy/specificity methods, then load only its pagination, table, furniture and print lenses."
     },
     {
       "id": "mechanical-evidence",

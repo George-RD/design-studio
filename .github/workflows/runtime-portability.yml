@@ -10,8 +10,10 @@ on:
       - 'skills/design-studio/runtime-contract.md'
       - 'skills/design-studio/runtime/**'
       - 'skills/design-studio/references/quality-gates.md'
+      - 'skills/design-studio/references/document/**'
       - 'test/test_runtime_contract.py'
       - 'test/test_mechanical_runtime.mjs'
+      - 'test/test_document_artifact_lane.py'
       - '.github/workflows/runtime-portability.yml'
   push:
     branches: [main]
@@ -21,8 +23,10 @@ on:
       - 'skills/design-studio/runtime-contract.md'
       - 'skills/design-studio/runtime/**'
       - 'skills/design-studio/references/quality-gates.md'
+      - 'skills/design-studio/references/document/**'
       - 'test/test_runtime_contract.py'
       - 'test/test_mechanical_runtime.mjs'
+      - 'test/test_document_artifact_lane.py'
       - '.github/workflows/runtime-portability.yml'
 
 permissions:
@@ -58,3 +62,6 @@ jobs:
 
       - name: Validate mechanical runtime behavior
         run: node --test test/test_mechanical_runtime.mjs
+
+      - name: Validate document runtime behavior
+        run: python -m unittest discover -s test -p test_document_artifact_lane.py -v
