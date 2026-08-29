@@ -1,6 +1,8 @@
 from pathlib import Path
 import json
 import re
+import shutil
+import tempfile
 import unittest
 
 
@@ -48,19 +50,6 @@ class ClaudeAdapterCompatibilityTests(unittest.TestCase):
 
     def test_portable_skill_tree_has_no_dependency_on_root_claude_adapter(self):
         skill_root = ROOT / "skills/design-studio"
-        required = [
-            "SKILL.md",
-            "invocation.md",
-            "workflow.yaml",
-            "runtime-contract.md",
-            "method-router.json",
-            "references/runtime-integrity.md",
-            "agents/design-agent.md",
-            "agents/evaluator.md",
-        ]
-        for relative in required:
-            self.assertTrue((skill_root / relative).is_file(), relative)
-
         adapter_markers = (
             ".claude-plugin/",
             "commands/create.md",
@@ -74,6 +63,33 @@ class ClaudeAdapterCompatibilityTests(unittest.TestCase):
             for marker in adapter_markers:
                 self.assertNotIn(marker, text, f"{path.relative_to(ROOT)} references root adapter {marker}")
 
+    def test_isolated_skill_copy_preserves_supported_capability_without_adapters(self):
+        required = [
+            "SKILL.md",
+            "invocation.md",
+            "workflow.yaml",
+            "runtime-contract.md",
+            "method-router.json",
+            "references/runtime-integrity.md",
+            "agents/design-agent.md",
+            "agents/evaluator.md",
+        ]
+        with tempfile.TemporaryDirectory() as temporary:
+            isolated_root = Path(temporary)
+            isolated_skill = isolated_root / "skills/design-studio"
+            shutil.copytree(ROOT / "skills/design-studio", isolated_skill)
+
+            for adapter_root in (".claude-plugin", "commands", "agents"):
+                self.assertFalse((isolated_root / adapter_root).exists())
+            for relative in required:
+                self.assertTrue((isolated_skill / relative).is_file(), relative)
+
+            workflow = (isolated_skill / "workflow.yaml").read_text()
+            skill = (isolated_skill / "SKILL.md").read_text()
+            self.assertIn("required: [file_io, shell, isolated_subagents]", workflow)
+            for capability in ("file I/O", "shell", "isolated"):
+                self.assertIn(capability, skill)
+
     def test_public_docs_make_plugin_optional_and_define_capable_host(self):
         readme = self.read("README.md")
         required = [
@@ -86,6 +102,8 @@ class ClaudeAdapterCompatibilityTests(unittest.TestCase):
             "browser automation",
             "runnable target",
             "optional convenience",
+            "claude plugin marketplace add George-RD/design-studio",
+            "claude plugin install design-studio@design-studio",
         ]
         for marker in required:
             self.assertIn(marker, readme)
