@@ -11,6 +11,20 @@ permissions:
   contents: read
 
 jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out exact revision
+        uses: actions/checkout@v5
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Validate public install contract
+        shell: bash
+        run: python3 -m unittest test/test_public_source_install_contract.py -v
+
   clean-install:
     strategy:
       fail-fast: false
