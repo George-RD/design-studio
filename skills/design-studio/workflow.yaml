@@ -20,7 +20,7 @@ workflow:
   capabilities:
     required: [file_io, shell, isolated_subagents]
     visualDecision: [runnable_target, browser_automation]
-    optional: [impeccable_cli, business_copy_style, image_generation, structured_user_questions, version_control]
+    optional: [business_copy_style, image_generation, structured_user_questions, version_control]
 
   defaults:
     budgetClass: standard
@@ -121,7 +121,7 @@ workflow:
       type: object
       required: [detector, snapshotId, generatedAt, passes, findings]
       properties:
-        detector: { enum: [impeccable, fallback] }
+        detector: { enum: [design-studio] }
         findings: { type: array }
 
     observation:
@@ -282,9 +282,9 @@ workflow:
       inputs: [roots, capabilities, site, serveConfig, DESIGN.md, pinned brief]
       procedure: references/quality-gates.md
       actions:
-        - Run Impeccable source, desktop and mobile JSON scans when available; otherwise run the explicit fallback gate.
-        - Write a complete current snapshot with stable signatures. Previous open findings do not remain open when absent.
-        - Resolve primary findings through fixes or authority-backed waivers; advisory findings never block alone.
+        - Collect current source facts and browser facts through the host capabilities; record unavailable evidence as incomplete passes with exact reasons.
+        - Run the installed local mechanical runtime and write a complete current snapshot with stable signatures. Previous open findings do not remain open when absent.
+        - Resolve primary findings through fixes or exact authority-backed waivers; incomplete evidence never becomes a clean pass.
       outputs: [mechanicalFindings]
       branches:
         - when: capabilities.evaluationPlan == build-once-unselected
