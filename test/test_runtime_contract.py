@@ -9,7 +9,10 @@ SKILL_ROOT = REPO_ROOT / "skills" / "design-studio"
 CONTRACT_PATH = SKILL_ROOT / "runtime-contract.md"
 WORKFLOW_PATH = SKILL_ROOT / "workflow.yaml"
 QUALITY_GATE_PATH = SKILL_ROOT / "references" / "quality-gates.md"
+DOCUMENT_PROCEDURE_PATH = SKILL_ROOT / "references" / "document" / "document.md"
+RUNTIME_README_PATH = SKILL_ROOT / "runtime" / "README.md"
 MECHANICAL_RUNTIME_PATH = SKILL_ROOT / "runtime" / "mechanical" / "index.mjs"
+DOCUMENT_RUNTIME_PATH = SKILL_ROOT / "runtime" / "document-contract" / "index.mjs"
 
 
 class RuntimeContractTests(unittest.TestCase):
@@ -73,13 +76,24 @@ class RuntimeContractTests(unittest.TestCase):
         self.assertIn("required: [file_io, shell, isolated_subagents]", workflow)
         self.assertIn("enum: [full, build-once-unselected, mechanical-review]", workflow)
 
-    def test_local_mechanical_runtime_is_the_only_supported_detector_path(self) -> None:
-        workflow = WORKFLOW_PATH.read_text()
+    def test_installed_methods_depend_on_stable_operations_not_helper_paths(self) -> None:
         quality_gate = QUALITY_GATE_PATH.read_text()
+        document_procedure = DOCUMENT_PROCEDURE_PATH.read_text()
+        runtime_readme = RUNTIME_README_PATH.read_text()
 
         self.assertTrue(MECHANICAL_RUNTIME_PATH.is_file())
-        self.assertNotIn("impeccable_cli", workflow)
-        self.assertIn("node runtime/mechanical/index.mjs", quality_gate)
+        self.assertTrue(DOCUMENT_RUNTIME_PATH.is_file())
+        self.assertIn("`mechanical_preflight`", quality_gate)
+        self.assertIn("`publish_document_visual_contract`", document_procedure)
+
+        leaked = []
+        for path in (SKILL_ROOT / "references").rglob("*.md"):
+            if "node runtime/" in path.read_text():
+                leaked.append(path.relative_to(SKILL_ROOT).as_posix())
+        self.assertEqual([], leaked, f"method/procedure authorities leak helper paths: {leaked}")
+
+        self.assertIn("node runtime/mechanical/index.mjs", runtime_readme)
+        self.assertIn("node runtime/document-contract/index.mjs", runtime_readme)
         self.assertIn("External detector availability must not change the supported rule set", quality_gate)
         self.assertNotIn("npx impeccable", quality_gate)
 
