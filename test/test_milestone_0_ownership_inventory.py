@@ -15,6 +15,7 @@ ROADMAP_PATH = ROOT / "ROADMAP.md"
 BASELINE_REVISION = "7e8a1df3a9ce6ade1116d804abfc7b1189d61381"
 IMPECCABLE_REVISION = "aee6ce9352b842217b3f57c78296a7a4fa35a7f3"
 RETIRED_POST_BASELINE_REFERENCES = {
+    "references/methodology.md",
     "skills/design-studio/references/planning.md",
     "skills/design-studio/references/evaluation.md",
     "skills/design-studio/references/iteration.md",

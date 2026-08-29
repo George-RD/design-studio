@@ -107,11 +107,13 @@ harness-output/
 
 Completed iterations are immutable. A failed or interrupted run resumes from the first incomplete step after its recorded artifacts pass validation.
 
-## Current compatibility and v1.6 direction
+## v1.6 product boundary
 
-In the current v1.5 release, Impeccable is optional. When its CLI is available, Design Studio uses source, desktop and mobile detector passes for mechanical preflight. Without it, the workflow records `detector: fallback` and runs a smaller browser-computed gate.
+Design Studio v1.6 has one supported runtime: the installed Agent Skill. It ships a local deterministic mechanical runtime under `skills/design-studio/runtime/`; supported behavior does not branch on whether an external design package is installed.
 
-The v1.6 roadmap removes this environment-dependent split and targets one self-contained Design Studio runtime with a curated local method kernel; external systems are research inputs. Impeccable and Emil Kowalski's skills are credited sources, not install requirements. Growth Arsenal remains a separate optional skill for offer and copy work. See [ADR 0002](docs/decisions/0002-owned-method-kernel.md).
+Impeccable and Emil Kowalski's skills are credited sources, not install requirements. Adopted methods live in the local kernel with provenance and progressive disclosure. Growth Arsenal remains a separate optional skill and composes only through the neutral artifact contract.
+
+Codex and Claude Code are both exercised through the standard Agent Skills install in CI. The root Claude plugin remains an optional adapter over the same skill contract. See [the v1.6 acceptance record](docs/releases/v1.6.0.md).
 
 Mechanical findings remain evidence. They never substitute for source-blind judgement of the rendered result.
 

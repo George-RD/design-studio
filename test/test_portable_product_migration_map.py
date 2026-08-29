@@ -17,6 +17,7 @@ RETIRED_POST_BASELINE_AUTHORITIES = {
     "skills/design-studio/references/evaluation.md",
     "skills/design-studio/references/iteration.md",
 }
+RETIRED_POST_BASELINE_SURFACES = {"references/methodology.md"}
 
 EXPECTED_SURFACE_LABELS = {
     "canonical-skill",
@@ -154,7 +155,10 @@ class PortableProductMigrationMapTests(unittest.TestCase):
             with self.subTest(path=row["path"]):
                 self.assertIn(row["label"], EXPECTED_SURFACE_LABELS)
                 self.assertTrue(row["reason"].strip())
-                self.assertTrue((ROOT / row["path"]).exists())
+                if row["path"] in RETIRED_POST_BASELINE_SURFACES:
+                    self.assertFalse((ROOT / row["path"]).exists())
+                else:
+                    self.assertTrue((ROOT / row["path"]).exists())
                 if row["label"] in {
                     "optional-host-adapter",
                     "compatibility-bridge",

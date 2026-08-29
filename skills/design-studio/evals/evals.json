@@ -1,6 +1,6 @@
 {
   "skill_name": "design-studio",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "evals": [
     {
       "id": 1,
@@ -167,9 +167,9 @@
       "prompt": "Validate the installed Design Studio version metadata.",
       "expected_output": "The portable skill, workflow and eval metadata agree without requiring a host-specific adapter.",
       "assertions": [
-        "SKILL.md version is 1.5.0",
-        "workflow.yaml version is 1.5.0",
-        "evals.json version is 1.5.0",
+        "SKILL.md version is 1.6.0",
+        "workflow.yaml version is 1.6.0",
+        "evals.json version is 1.6.0",
         "portable version validation uses only installed skill metadata"
       ]
     },

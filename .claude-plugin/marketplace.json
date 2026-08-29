@@ -11,7 +11,7 @@
     {
       "name": "design-studio",
       "description": "Host discovery and invocation adapter over the canonical Agent Skill; design methods and runtime behavior remain under skills/design-studio/.",
-      "version": "1.5.0",
+      "version": "1.6.0",
       "author": {
         "name": "George Reid-Dowd"
       },

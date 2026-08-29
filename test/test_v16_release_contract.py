@@ -32,6 +32,11 @@ class V16ReleaseContractTests(unittest.TestCase):
         self.assertEqual(VERSION, plugin["version"])
         self.assertEqual(VERSION, marketplace_plugin["version"])
 
+        evals = json.loads(self.read("skills/design-studio/evals/evals.json"))
+        workflow = self.read("skills/design-studio/workflow.yaml")
+        self.assertEqual(VERSION, evals["version"])
+        self.assertRegex(workflow, rf"(?m)^  version: {re.escape(VERSION)}$")
+
     def test_standard_install_proves_two_representative_hosts(self) -> None:
         workflow = self.read(".github/workflows/validate-agent-skill-install.yml")
         self.assertIn("agent: [codex, claude-code]", workflow)

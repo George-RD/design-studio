@@ -5,7 +5,7 @@ description: >-
   Separates product framing, visual direction, implementation and blind browser evaluation; roots the target
   before work starts; preserves immutable iterations; resumes from recorded evidence; and documents the
   accepted visual system. Use Review for audit or polish without redesign.
-version: 1.5.0
+version: 1.6.0
 ---
 
 # Design Studio
