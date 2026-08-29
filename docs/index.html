@@ -45,7 +45,7 @@
             <span class="command__value">/design-studio:create a landing page with a point of view</span>
             <span class="command__copy" aria-hidden="true">Copy command</span>
           </button>
-          <p class="hero-note">Claude Code plugin · portable workflow contract for other agent tools</p>
+          <p class="hero-note">Standard Agent Skill · optional Claude Code adapter</p>
           <p class="visually-hidden" id="copy-status" role="status" aria-live="polite"></p>
         </div>
       </div>
@@ -206,13 +206,16 @@
       <div class="shell section__inner install-grid">
         <h2 id="install-title">Give the design its own room.</h2>
         <div class="install-panel">
-          <div class="install-panel__top">Install in Claude Code</div>
-          <pre><code>/plugin marketplace add George-RD/design-studio
+          <div class="install-panel__top">Install Design Studio</div>
+          <pre><code>npx skills add George-RD/design-studio
+
+Optional Claude Code adapter:
+/plugin marketplace add George-RD/design-studio
 /plugin install design-studio@design-studio
 /reload-plugins
 
 /design-studio:create your next surface</code></pre>
-          <div class="install-links"><a href="https://github.com/George-RD/design-studio">Get the plugin ↗</a><a href="https://github.com/pbakaus/impeccable">Optional Impeccable gate ↗</a></div>
+          <div class="install-links"><a href="https://github.com/George-RD/design-studio">Get the Agent Skill ↗</a><a href="https://github.com/pbakaus/impeccable">Optional Impeccable gate ↗</a></div>
         </div>
       </div>
     </section>
