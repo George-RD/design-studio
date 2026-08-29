@@ -28,7 +28,7 @@ class ClaudeAdapterCompatibilityTests(unittest.TestCase):
                 self.assertIn("Claude Code adapter", body)
                 self.assertIn("skills/design-studio/SKILL.md", body)
                 self.assertIn(entrypoint, body)
-                self.assertNotIn("Do not ", body)
+                self.assertIn("invocation metadata only", body)
                 self.assertNotRegex(body, r"\b(?:REFINE|PIVOT|SHIP|HALT)\b")
 
     def test_agent_stubs_contain_discovery_metadata_and_one_canonical_pointer(self):
@@ -40,10 +40,11 @@ class ClaudeAdapterCompatibilityTests(unittest.TestCase):
             with self.subTest(path=path):
                 text = self.read(path)
                 body = self.body_after_frontmatter(path)
+                self.assertIn("Optional Claude Code discovery stub", text)
                 self.assertNotIn("<example>", text)
                 self.assertIn(canonical, body)
                 self.assertIn("plugin stub", body)
-                self.assertLessEqual(len(body.splitlines()), 7)
+                self.assertIn("Load that file as the full system prompt", body)
 
     def test_portable_runtime_tree_has_no_dependency_on_root_claude_adapter(self):
         skill_root = ROOT / "skills/design-studio"
