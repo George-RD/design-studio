@@ -16,13 +16,8 @@ allowed-tools:
 
 # Design Studio: Review
 
-Load `skills/design-studio/SKILL.md`, then execute `skills/design-studio/references/review/polish.md` only.
+This command is a Claude Code adapter over the canonical Agent Skill.
 
-Parse `$ARGUMENTS` into:
+Load `skills/design-studio/SKILL.md` and `skills/design-studio/references/invocation.md`. Map `$ARGUMENTS` to the Review inputs defined there, using Claude Code's `Agent` tool as the host implementation of `isolated_subagents`, then execute `skills/design-studio/references/review/polish.md` only.
 
-- `target`: local path, URL, or an existing `serve.json`.
-- `constraints`: remaining text.
-- `report_only`: true when `--report-only` is present.
-- `mechanical_only`: true when `--mechanical-only` is present.
-
-Do not execute `workflow.yaml`, create design directions, score originality, or return REFINE/PIVOT/SHIP. Review ends with a readiness verdict. If browser automation is unavailable, return a mechanical-only report with visual status `unverified`; never pretend a source scan is a visual judgment.
+Do not execute `workflow.yaml`, create design directions, score originality, or return REFINE/PIVOT/SHIP. Review ends with a readiness verdict, and the skill remains the authority for degradation behavior when browser automation is unavailable.
