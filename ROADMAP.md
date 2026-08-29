@@ -80,7 +80,6 @@ The migration map classifies the pre-change product boundary. The method authori
 ## Non-blocking maintenance
 
 - [#42 — Harden the capability gate against timing and safe self-inspection flakes](https://github.com/George-RD/design-studio/issues/42) remains a separate repository-research reliability issue. #50 reviewed the overlap and did not promote its browser-launch, capability-gate or timing machinery into the installed runtime.
-- Under the v1.7 contraction spec [#74](https://github.com/George-RD/design-studio/issues/74), `advisory-latest-installer` checks the public GitHub-source install with `skills@latest`. It reports installer drift but does not gate merges; the pinned proofs remain authoritative under [ADR 0004](docs/decisions/0004-installer-compatibility-proof.md) and the [runtime/distribution boundary](docs/runtime-boundary.md).
 
 ## Planning and implementation discipline
 
