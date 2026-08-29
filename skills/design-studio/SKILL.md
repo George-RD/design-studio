@@ -70,7 +70,7 @@ Run `workflow.yaml` end to end. Invoke deterministic operations through `runtime
 3. **Assign**: for unattended work, commit a reproducible seed and candidate slot before directions are generated. Keep both hidden from Visual Director.
 4. **Explore and select**: Visual Director produces three equally specified, materially different directions. A pinned direction, the user or the precommitted slot selects one.
 5. **Direct and build**: Visual Director writes the source-free contract. Builder implements it in a new immutable iteration and records fidelity evidence.
-6. **Mechanical preflight**: use `references/quality-gates.md`. Each scan is a complete current snapshot. Mechanical checks can block craft or functionality but never assign visual quality.
+6. **Mechanical preflight**: use `references/quality-gates.md` and the installed local runtime. Each scan is a complete current snapshot. Mechanical checks can block craft or functionality but never assign visual quality.
 7. **Blind evaluation**: Evaluator interacts with the live page at verified desktop and mobile viewports, captures zones and records observations and scores without a workflow decision.
 8. **Decide**: Orchestrator applies the ordered decision table. REFINE keeps the world. PIVOT replaces it. SHIP moves to tiered final selection.
 9. **Finish and accept**: eligible, mechanically clean iterations outrank higher averages with a failed criterion. A fresh reviewer checks the selected result. Apply at most one correction batch, then write an acceptance receipt for the final tree.
@@ -165,11 +165,12 @@ Execute `references/review/polish.md` through `runtime-contract.md` without `wor
 | Host input mapping and isolated-role invocation | `invocation.md` |
 | Product, copy, design and surface context | `references/context.md` |
 | Deterministic runtime operations and failure semantics | `runtime-contract.md` |
+| Installed runtime helper/platform policy | `runtime/README.md` |
 | Roots, capabilities, resume, assignment and acceptance | `references/runtime-integrity.md` |
 | Machine workflow, paths and decisions | `workflow.yaml` |
 | Visual Director prompt | `agents/design-agent.md` |
 | Builder constraints | `references/generation.md` |
-| Mechanical gate and Impeccable integration | `references/quality-gates.md` |
+| Mechanical gate and local deterministic checks | `references/quality-gates.md` |
 | Customer-facing copy changes | `references/copy.md` |
 | Blind visual evaluation | `agents/evaluator.md` |
 | Review-only audit | `references/review/polish.md` |
@@ -182,7 +183,7 @@ Studio needs file I/O, shell access and isolated subagents. A complete visual de
 
 - No browser or runnable target in Studio: preserve one build and current mechanical snapshot, then halt unselected.
 - No browser or missing required viewport in Review: return mechanical evidence with visual status `unverified`.
-- No Impeccable: use the fallback gate and record `detector: fallback`.
+- Incomplete source or browser evidence: record the pass as incomplete with its exact reason; never convert missing evidence into a clean result.
 - No user answer mechanism: use the precommitted deterministic assignment.
 - No image generation: present equal text directions; do not fabricate comps.
 - No `business-copy-style`: apply `references/copy.md` and record `copyWorkflow: local-rules`.
