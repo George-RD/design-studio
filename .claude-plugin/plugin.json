@@ -1,7 +1,7 @@
 {
   "name": "design-studio",
   "version": "1.5.0",
-  "description": "A multi-agent frontend design workflow that roots the target, separates visual direction and browser judgement from source code, preserves resumable evidence, and codifies the accepted result into a reusable design system.",
+  "description": "Optional Claude Code adapter for the portable Design Studio Agent Skill. Provides host discovery and invocation only; canonical design and runtime behavior lives under skills/design-studio/.",
   "author": { "name": "George Reid-Dowd" },
   "keywords": [
     "frontend",
