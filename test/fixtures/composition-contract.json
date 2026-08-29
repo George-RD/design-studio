@@ -6,12 +6,11 @@
       "installedSkills": ["design-studio"],
       "artifacts": [
         {"path": "/project/PRODUCT.md", "role": "product-truth", "scope": "project", "state": "confirmed", "producer": "user"},
-        {"path": "/project/COPY.md", "role": "offer-copy", "scope": "project", "state": "approved", "producer": "user"},
+        {"path": "/project/COPY.md", "role": "language-rules", "scope": "project", "state": "present", "producer": "user"},
         {"path": "/project/DESIGN.md", "role": "visual-design", "scope": "project", "state": "accepted", "producer": "design-studio"}
       ],
       "expectedAuthorities": {
         "product-truth": "/project/PRODUCT.md",
-        "offer-copy": "/project/COPY.md",
         "visual-design": "/project/DESIGN.md"
       }
     },

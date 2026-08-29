@@ -50,6 +50,8 @@ web | ios | android | adaptive
 [Known user needs or required standard.]
 ```
 
+The `Positioning` section is a durable snapshot only when that decision is explicitly settled. Design Studio does not create or revise positioning strategy; a user- or Growth-Arsenal-approved positioning change must update the snapshot before Design Studio treats it as confirmed product context.
+
 Ask only about material gaps the request and repository do not answer. Record undecided facts instead of inventing them. A redesign changes visual authority, not confirmed product truth.
 
 Do not put palettes, component recipes, page layouts or an invented visual world in `PRODUCT.md`. Never invent prices, customers, benchmarks, capabilities, endpoints or testimonials.
@@ -68,7 +70,7 @@ Do not put palettes, component recipes, page layouts or an invented visual world
 
 Load it into planning and the surface brief. Do not let it override confirmed product facts. Do not create it for a one-line edit unless the user asks to preserve language rules across future work.
 
-When an approved external offer/copy artifact or composition metadata is present, do not infer authority from `COPY.md` or any other basename. Classify candidate artifacts by declared role, project scope and approval/acceptance provenance using `../composition-contract.json`. Add the `composition-artifacts` evidence signal so the method router loads the local copy boundary. Its human reference is `composition-contract.md`.
+When a candidate external offer/copy artifact or composition metadata is present, do not infer authority from `COPY.md` or any other basename. Classify candidate artifacts by declared role, project scope and approval/acceptance provenance using `../composition-contract.json`. Add the `composition-artifacts` evidence signal so the method router loads the local copy boundary. Its human reference is `composition-contract.md`.
 
 A Growth Arsenal repository-internal `DESIGN.md` or token file is not project visual authority merely because its name matches Design Studio's project artifact. Role and scope come before basename.
 
