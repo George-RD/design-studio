@@ -10,7 +10,7 @@ This file defines the **host-neutral deterministic seam** used by the Design Stu
 - This contract does not restate those schemas. Callers write and validate the shapes defined by `workflow.yaml` and obey the invariants in `references/runtime-integrity.md`.
 - Source-blind Visual Director/Evaluator boundaries and immutable completed iterations are preconditions. No runtime adapter may weaken them.
 
-The seam deliberately describes **what must happen**, not which language or current repository script performs it. The v1.5 repository has no product-runtime script family to promote wholesale: current benchmark/capability scripts remain research or repository-support tooling unless a later migration ticket explicitly extracts a supported helper.
+The seam deliberately describes **what must happen**, not which language performs it. Historical benchmark/capability scripts remain research or repository-support tooling rather than being promoted wholesale. A shipped helper is introduced only for bounded deterministic behavior that a supported operation actually needs.
 
 ## Stable operations
 
@@ -21,7 +21,7 @@ The seam deliberately describes **what must happen**, not which language or curr
 | `resolve_roots` | explicit target plus repository/application evidence | `roots.json` containing proven repo/app/context roots or external-URL status |
 | `probe_capabilities` | actual host/tool probes and target evidence | `capabilities.json`, an evaluation plan and any required budget clamp; missing required capability blocks before planning |
 | `prepare_direction_assignment` | run identity, iteration, candidate IDs, pinned/user-selection mode | committed `direction-assignment.json` before candidate generation, with hidden unattended seed/index |
-| `mechanical_preflight` | current immutable site, serve contract, detector availability and applicable design/brief constraints | one complete current `mechanical-findings.json` snapshot with detector/evidence metadata; old findings do not stay open by history alone |
+| `mechanical_preflight` | current source/browser facts plus applicable design/brief constraints and optional comparison snapshot | one complete current `mechanical-findings.json` snapshot from the supported local rule set; old findings do not stay open by history alone |
 | `decide` | current observation, current mechanical snapshot, score history, run budget/pivot state and selection mode | one ordered workflow decision and transition, recorded through `append_event`; visual judgement remains Evaluator evidence rather than runtime invention |
 | `finish_select` | eligible immutable evaluated iterations and current mechanical evidence | `finish/selection.json`, copied selected tree/serve contract/direction and fresh viewport evidence |
 | `finish_correction_decide` | selected-tree evidence plus correction verdict, mechanical snapshot and viewport evidence | deterministic choice of accepted corrected tree or retained selected tree in `finish/final-tree.json` |
@@ -30,7 +30,7 @@ The seam deliberately describes **what must happen**, not which language or curr
 | `halt` | exact failed or blocked contract plus current durable run evidence | preserve completed artifacts, append the exact failure through `append_event`, set terminal halted state and publish no winner or accepted tree |
 | `append_event` | step, status, sequence, iteration, artifact paths and exact message/failure contract | append one new line to `events.jsonl`; earlier events are never edited |
 
-These identifiers are the stable internal vocabulary. A host may implement them directly or through shipped helpers introduced later, but adapters must preserve their observable artifacts and failure semantics.
+These identifiers are the stable internal vocabulary. A host may implement operations directly or use shipped helpers behind the seam, but adapters must preserve their observable artifacts and failure semantics.
 
 ## Capability and failure semantics
 
@@ -48,7 +48,11 @@ Failures are durable workflow facts. A deterministic operation must either produ
 
 ## Mechanical detector boundary
 
-The seam owns the normalized **current mechanical snapshot contract**, not a particular detector implementation. The existing optional Impeccable/fallback branch is migration debt: detector availability may be recorded, but an external CLI is not a required runtime dependency and its presence must not create a different supported quality mode. #47/#50 own later method/detector consolidation.
+The seam owns one normalized **current mechanical snapshot contract** and one supported local deterministic rule set. External detector presence must not change the supported checks, severity semantics or outcome.
+
+Hosts provide current source and browser facts through their existing file/browser capabilities. Missing evidence is recorded as an incomplete pass rather than a clean result. The installed mechanical helper validates and normalizes those facts, creates stable finding identities, applies only exact authority-backed waivers and keeps previous findings as comparison history rather than current truth.
+
+For resume compatibility, legacy detector values remain schema-readable in durable pre-#50 snapshots. The current helper emits only `design-studio`; accepting `impeccable` or `fallback` in an existing artifact does not re-enable those runtime branches and no new supported run may select them.
 
 Mechanical checks report source/browser-computed facts and severity/waiver evidence. They do not assign visual quality and do not replace the source-blind Evaluator.
 
@@ -71,4 +75,4 @@ A host adapter may not own workflow decisions, artifact schemas, design methods,
 
 The following are **excluded from the runtime seam**: blind comparison, lane matrix generation, benchmark fixture validation, model probing, preference transactions and other Milestone 0 research harness behavior.
 
-Repository research tooling may call a genuinely shared shipped helper later, but a supported installed Design Studio run must not import or shell into benchmark/research tooling merely because similar machinery already exists there. #49 owns the physical shipped-runtime/research separation after this seam is established.
+Repository research tooling may call a genuinely shared shipped helper later, but a supported installed Design Studio run must not import or shell into benchmark/research tooling merely because similar machinery already exists there. The physical shipped-runtime/research separation defined by #49 remains authoritative.
