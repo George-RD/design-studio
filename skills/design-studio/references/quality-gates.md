@@ -31,7 +31,7 @@ A completed browser pass provides:
 
 - `requestedViewport` and the measured `actualViewport`;
 - `scrollWidth` and `clientWidth`;
-- `primaryActionUsable`, `motionPresent` and `reducedMotionVerified`;
+- `motionPresent` and `reducedMotionVerified`;
 - arrays named `contrastFailures`, `clippedContentFailures`, `keyboardFailures`, `focusFailures`, `touchTargetFailures`, `resourceFailures` and `fatalConsoleErrors`.
 
 Each explicit failure item contains `location`, `value` and exact human-readable `evidence`. Record only observed failures; an empty array means that check was actually completed and no failure was observed.
@@ -59,10 +59,9 @@ The runtime turns current facts into primary findings for:
 - keyboard reachability or visible-focus failures;
 - undersized relevant touch targets;
 - resource-load failures or fatal console errors;
-- unusable primary action;
 - rendered motion that remains materially active under reduced-motion emulation.
 
-Keep judgement-heavy categories such as visual hierarchy, generic-template feel, token-system quality and aesthetic anti-patterns in the routed review/evaluation methods. They are not deterministic merely because they can be expressed as a checklist.
+Keep task-specific functionality and judgement-heavy categories such as visual hierarchy, generic-template feel, token-system quality and aesthetic anti-patterns in the routed review/evaluation methods. They are not universal deterministic checks merely because they can be expressed as a checklist.
 
 ## Current-snapshot rule
 
@@ -127,6 +126,6 @@ Never convert a mechanical finding count into an aesthetic score. A zero-finding
 
 ## Provenance and research boundary
 
-The repeatable-check and explicit-finding model is consistent with the pinned Impeccable research review recorded in `docs/method-sources.json`, but this runtime is a local implementation of Design Studio's existing mechanical contract. No upstream CLI, prompt library or source file is required or copied into the supported runtime.
+Impeccable remains a pinned research source recorded in `docs/method-sources.json`; it is not required at runtime. The repeatable-check and explicit-finding model informed the local review, but this helper implements Design Studio's own mechanical contract and does not copy or require an upstream CLI, prompt library or source file.
 
 Historical browser/capability probes remain repository research tooling. Reliability work tracked in issue #42 stays on that research surface and must not become a reason to bundle its browser-launch or comparison machinery into the Agent Skill.
