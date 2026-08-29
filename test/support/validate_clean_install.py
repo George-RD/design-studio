@@ -2,12 +2,21 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 import re
 import sys
 
 
 SKILL_ROOT = Path("skills") / "design-studio"
+RUNTIME_SURFACE_PATH = Path("runtime-surface.json")
+EXPECTED_ADAPTER_ROOTS = {Path(".claude-plugin"), Path("agents"), Path("commands")}
+EXPECTED_REPOSITORY_ONLY_ROOTS = {
+    Path(".github"),
+    Path("benchmarks"),
+    Path("scripts"),
+    Path("test"),
+}
 GENERIC_REQUIRED_CAPABILITIES = {"file_io", "shell", "isolated_subagents"}
 PUBLIC_INSTALL_FACING_FILES = (
     Path("README.md"),
@@ -33,7 +42,6 @@ INVOCATION_TOKENS = {
     "Orchestrator",
 }
 PLUGIN_ONLY_MARKERS = ("commands/", "../commands/", "../../commands/", ".claude-plugin/")
-REPOSITORY_ONLY_MARKERS = ("scripts/", "benchmarks/", "test/", ".github/")
 DEPENDENCY_ACTION_MARKERS = (
     " run ",
     "run `",
@@ -81,6 +89,62 @@ def path_is_inside(path: Path, root: Path) -> bool:
         return False
 
 
+def parse_root_list(value: object, field: str, errors: list[str]) -> list[Path]:
+    if not isinstance(value, list) or any(not isinstance(item, str) or not item for item in value):
+        errors.append(f"runtime surface {field} must be a list of non-empty paths")
+        return []
+    roots = [Path(item) for item in value]
+    if any(path.is_absolute() or ".." in path.parts for path in roots):
+        errors.append(f"runtime surface {field} must contain repository-relative paths")
+    if len(roots) != len(set(roots)):
+        errors.append(f"runtime surface {field} contains duplicate paths")
+    return roots
+
+
+def load_runtime_surface(root: Path, errors: list[str]) -> tuple[Path, Path, list[Path], list[Path]]:
+    path = root / RUNTIME_SURFACE_PATH
+    try:
+        data = json.loads(path.read_text())
+    except FileNotFoundError:
+        errors.append(f"missing runtime surface manifest: {RUNTIME_SURFACE_PATH}")
+        return SKILL_ROOT, SKILL_ROOT / "runtime", [], []
+    except json.JSONDecodeError as exc:
+        errors.append(f"invalid runtime surface manifest: {exc}")
+        return SKILL_ROOT, SKILL_ROOT / "runtime", [], []
+
+    if data.get("schemaVersion") != 1:
+        errors.append("runtime surface schemaVersion must be 1")
+
+    installed = data.get("installedRuntime")
+    if not isinstance(installed, dict):
+        errors.append("runtime surface installedRuntime must be an object")
+        installed = {}
+
+    installed_root = Path(str(installed.get("root", "")))
+    helper_root = Path(str(installed.get("runtimeHelperRoot", "")))
+    adapter_roots = parse_root_list(data.get("optionalAdapterRoots"), "optionalAdapterRoots", errors)
+    repository_only_roots = parse_root_list(
+        data.get("repositoryOnlyRoots"), "repositoryOnlyRoots", errors
+    )
+
+    if installed_root != SKILL_ROOT:
+        errors.append(f"installed runtime root must be {SKILL_ROOT.as_posix()}")
+    if not helper_root.parts or not path_is_inside(root / helper_root, root / installed_root):
+        errors.append("runtime helper root must live inside the installed skill")
+    if set(adapter_roots) != EXPECTED_ADAPTER_ROOTS:
+        errors.append(
+            "optional adapter roots must be exactly "
+            f"{sorted(path.as_posix() for path in EXPECTED_ADAPTER_ROOTS)}"
+        )
+    if set(repository_only_roots) != EXPECTED_REPOSITORY_ONLY_ROOTS:
+        errors.append(
+            "repository-only roots must be exactly "
+            f"{sorted(path.as_posix() for path in EXPECTED_REPOSITORY_ONLY_ROOTS)}"
+        )
+
+    return installed_root, helper_root, adapter_roots, repository_only_roots
+
+
 def external_dependency_errors(path: Path, text: str) -> list[str]:
     errors: list[str] = []
     for line_number, line in enumerate(text.splitlines(), start=1):
@@ -121,11 +185,14 @@ def external_dependency_errors(path: Path, text: str) -> list[str]:
     return errors
 
 
-def repository_only_dependency_errors(path: Path, text: str) -> list[str]:
+def repository_only_dependency_errors(
+    path: Path, text: str, repository_only_roots: list[Path]
+) -> list[str]:
     errors: list[str] = []
+    markers = tuple(f"{root.as_posix().rstrip('/')}/" for root in repository_only_roots)
     for line_number, line in enumerate(text.splitlines(), start=1):
         lower = re.sub(r"\s+", " ", line.lower())
-        if not any(marker in lower for marker in REPOSITORY_ONLY_MARKERS):
+        if not any(marker in lower for marker in markers):
             continue
         if any(marker in lower for marker in NEGATED_DEPENDENCY_MARKERS):
             continue
@@ -136,16 +203,28 @@ def repository_only_dependency_errors(path: Path, text: str) -> list[str]:
     return errors
 
 
+def files_under(root: Path) -> set[Path]:
+    if root.is_file():
+        return {root}
+    if not root.is_dir():
+        return set()
+    return {path for path in root.rglob("*") if path.is_file()}
+
+
 def validate(root: Path) -> list[str]:
     errors: list[str] = []
-    skill_root = root / SKILL_ROOT
+    installed_root, _helper_root, adapter_roots, repository_only_roots = load_runtime_surface(
+        root, errors
+    )
+    skill_root = root / installed_root
     skill_path = skill_root / "SKILL.md"
     workflow_path = skill_root / "workflow.yaml"
     invocation_path = skill_root / "invocation.md"
 
     skill_text = read_text(skill_path, errors)
     workflow_text = read_text(workflow_path, errors)
-    runtime_paths: set[Path] = {skill_path, workflow_path, invocation_path}
+    runtime_paths = files_under(skill_root)
+    runtime_paths.update({skill_path, workflow_path, invocation_path})
 
     if skill_text:
         if not skill_text.startswith("---\n"):
@@ -171,7 +250,6 @@ def validate(root: Path) -> list[str]:
             if not path_is_inside(resolved, skill_root):
                 errors.append(f"required reference escapes the skill package: {reference}")
                 continue
-            runtime_paths.add(resolved)
             if not resolved.is_file():
                 errors.append(f"missing required reference: {reference}")
 
@@ -181,10 +259,8 @@ def validate(root: Path) -> list[str]:
             resolved = skill_root / procedure
             if not path_is_inside(resolved, skill_root):
                 errors.append(f"workflow procedure escapes the skill package: {procedure}")
-            else:
-                runtime_paths.add(resolved)
-                if not resolved.is_file():
-                    errors.append(f"missing workflow procedure: {procedure}")
+            elif not resolved.is_file():
+                errors.append(f"missing workflow procedure: {procedure}")
 
         capability_match = re.search(r"^\s*required:\s*\[([^\]]*)\]", workflow_text, re.M)
         if capability_match is None:
@@ -213,12 +289,21 @@ def validate(root: Path) -> list[str]:
         relative = path.relative_to(root)
         text = path.read_text(errors="replace")
         errors.extend(external_dependency_errors(relative, text))
-        errors.extend(repository_only_dependency_errors(relative, text))
+        errors.extend(repository_only_dependency_errors(relative, text, repository_only_roots))
         for marker in PLUGIN_ONLY_MARKERS:
             if marker in text:
                 errors.append(
                     f"plugin-only surface dependency inside runtime graph: {relative} contains {marker!r}"
                 )
+
+    adapter_paths: set[Path] = set()
+    for relative_root in adapter_roots:
+        adapter_paths.update(files_under(root / relative_root))
+    for path in sorted(adapter_paths):
+        relative = path.relative_to(root)
+        text = path.read_text(errors="replace")
+        errors.extend(external_dependency_errors(relative, text))
+        errors.extend(repository_only_dependency_errors(relative, text, repository_only_roots))
 
     for relative in PUBLIC_INSTALL_FACING_FILES:
         path = root / relative

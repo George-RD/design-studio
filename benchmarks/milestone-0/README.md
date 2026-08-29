@@ -1,5 +1,7 @@
 # Milestone 0 comparison fixtures
 
+**Status:** Historical research evidence retained for targeted comparisons. This tree is not a release gate or an installed-runtime dependency.
+
 These fixtures freeze the inputs used to test whether Design Studio adds useful orchestration beyond a specialist design workflow used alone.
 
 ## Acceptance contract

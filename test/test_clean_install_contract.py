@@ -29,8 +29,10 @@ class CleanInstallContractTests(unittest.TestCase):
         temporary = tempfile.TemporaryDirectory()
         root = Path(temporary.name)
         for relative in (
+            "runtime-surface.json",
             "skills/design-studio",
             ".claude-plugin",
+            "agents",
             "commands",
             "README.md",
             "docs/index.html",
@@ -46,6 +48,15 @@ class CleanInstallContractTests(unittest.TestCase):
 
     def test_repository_clean_install_contract_is_valid(self) -> None:
         self.assertEqual([], self.validator.validate(REPO_ROOT))
+
+    def test_missing_runtime_surface_manifest_is_rejected(self) -> None:
+        temporary, root = self.copy_repository()
+        self.addCleanup(temporary.cleanup)
+        (root / "runtime-surface.json").unlink()
+
+        errors = self.validator.validate(root)
+
+        self.assertTrue(any("missing runtime surface manifest" in error for error in errors), errors)
 
     def test_missing_in_skill_invocation_contract_is_rejected(self) -> None:
         temporary, root = self.copy_repository()

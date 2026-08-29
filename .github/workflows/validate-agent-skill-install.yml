@@ -46,9 +46,12 @@ jobs:
           grep -qx 'name: design-studio' "$installed_skill"
           test -f "$skill_root/invocation.md"
           test -f "$skill_root/workflow.yaml"
+          test -f "$skill_root/runtime-contract.md"
           test -f "$skill_root/references/runtime-integrity.md"
 
-          if find "$skill_root" -type f \( -path '*/commands/*' -o -path '*/.claude-plugin/*' \) -print -quit | grep -q .; then
-            echo "plugin-only surface leaked into installed skill" >&2
-            exit 1
-          fi
+          for forbidden in scripts benchmarks test .github commands .claude-plugin; do
+            if find "$skill_root" -type d -name "$forbidden" -print -quit | grep -q .; then
+              echo "$forbidden leaked into installed skill" >&2
+              exit 1
+            fi
+          done
