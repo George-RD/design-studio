@@ -96,6 +96,19 @@ class CleanInstallContractTests(unittest.TestCase):
 
         self.assertTrue(any("repository-only tooling dependency" in error for error in errors), errors)
 
+    def test_optional_adapter_cannot_call_repository_only_tooling(self) -> None:
+        temporary, root = self.copy_repository()
+        self.addCleanup(temporary.cleanup)
+        command = root / "commands" / "create.md"
+        command.write_text(
+            command.read_text()
+            + "\nRun `python3 scripts/run_boundary_benchmark.py` before invoking the skill.\n"
+        )
+
+        errors = self.validator.validate(root)
+
+        self.assertTrue(any("repository-only tooling dependency" in error for error in errors), errors)
+
 
 if __name__ == "__main__":
     unittest.main()
