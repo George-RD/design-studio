@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "horaxon-foundation-sprint-quote",
+  "kind": "paginated-document-dogfood",
+  "task": "document-create",
+  "surface": "paginated-artifact",
+  "documentType": "quote",
+  "sourceIssue": "George-RD/horaxon-web#105",
+  "contentEvidence": "George-RD/avancus#11",
+  "brief": "brief.md",
+  "acceptance": "acceptance.json",
+  "pageSizes": ["A4"],
+  "contractArtifact": "document-visual-contract.json",
+  "visualSubstrate": {
+    "workingWorld": "warm working-sheet/paper",
+    "primaryTypeRole": "Horizon Ink",
+    "accentRole": "Dune Gold used sparingly for hierarchy and wayfinding",
+    "fontIntent": "IBM Plex family where output format and licensing allow",
+    "metadata": "mono",
+    "tableIntent": "financial scanability with aligned numeric columns"
+  }
+}

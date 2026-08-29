@@ -10,7 +10,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILL_ROOT = ROOT / "skills" / "design-studio"
-VERSION = "1.7.0"
+VERSION = "1.6.0"
 
 
 class DocumentArtifactLaneTests(unittest.TestCase):
@@ -22,12 +22,16 @@ class DocumentArtifactLaneTests(unittest.TestCase):
     def load(self, path: Path) -> dict:
         return json.loads(self.read(path))
 
-    def test_document_requests_route_to_one_progressive_disclosure_leaf(self) -> None:
+    def test_document_requests_route_to_one_progressive_disclosure_procedure(self) -> None:
         router = self.load(SKILL_ROOT / "method-router.json")
         route = next(row for row in router["routes"] if row["id"] == "document-artifact")
         self.assertEqual(["document-create", "document-review"], route["signals"]["task"])
         self.assertEqual(["paginated-artifact"], route["signals"]["surface"])
-        self.assertEqual(["references/document/document.md"], route["leaves"])
+        self.assertEqual(
+            ["references/review/slop.md", "references/review/hierarchy.md"],
+            route["leaves"],
+        )
+        self.assertEqual("references/document/document.md", route["procedure"])
 
         skill = self.read(SKILL_ROOT / "SKILL.md")
         invocation = self.read(SKILL_ROOT / "invocation.md")
@@ -37,7 +41,21 @@ class DocumentArtifactLaneTests(unittest.TestCase):
         self.assertIn("quote", invocation.lower())
         self.assertIn("pdf", invocation.lower())
 
-    def test_document_leaf_is_renderer_neutral_and_loads_only_document_lenses(self) -> None:
+    def test_existing_interactive_routes_remain_separate_from_documents(self) -> None:
+        router = self.load(SKILL_ROOT / "method-router.json")
+        routes = {row["id"]: row for row in router["routes"]}
+        self.assertEqual(
+            ["persuade", "operate", "read", "experience"],
+            routes["studio-direction"]["signals"]["surface"],
+        )
+        self.assertEqual(
+            ["persuade", "operate", "read", "experience"],
+            routes["review-core"]["signals"]["surface"],
+        )
+        for route_id in ["studio-direction", "review-core", "review-interaction", "review-motion"]:
+            self.assertNotIn("paginated-artifact", routes[route_id]["signals"]["surface"])
+
+    def test_document_procedure_is_renderer_neutral_and_loads_only_page_lenses(self) -> None:
         document = self.read(SKILL_ROOT / "references" / "document" / "document.md")
         for marker in [
             "A4",
@@ -69,18 +87,25 @@ class DocumentArtifactLaneTests(unittest.TestCase):
         self.assertIn("unevaluated", evaluator.lower())
         self.assertIn("rendered page", director.lower())
 
-    def test_runtime_keeps_rendering_optional_and_emits_document_visual_contract(self) -> None:
+    def test_runtime_keeps_rendering_optional_and_codifies_a_document_contract(self) -> None:
         workflow = self.read(SKILL_ROOT / "workflow.yaml")
         self.assertRegex(workflow, r"required: \[file_io, shell, isolated_subagents\]")
-        self.assertIn("page_artifact_rendering", workflow)
-        self.assertIn("documentVisualContract: harness-output/design-system/document-visual-contract.json", workflow)
-        self.assertRegex(workflow, r"outputs: \[[^\n]*documentVisualContract[^\n]*\]")
 
+        document = self.read(SKILL_ROOT / "references" / "document" / "document.md")
         contract = self.read(SKILL_ROOT / "runtime-contract.md")
+        template = self.read(SKILL_ROOT / "assets" / "design-system-skill" / "SKILL.md.template")
+        self.assertIn("page_artifact_rendering", document)
+        self.assertIn("harness-output/design-system/document-visual-contract.json", document)
         self.assertIn("page-artifact", contract)
         self.assertIn("renderer", contract.lower())
         self.assertIn("build-once-unselected", contract)
         self.assertIn("mechanical-review", contract)
+        self.assertIn("document-visual-contract.json", template)
+
+        schema = self.load(SKILL_ROOT / "references" / "document" / "document-visual-contract.schema.json")
+        self.assertEqual(True, schema["properties"]["rendererNeutral"]["const"])
+        for field in ["page", "typography", "colour", "spacing", "furniture", "components", "pagination", "qa"]:
+            self.assertIn(field, schema["required"])
 
     def test_mechanical_runtime_normalizes_page_artifact_facts(self) -> None:
         runtime = SKILL_ROOT / "runtime" / "mechanical" / "index.mjs"
@@ -133,6 +158,7 @@ class DocumentArtifactLaneTests(unittest.TestCase):
         result = json.loads(run.stdout)
         page_pass = next(row for row in result["passes"] if row["kind"] == "page-artifact")
         self.assertEqual("horaxon-foundation-sprint-quote.pdf", page_pass["target"])
+        self.assertEqual(2, page_pass["pageCount"])
         rules = {finding["ruleId"] for finding in result["findings"]}
         self.assertIn("printable-area-overflow", rules)
         self.assertIn("document-furniture", rules)
@@ -141,13 +167,16 @@ class DocumentArtifactLaneTests(unittest.TestCase):
         fixture_dir = ROOT / "test" / "fixtures" / "document-artifact" / "horaxon-foundation-sprint"
         fixture = self.load(fixture_dir / "fixture.json")
         acceptance = self.load(fixture_dir / "acceptance.json")
+        brief = self.read(fixture_dir / fixture["brief"])
         self.assertEqual("George-RD/horaxon-web#105", fixture["sourceIssue"])
+        self.assertEqual("George-RD/avancus#11", fixture["contentEvidence"])
         self.assertIn("A4", fixture["pageSizes"])
         self.assertEqual("document-visual-contract.json", fixture["contractArtifact"])
+        self.assertIn("working-sheet", brief)
         self.assertGreaterEqual(len(acceptance["functionalChecks"]), 5)
         self.assertIn("renderer-neutral", json.dumps(acceptance).lower())
 
-    def test_current_product_version_is_synchronized_after_the_new_lane(self) -> None:
+    def test_v16_release_metadata_remains_synchronized(self) -> None:
         skill = self.read(SKILL_ROOT / "SKILL.md")
         match = re.search(r"^version:\s*([^\s]+)", skill, re.MULTILINE)
         self.assertIsNotNone(match)
