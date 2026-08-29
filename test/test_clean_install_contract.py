@@ -120,6 +120,17 @@ class CleanInstallContractTests(unittest.TestCase):
 
         self.assertTrue(any("repository-only tooling dependency" in error for error in errors), errors)
 
+    def test_runtime_helper_cannot_import_repository_only_tooling(self) -> None:
+        temporary, root = self.copy_repository()
+        self.addCleanup(temporary.cleanup)
+        helper = root / "skills" / "design-studio" / "runtime" / "bridge.py"
+        helper.parent.mkdir(parents=True, exist_ok=True)
+        helper.write_text("from scripts.run_boundary_benchmark import prepare_run\n")
+
+        errors = self.validator.validate(root)
+
+        self.assertTrue(any("repository-only tooling dependency" in error for error in errors), errors)
+
 
 if __name__ == "__main__":
     unittest.main()
