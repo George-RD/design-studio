@@ -67,13 +67,9 @@ Evaluator returns evidence/scores only. Orchestrator applies REFINE/PIVOT/SHIP/H
 
 A visual winner requires complete rendered-page evidence, a current mechanical snapshot, no unresolved blocking page defect and an acceptance receipt naming the immutable artifact/tree used.
 
-After acceptance, Visual Director/Orchestrator assemble the proposed renderer-neutral contract from accepted evidence. Publish it only through the installed deterministic validator:
+After acceptance, Visual Director/Orchestrator assemble the proposed renderer-neutral contract from accepted evidence. Publish it through the stable runtime operation `publish_document_visual_contract`, supplying the accepted proposed contract and target output path. The operation validates the required v1 shape and writes the actual downstream artifact. A validation failure blocks publication.
 
-```text
-node runtime/document-contract/index.mjs <proposed-contract.json> harness-output/design-system/document-visual-contract.json
-```
-
-The helper validates the required v1 shape and writes the actual downstream artifact. A validation failure blocks publication. `document-visual-contract.schema.json` remains the declarative schema authority; the helper enforces its required operational subset without synthesizing design values.
+`document-visual-contract.schema.json` remains the declarative schema authority. The runtime implementation enforces its required operational subset without synthesizing design values; concrete helper language/path mapping belongs to the runtime implementation layer, not this procedure authority.
 
 The contract contains, where applicable: page sizes/printable area/margins/grid; typography roles/scale/leading/tracking/fallbacks; colour/ink/paper and grayscale constraints; spacing/rhythm; title/metadata/header/footer/page-number/status/version/confidentiality furniture; reusable table/totals/scope-row/note/callout/divider/signature/payment/figure recipes; pagination rules; intentional variants; and QA criteria/representative rendered fixtures.
 

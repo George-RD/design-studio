@@ -9,7 +9,10 @@ SKILL_ROOT = REPO_ROOT / "skills" / "design-studio"
 CONTRACT_PATH = SKILL_ROOT / "runtime-contract.md"
 WORKFLOW_PATH = SKILL_ROOT / "workflow.yaml"
 QUALITY_GATE_PATH = SKILL_ROOT / "references" / "quality-gates.md"
+DOCUMENT_PROCEDURE_PATH = SKILL_ROOT / "references" / "document" / "document.md"
+RUNTIME_README_PATH = SKILL_ROOT / "runtime" / "README.md"
 MECHANICAL_RUNTIME_PATH = SKILL_ROOT / "runtime" / "mechanical" / "index.mjs"
+DOCUMENT_RUNTIME_PATH = SKILL_ROOT / "runtime" / "document-contract" / "index.mjs"
 
 
 class RuntimeContractTests(unittest.TestCase):
@@ -73,15 +76,39 @@ class RuntimeContractTests(unittest.TestCase):
         self.assertIn("required: [file_io, shell, isolated_subagents]", workflow)
         self.assertIn("enum: [full, build-once-unselected, mechanical-review]", workflow)
 
-    def test_local_mechanical_runtime_is_the_only_supported_detector_path(self) -> None:
+    def test_runtime_helpers_remain_implementation_details_behind_stable_operations(self) -> None:
         workflow = WORKFLOW_PATH.read_text()
         quality_gate = QUALITY_GATE_PATH.read_text()
+        document_procedure = DOCUMENT_PROCEDURE_PATH.read_text()
+        runtime_readme = RUNTIME_README_PATH.read_text()
 
         self.assertTrue(MECHANICAL_RUNTIME_PATH.is_file())
+        self.assertTrue(DOCUMENT_RUNTIME_PATH.is_file())
         self.assertNotIn("impeccable_cli", workflow)
-        self.assertIn("node runtime/mechanical/index.mjs", quality_gate)
+        self.assertIn("`mechanical_preflight`", quality_gate)
+        self.assertIn("`publish_document_visual_contract`", document_procedure)
+        self.assertIn("`mechanical/index.mjs` implements `mechanical_preflight`", runtime_readme)
+        self.assertIn(
+            "`document-contract/index.mjs` implements `publish_document_visual_contract`",
+            runtime_readme,
+        )
+        self.assertIn("node runtime/mechanical/index.mjs", runtime_readme)
+        self.assertIn("node runtime/document-contract/index.mjs", runtime_readme)
         self.assertIn("External detector availability must not change the supported rule set", quality_gate)
         self.assertNotIn("npx impeccable", quality_gate)
+
+    def test_reference_authorities_do_not_depend_on_concrete_runtime_helper_paths(self) -> None:
+        helper_paths = (
+            "runtime/mechanical/index.mjs",
+            "runtime/document-contract/index.mjs",
+        )
+
+        for path in (SKILL_ROOT / "references").rglob("*.md"):
+            text = path.read_text()
+            relative = path.relative_to(SKILL_ROOT).as_posix()
+            for helper_path in helper_paths:
+                with self.subTest(reference=relative, helper_path=helper_path):
+                    self.assertNotIn(helper_path, text)
 
     def test_legacy_detector_artifacts_remain_readable_for_resume(self) -> None:
         contract = self.contract_text()

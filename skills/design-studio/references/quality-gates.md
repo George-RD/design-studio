@@ -20,13 +20,9 @@ Completed page-artifact evidence uses `pageCount`, physical `pageSize` (`name`, 
 
 ## Outputs and handoff
 
-Run from the installed skill root:
+Invoke the stable runtime operation `mechanical_preflight` with the current evidence and applicable constraints. It writes the canonical current `mechanical-findings.json` defined by `runtime-contract.md`.
 
-```text
-node runtime/mechanical/index.mjs <input-json> <mechanical-findings-json>
-```
-
-The Node-standard-library helper writes the canonical current `mechanical-findings.json`. Hand that snapshot to Evaluator/Review/Document evaluation and later acceptance. External detector availability must not change the supported rule set or result semantics; renderer availability must not change those semantics either.
+Hand that snapshot to Evaluator/Review/Document evaluation and later acceptance. External detector availability must not change the supported rule set or result semantics; renderer availability must not change those semantics either. Concrete helper language/path mapping belongs to the runtime implementation layer, not this method authority.
 
 ## Authority boundary
 
