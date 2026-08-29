@@ -10,7 +10,8 @@ const BASE_BROWSER_SCRIPT = fileURLToPath(
 );
 const DIAGNOSTIC_LIMIT = 2000;
 const CAPTURE_LIMIT = 64_000;
-const DEFAULT_BASE_TIMEOUT_MS = 60_000;
+const DEFAULT_BASE_TIMEOUT_MS = 120_000;
+const MAX_BASE_TIMEOUT_MS = 180_000;
 const TERMINATION_GRACE_MS = 1_000;
 
 class CompletionProbeError extends Error {}
@@ -37,9 +38,9 @@ function baseTimeoutMs() {
   const raw = process.env.DESIGN_STUDIO_BROWSER_COMPLETION_TIMEOUT_MS;
   if (raw === undefined || raw === '') return DEFAULT_BASE_TIMEOUT_MS;
   const parsed = Number(raw);
-  if (!Number.isInteger(parsed) || parsed < 100 || parsed > DEFAULT_BASE_TIMEOUT_MS) {
+  if (!Number.isInteger(parsed) || parsed < 100 || parsed > MAX_BASE_TIMEOUT_MS) {
     throw new CompletionProbeError(
-      'DESIGN_STUDIO_BROWSER_COMPLETION_TIMEOUT_MS must be an integer from 100 to 60000',
+      `DESIGN_STUDIO_BROWSER_COMPLETION_TIMEOUT_MS must be an integer from 100 to ${MAX_BASE_TIMEOUT_MS}`,
     );
   }
   return parsed;

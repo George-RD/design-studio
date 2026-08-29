@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; connect-src 'none'; form-action 'none'; frame-src 'none'; img-src data:; media-src data:; object-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'">
+  <title>Delayed request capability check</title>
+  <style>
+    :root { --accent: #176b5b; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 2rem; font-family: system-ui; max-width: 42rem; }
+    input, button { font: inherit; padding: .75rem; }
+    button { transition: transform .2s; }
+    button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); }
+    @media (prefers-reduced-motion: reduce) {
+      * { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Capability check</h1>
+    <form id="capability-form">
+      <label for="capability-name">Name</label>
+      <input id="capability-name" name="name">
+      <button type="submit">Complete</button>
+    </form>
+    <p id="capability-success" hidden></p>
+  </main>
+  <script>
+    document.querySelector('#capability-form').addEventListener('submit', (event) => {
+      event.preventDefault();
+      const success = document.querySelector('#capability-success');
+      success.textContent = 'Capability complete';
+      success.hidden = false;
+    });
+    setTimeout(() => {
+      new Image().src = 'https:' + '//example.invalid/delayed.png';
+    }, 900);
+  </script>
+</body>
+</html>
