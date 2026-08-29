@@ -21,6 +21,7 @@ REQUIRED_LEAF_HEADINGS = {
     "## Evaluation hooks",
 }
 SIGNAL_KEYS = {"task", "surface", "interaction", "evidence"}
+AUTHORITY_ROLES = {"canonical", "boundary", "supporting"}
 REMOVED_COMPATIBILITY_LEAVES = {
     "references/planning.md",
     "references/evaluation.md",
@@ -32,6 +33,20 @@ RETIRED_RUNTIME_PHRASES = {
     "Impeccable availability",
     "business-copy-style",
 }
+
+
+def matching_route_ids(router: dict, current: dict[str, set[str]]) -> set[str]:
+    """Apply the router's all-populated-dimensions matching contract."""
+    matches: set[str] = set()
+    for route in router["routes"]:
+        route_matches = True
+        for kind, required_values in route["signals"].items():
+            if required_values and not set(required_values).intersection(current.get(kind, set())):
+                route_matches = False
+                break
+        if route_matches:
+            matches.add(route["id"])
+    return matches
 
 
 class MethodKernelRoutingTests(unittest.TestCase):
@@ -53,6 +68,8 @@ class MethodKernelRoutingTests(unittest.TestCase):
             "docs/decisions/0002-owned-method-kernel.md",
             router["governingDecision"],
         )
+        self.assertIs(router["repositoryMetadataOnly"], True)
+        self.assertIn("every signal dimension with a non-empty list is required", router["selectionRule"])
 
         routes = router["routes"]
         self.assertTrue(routes)
@@ -75,6 +92,62 @@ class MethodKernelRoutingTests(unittest.TestCase):
                 self.assertTrue(route["handoff"].strip())
 
         self.assertEqual(SIGNAL_KEYS, used_signal_kinds)
+        for path in router["coreAuthorities"]:
+            self.assertTrue((SKILL_ROOT / path).is_file(), path)
+
+    def test_routing_examples_make_progressive_disclosure_deterministic(self) -> None:
+        router = self.load(ROUTER_PATH)
+        scenarios = [
+            (
+                "greenfield direction",
+                {"task": {"studio-direction"}, "surface": {"persuade"}},
+                {"studio-direction"},
+            ),
+            (
+                "overhaul",
+                {"task": {"studio-overhaul"}, "surface": {"read"}},
+                {"overhaul"},
+            ),
+            (
+                "selected build",
+                {"task": {"studio-build"}, "evidence": {"selected-direction"}},
+                {"studio-build"},
+            ),
+            (
+                "mechanical preflight",
+                {"evidence": {"mechanical-preflight"}},
+                {"mechanical-evidence"},
+            ),
+            (
+                "static review",
+                {"task": {"review"}, "surface": {"read"}},
+                {"review-core"},
+            ),
+            (
+                "interactive review",
+                {"task": {"review"}, "surface": {"operate"}, "interaction": {"controls"}},
+                {"review-core", "review-interaction"},
+            ),
+            (
+                "motion review",
+                {"task": {"polish"}, "surface": {"experience"}, "interaction": {"motion"}},
+                {"review-core", "review-motion"},
+            ),
+            (
+                "local copy change",
+                {"task": {"copy-change"}},
+                {"copy-boundary"},
+            ),
+            (
+                "method intake",
+                {"task": {"method-intake"}},
+                {"meta"},
+            ),
+        ]
+
+        for name, current, expected in scenarios:
+            with self.subTest(name=name):
+                self.assertEqual(expected, matching_route_ids(router, current))
 
     def test_every_declared_leaf_uses_the_standard_contract(self) -> None:
         router = self.load(ROUTER_PATH)
@@ -95,7 +168,31 @@ class MethodKernelRoutingTests(unittest.TestCase):
                     REQUIRED_LEAF_HEADINGS.issubset(headings),
                     f"{leaf['path']} missing {sorted(REQUIRED_LEAF_HEADINGS - headings)}",
                 )
+                self.assertIn(leaf["authorityRole"], AUTHORITY_ROLES)
                 self.assertTrue(leaf["conceptIds"])
+
+    def test_leaf_authority_roles_match_the_single_authority_map(self) -> None:
+        router = self.load(ROUTER_PATH)
+        authority_map = self.load(AUTHORITY_MAP_PATH)
+        concepts = {item["conceptId"]: item for item in authority_map["concepts"]}
+        canonical_by_concept: dict[str, str] = {}
+
+        for leaf in router["leaves"]:
+            repo_path = f"skills/design-studio/{leaf['path']}"
+            for concept_id in leaf["conceptIds"]:
+                with self.subTest(path=leaf["path"], concept=concept_id):
+                    concept = concepts[concept_id]
+                    role = leaf["authorityRole"]
+                    if role == "canonical":
+                        self.assertEqual("canonical-local", concept["authority"]["kind"])
+                        self.assertEqual(repo_path, concept["authority"]["canonicalPath"])
+                        self.assertNotIn(concept_id, canonical_by_concept)
+                        canonical_by_concept[concept_id] = leaf["path"]
+                    elif role == "boundary":
+                        self.assertEqual("external-domain", concept["authority"]["kind"])
+                        self.assertEqual(repo_path, concept["authority"]["localBoundaryPath"])
+                    else:
+                        self.assertIn(repo_path, concept["supportingReferences"])
 
     def test_adopted_methods_match_authority_map_and_record_exact_provenance(self) -> None:
         router = self.load(ROUTER_PATH)
