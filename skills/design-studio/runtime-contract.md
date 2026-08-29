@@ -84,6 +84,6 @@ An adapter may not own workflow decisions, artifact schemas, design methods, cap
 
 ## Research boundary
 
-Blind comparison, lane matrix generation, fixture validation, model probing, preference transactions and other historical Milestone 0 research behavior are excluded from the runtime seam.
+blind comparison, lane matrix generation, fixture validation, model probing, preference transactions and other historical Milestone 0 research behavior are excluded from the runtime seam.
 
 Repository research tooling may call a genuinely shared helper later, but a supported installed run must not import or shell into benchmark/research tooling merely because similar machinery exists there. The shipped-runtime/research separation from #49 remains authoritative.
