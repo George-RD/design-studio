@@ -1,78 +1,72 @@
 # Method authority map
 
-Issue #47 turns the migration inventory into the concept-level authority record for Design Studio. The machine-readable source of truth is [`docs/method-authority-map.json`](./method-authority-map.json); this file is the maintainer view.
+Issue #47 defined the concept-level ownership record. Issue #51 realizes that record as a progressively disclosed local kernel. The machine-readable authorities remain in [`docs/method-authority-map.json`](./method-authority-map.json); shipped signal routing lives in `skills/design-studio/method-router.json`.
 
 ## Boundary
 
 - **Design Studio — design engineering:** generic visual-design methods and specialist review guidance.
-- **Design Studio — orchestration/runtime:** lifecycle, role isolation, evidence, routing, resume, acceptance, and runtime behaviour.
-- **Growth Arsenal — offer/copy:** offer, positioning, persuasion strategy, and authoritative copy. Design Studio consumes approved artifacts through `skills/design-studio/references/copy.md`; it does not become a second copy authority.
+- **Design Studio — orchestration/runtime:** lifecycle, role isolation, evidence, routing, resume, acceptance and supported runtime behaviour.
+- **Growth Arsenal — offer/copy:** offer, positioning, persuasion strategy and authoritative copy. Design Studio consumes approved artifacts through its copy boundary; it does not become a second copy authority.
 
-No upstream repository is required at runtime. Impeccable and Emil Kowalski's skills are pinned research inputs only. Design Studio does not wholesale-fork either source.
+No upstream repository is required at runtime. Pinned external repositories are provenance/research inputs, not execution dependencies.
 
 ## Provenance pins
 
-`docs/method-sources.json` is canonical for source metadata. External overlap entries reference a `sourceId` rather than duplicating mutable provenance fields in multiple files.
-
 | Source | Exact reviewed revision | Licence | Runtime role |
 | --- | --- | --- | --- |
-| https://github.com/pbakaus/impeccable | `63b04e2530f5c7b41ea83c133daab24f34912456` | Apache-2.0 | Research input only; no runtime dependency |
-| https://github.com/emilkowalski/skills | `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7` | MIT | Research input only; no runtime dependency |
+| https://github.com/pbakaus/impeccable | `63b04e2530f5c7b41ea83c133daab24f34912456` | Apache-2.0 | Research/provenance only; selected methods are re-expressed in local leaves |
+| https://github.com/emilkowalski/skills | `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7` | MIT | Research/provenance only; selected methods are re-expressed in local leaves |
 
-The source registry's `currentDisposition: observe` applies to each upstream repository as a whole. The concept-level JSON map is authoritative for individual method dispositions, so a bounded method can be an `adapt-local` candidate without promoting the upstream source into a product dependency.
+`docs/method-sources.json` owns source metadata. Repository-level `currentDisposition: observe` means neither upstream project is promoted wholesale. Concept-level entries decide the smallest useful method slice.
 
-`adapt-local` and `vendor-slice` mean **candidate**, not already adopted. A later implementation PR must cite the source ID and exact revision, describe modifications, preserve required notices when source material is copied, and protect the retained benefit with evidence or tests. `observe` and `reject` authorize no copying and create no runtime dependency.
+For `adapt-local`/`vendor-slice`, `implementationStatus: candidate` means selected but not shipped; `adopted` means a focused implementation has recorded exact provenance/modifications and protects the benefit with tests or evidence. `observe` and `reject` authorize no copying.
 
 ## Canonical concept authorities
 
-| Concept | Domain | Single authority | Routing |
-| --- | --- | --- | --- |
-| `source-blind-direction-and-evaluation` | design engineering | `references/rationale.md` | When generating or evaluating competing directions without source identity |
-| `runtime-integrity-and-immutable-evidence` | orchestration/runtime | `references/runtime-integrity.md` | Always |
-| `product-context-and-planning` | design engineering | `references/context.md` | Always |
-| `implementation-fidelity` | design engineering | `references/generation.md` | Accepted direction → implementation |
-| `mechanical-source-and-browser-evidence` | orchestration/runtime | `references/quality-gates.md` | Source/browser evidence collection and re-checks |
-| `review-orchestration` | orchestration/runtime | `references/review/polish.md` | Iteration and final design review |
-| `accessibility-review` | design engineering | `references/review/a11y.md` | Accessibility-relevant UI or evidence |
-| `hierarchy-rhythm-and-responsive-composition` | design engineering | `references/review/hierarchy.md` | Hierarchy/layout/breakpoint review |
-| `interaction-state-and-affordance` | design engineering | `references/review/interaction.md` | Interaction/state review |
-| `motion-craft-and-perceptibility` | design engineering | `references/review/interaction.md` | Motion is added, changed, or reviewed |
-| `generated-specificity-and-subtraction` | design engineering | `references/review/slop.md` | Generated UI feels generic/repetitive/over-produced |
-| `design-system-codification` | design engineering | `assets/design-system-skill/SKILL.md.template` | Accepted visual world needs reusable codification |
-| `offer-copy-authority` | copy/offer | **Growth Arsenal**; local boundary is `references/copy.md` | Compose only from approved copy/offer artifacts |
-| `overhaul-scope-and-settled-world` | orchestration/runtime | `references/overhaul.md` | Explicit overhaul/reinvention or evidence requires reopening the visual world |
-| `visual-evaluation-contract` | orchestration/runtime | `references/evaluation.md` | Always for rendered decisions and final acceptance |
+| Concept | Single authority | Routing |
+| --- | --- | --- |
+| source-blind direction/evaluation | `references/rationale.md` with role prompts | direction/evaluation signals |
+| runtime integrity/evidence | `references/runtime-integrity.md` | always |
+| product context/planning | `references/context.md` | always |
+| implementation fidelity | `references/generation.md` | build/refine |
+| mechanical evidence | `references/quality-gates.md` | evidence signals |
+| review orchestration | `references/review/polish.md` | Review |
+| accessibility | `references/review/a11y.md` | Review lens |
+| hierarchy/rhythm/responsive | `references/review/hierarchy.md` | Review lens |
+| interaction/state | `references/review/interaction.md` | interaction signals |
+| motion craft | `references/review/interaction.md` | motion signals |
+| generated specificity/subtraction | `references/review/slop.md` | Review core |
+| design-system codification | `assets/design-system-skill/SKILL.md.template` | accepted system |
+| offer/copy authority | **Growth Arsenal**; local boundary `references/copy.md` | composition |
+| overhaul scope | `references/overhaul.md` | redesign/reopen |
+| visual evaluation | `agents/evaluator.md` | rendered decisions |
 
-Paths in this table are relative to `skills/design-studio/` unless otherwise stated. Supporting references are deliberately not additional authorities; they implement role prompts, handoffs, or adjacent lifecycle behaviour around the one concept owner.
+`method-router.json` maps task/surface/interaction/evidence signals to these authorities. It is not another source of design rules.
 
-## External overlap decisions
+## Adopted local method slices
 
-The migration map exposed the overlaps; #47 resolves them without importing another system.
+Issue #51 adopts only the seven #47 `adapt-local` candidates:
 
-### Adapt locally — candidates
+- Emil: materially divergent alternatives compared in realistic context → `references/rationale.md`.
+- Impeccable: repeatable technical audit/finding semantics → `references/quality-gates.md`; the supported implementation is Design Studio's local mechanical runtime.
+- Emil: read-only expert audit → executable improvement plan handoff → `references/review/polish.md`.
+- Emil: motion purpose/frequency gate → `references/review/interaction.md`.
+- Emil: bounded motion timing/interruptibility heuristics → `references/review/interaction.md`.
+- Emil: concise evidence for rejected motion opportunities → `references/review/interaction.md`.
+- Impeccable: useful recurring anti-pattern categories → `references/review/slop.md`.
 
-- **Divergent prototypes in realistic context** — Emil `skills/prototype/SKILL.md`. Retain the divergence criterion, but keep Design Studio's source-blind role split, evidence contract, and routing.
-- **Deterministic source/browser checks with explicit finding severity** — Impeccable `.agent/skills/impeccable/reference/audit.md`. Implement only repeatable local checks that can be tested; issue #50 is the intended runtime follow-up.
-- **Read-only audit → executable improvement plan** — Emil `skills/improve-animations/SKILL.md`. Retain the handoff shape while the evaluator stays source-blind/read-only and the orchestrator keeps decision ownership.
-- **Motion purpose/frequency gate, bounded values/interruptibility, and rejected-opportunity evidence** — Emil `skills/improve-animations/SKILL.md` and `skills/animate/SKILL.md`. Route only for motion work; upstream preferences are heuristics, not universal laws.
-- **Useful anti-pattern categories** — Impeccable `.agent/skills/impeccable/SKILL.md`. Admit only categories that correspond to recurring local evidence; do not import its command framework or full prompt text.
+Each adopted leaf contains the exact source ID, revision, licence and local modification boundary. No upstream command framework, prompt library, picker/prototype harness, CLI, or animation toolchain is imported.
 
-### Observe
+## Observe and reject
 
-Impeccable's accessibility, hierarchy/responsive, interaction-state, generic motion, and design-system/token guidance stay pinned comparison sources. Design Studio already has local authorities for these concepts, and current evidence does not justify another maintained rule set.
-
-### Reject as authority
-
-- Impeccable's lifecycle/design-command taxonomy does not replace Design Studio's local phase/routing model.
-- Impeccable's broad review command taxonomy does not become a parallel routing framework.
-- Its mechanical-versus-visual separation does not become a second authority because Design Studio already owns that boundary in `quality-gates.md` and `evaluation.md`.
+Impeccable accessibility, hierarchy/responsive, interaction, generic motion and design-system guidance remain comparison-only because Design Studio already has local authorities. Impeccable lifecycle/review command taxonomies remain rejected as parallel routing systems. External mechanical-versus-visual separation is also rejected as a second authority because Design Studio already owns that boundary.
 
 ## Duplicate retirement
 
-`references/methodology.md` is now a legacy aggregate, not a method authority. Delete it after issues #48 and #51 migrate remaining supported references/routing and a clean-install validation shows that no runtime path depends on it. The retained authorities are enumerated in the JSON map so deletion cannot silently remove the only copy of a concept.
+The installed compatibility stubs `references/planning.md`, `references/evaluation.md` and `references/iteration.md` were removed by #51 after callers were routed to their real authorities.
 
-## Future intake and comparison
+Top-level `references/methodology.md` remains historical/legacy evidence until #48 finishes the composition migration. It is not a runtime authority. Once #48 completes and clean-install evidence confirms no dependency, delete it under the existing `delete-after` record.
 
-There is no broad comparison or dogfood gate attached to #47. `targetedComparisons` is intentionally empty because the current overlaps can be classified from existing evidence and the pinned source review.
+## Future intake
 
-If a future observed method is proposed for adoption, add one comparison request naming: one concept, one unresolved question, and the evidence required to decide it. Do not reopen general Impeccable-versus-Design-Studio benchmarking by default.
+Do not reopen broad upstream comparisons by default. A proposed method names one reusable gap, one current authority, the smallest coherent source slice, exact revision/licence, the local modification boundary, and evidence that would justify its cost. If the evidence is absent, observe rather than adopt.
