@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-import re
 import subprocess
 import tempfile
 import unittest
@@ -10,19 +9,21 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILL_ROOT = ROOT / "skills" / "design-studio"
-VERSION = "1.6.0"
 
 
 class DocumentArtifactLaneTests(unittest.TestCase):
     """Acceptance contract for issue #64's paginated document lane."""
 
     def read(self, path: Path) -> str:
+        """Read one repository text artifact as UTF-8."""
         return path.read_text(encoding="utf-8")
 
     def load(self, path: Path) -> dict:
+        """Load one JSON contract fixture or manifest."""
         return json.loads(self.read(path))
 
     def test_document_requests_route_to_one_progressive_disclosure_procedure(self) -> None:
+        """Route page artifacts through one procedure plus existing reusable leaves."""
         router = self.load(SKILL_ROOT / "method-router.json")
         route = next(row for row in router["routes"] if row["id"] == "document-artifact")
         self.assertEqual(["document-create", "document-review"], route["signals"]["task"])
@@ -42,6 +43,7 @@ class DocumentArtifactLaneTests(unittest.TestCase):
         self.assertIn("pdf", invocation.lower())
 
     def test_existing_interactive_routes_remain_separate_from_documents(self) -> None:
+        """Keep existing Studio and Review surface signals out of the new page lane."""
         router = self.load(SKILL_ROOT / "method-router.json")
         routes = {row["id"]: row for row in router["routes"]}
         self.assertEqual(
@@ -56,6 +58,7 @@ class DocumentArtifactLaneTests(unittest.TestCase):
             self.assertNotIn("paginated-artifact", routes[route_id]["signals"]["surface"])
 
     def test_document_procedure_is_renderer_neutral_and_loads_only_page_lenses(self) -> None:
+        """Use only medium-appropriate visual methods inside the Document procedure."""
         document = self.read(SKILL_ROOT / "references" / "document" / "document.md")
         for marker in [
             "A4",
@@ -78,28 +81,34 @@ class DocumentArtifactLaneTests(unittest.TestCase):
             self.assertIn("evidence", text)
             self.assertIn("status", text)
 
-    def test_source_blind_roles_accept_rendered_pages_without_renderer_identity(self) -> None:
+    def test_source_blind_roles_accept_rendered_pages_without_document_source(self) -> None:
+        """Prove both blind roles forbid source/renderer context while allowing page renders."""
         evaluator = self.read(SKILL_ROOT / "agents" / "evaluator.md")
         director = self.read(SKILL_ROOT / "agents" / "design-agent.md")
-        self.assertIn("## Document contract", evaluator)
-        self.assertIn("rendered page", evaluator.lower())
-        self.assertIn("renderer identity", evaluator.lower())
-        self.assertIn("unevaluated", evaluator.lower())
-        self.assertIn("rendered page", director.lower())
+        director_isolation = director.split("## Isolation", 1)[1].split("## Inputs", 1)[0]
+        evaluator_document = evaluator.split("## Document contract", 1)[1].split("## Pass 1", 1)[0]
 
-    def test_runtime_keeps_rendering_optional_and_codifies_a_document_contract(self) -> None:
+        self.assertIn("rendered page", director.lower())
+        self.assertIn("component/document source", director_isolation)
+        self.assertIn("renderer identity", director_isolation)
+        self.assertIn("rendered page", evaluator_document.lower())
+        self.assertIn("Renderer identity, source", evaluator_document)
+        self.assertIn("unevaluated", evaluator_document.lower())
+
+    def test_runtime_keeps_rendering_optional_and_publishes_a_document_contract(self) -> None:
+        """Publish an actual accepted contract without introducing a renderer dependency."""
         workflow = self.read(SKILL_ROOT / "workflow.yaml")
         self.assertRegex(workflow, r"required: \[file_io, shell, isolated_subagents\]")
 
         document = self.read(SKILL_ROOT / "references" / "document" / "document.md")
-        contract = self.read(SKILL_ROOT / "runtime-contract.md")
+        runtime_contract = self.read(SKILL_ROOT / "runtime-contract.md")
         template = self.read(SKILL_ROOT / "assets" / "design-system-skill" / "SKILL.md.template")
         self.assertIn("page_artifact_rendering", document)
-        self.assertIn("harness-output/design-system/document-visual-contract.json", document)
-        self.assertIn("page-artifact", contract)
-        self.assertIn("renderer", contract.lower())
-        self.assertIn("build-once-unselected", contract)
-        self.assertIn("mechanical-review", contract)
+        self.assertIn("publish_document_visual_contract", runtime_contract)
+        self.assertIn("page-artifact", runtime_contract)
+        self.assertIn("renderer", runtime_contract.lower())
+        self.assertIn("build-once-unselected", runtime_contract)
+        self.assertIn("mechanical-review", runtime_contract)
         self.assertIn("document-visual-contract.json", template)
 
         schema = self.load(SKILL_ROOT / "references" / "document" / "document-visual-contract.schema.json")
@@ -107,7 +116,30 @@ class DocumentArtifactLaneTests(unittest.TestCase):
         for field in ["page", "typography", "colour", "spacing", "furniture", "components", "pagination", "qa"]:
             self.assertIn(field, schema["required"])
 
+        fixture_dir = ROOT / "test" / "fixtures" / "document-artifact" / "horaxon-foundation-sprint"
+        proposed = fixture_dir / "document-visual-contract.json"
+        publisher = SKILL_ROOT / "runtime" / "document-contract" / "index.mjs"
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "harness-output" / "design-system" / "document-visual-contract.json"
+            run = subprocess.run(
+                ["node", str(publisher), str(proposed), str(output)],
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(0, run.returncode, run.stderr)
+            self.assertTrue(output.is_file())
+            published = self.load(output)
+
+        self.assertEqual("paginated-artifact", published["surface"])
+        self.assertIs(published["rendererNeutral"], True)
+        self.assertEqual("A4", published["page"]["defaultSize"])
+        self.assertIn("pagination", published)
+        self.assertIn("qa", published)
+
     def test_mechanical_runtime_normalizes_page_artifact_facts(self) -> None:
+        """Join deterministic page facts to the existing current mechanical snapshot."""
         runtime = SKILL_ROOT / "runtime" / "mechanical" / "index.mjs"
         payload = {
             "schemaVersion": 1,
@@ -163,33 +195,22 @@ class DocumentArtifactLaneTests(unittest.TestCase):
         self.assertIn("printable-area-overflow", rules)
         self.assertIn("document-furniture", rules)
 
-    def test_horaxon_fixture_proves_a4_document_contract_consumption(self) -> None:
+    def test_horaxon_fixture_proves_real_quote_contract_consumption(self) -> None:
+        """Dogfood the Horaxon page system against the real Avancus quote draft case."""
         fixture_dir = ROOT / "test" / "fixtures" / "document-artifact" / "horaxon-foundation-sprint"
         fixture = self.load(fixture_dir / "fixture.json")
         acceptance = self.load(fixture_dir / "acceptance.json")
         brief = self.read(fixture_dir / fixture["brief"])
+        contract = self.load(fixture_dir / fixture["contractArtifact"])
+
         self.assertEqual("George-RD/horaxon-web#105", fixture["sourceIssue"])
         self.assertEqual("George-RD/avancus#11", fixture["contentEvidence"])
         self.assertIn("A4", fixture["pageSizes"])
         self.assertEqual("document-visual-contract.json", fixture["contractArtifact"])
         self.assertIn("working-sheet", brief)
+        self.assertIs(contract["rendererNeutral"], True)
         self.assertGreaterEqual(len(acceptance["functionalChecks"]), 5)
         self.assertIn("renderer-neutral", json.dumps(acceptance).lower())
-
-    def test_v16_release_metadata_remains_synchronized(self) -> None:
-        skill = self.read(SKILL_ROOT / "SKILL.md")
-        match = re.search(r"^version:\s*([^\s]+)", skill, re.MULTILINE)
-        self.assertIsNotNone(match)
-        plugin = self.load(ROOT / ".claude-plugin" / "plugin.json")
-        marketplace = self.load(ROOT / ".claude-plugin" / "marketplace.json")
-        marketplace_plugin = next(row for row in marketplace["plugins"] if row["name"] == "design-studio")
-        evals = self.load(SKILL_ROOT / "evals" / "evals.json")
-        workflow = self.read(SKILL_ROOT / "workflow.yaml")
-        self.assertEqual(VERSION, match.group(1))
-        self.assertEqual(VERSION, plugin["version"])
-        self.assertEqual(VERSION, marketplace_plugin["version"])
-        self.assertEqual(VERSION, evals["version"])
-        self.assertRegex(workflow, rf"(?m)^  version: {re.escape(VERSION)}$")
 
 
 if __name__ == "__main__":

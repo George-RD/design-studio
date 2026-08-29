@@ -22,6 +22,7 @@ The seam describes **what must happen**, not which language or renderer performs
 | `probe_capabilities` | actual host/tool probes and target evidence | `capabilities.json`, evaluation plan and any required budget clamp; missing generic required capability blocks before planning |
 | `prepare_direction_assignment` | run identity, iteration, candidate IDs, pinned/user-selection mode | committed assignment before candidate generation, with hidden unattended seed/index |
 | `mechanical_preflight` | current source, browser and/or page-artifact facts plus applicable constraints and optional comparison snapshot | one complete current `mechanical-findings.json` snapshot from the supported local rule set; history never keeps an absent finding open |
+| `publish_document_visual_contract` | accepted proposed Document Visual Contract plus output path | validate the v1 renderer-neutral contract and write the actual accepted JSON artifact; never synthesize visual values or renderer code |
 | `decide` | current observation, mechanical snapshot, score history, budget/pivot state and selection mode | ordered lane decision recorded through `append_event`; visual judgement remains Evaluator evidence |
 | `finish_select` | eligible immutable evaluated iterations/artifacts and current mechanical evidence | final selection plus copied/identified accepted candidate and fresh required rendered evidence |
 | `finish_correction_decide` | selected evidence plus correction verdict, mechanical snapshot and required rendered evidence | deterministic choice of accepted correction or retained selected candidate |
@@ -40,15 +41,15 @@ Interactive visual-decision capability is a runnable/reachable target plus brows
 
 Use the same evaluation-plan vocabulary for every lane:
 
-- `full`: the lane has the rendered evidence required for source-blind visual judgement and may select a winner.
-- `build-once-unselected`: creation can produce one build/artifact but cannot make grounded visual judgement; clamp to one build, run available mechanical preflight, preserve evidence and halt without a winner.
+- `full`: the lane has rendered evidence required for source-blind visual judgement and may select a winner.
+- `build-once-unselected`: creation can produce one build/artifact but cannot make grounded visual judgement; clamp to one build, run available mechanical preflight, preserve evidence and halt without winner.
 - `mechanical-review`: Review/Document review may return deterministic evidence with visual status `unverified` when required rendered evidence is unavailable.
 
-A renderer may be HTML→PDF, DOCX/PDF, native PDF or another host/downstream implementation. Design Studio does not choose one as visual authority. Record renderer identity and operational settings only for Orchestrator/Builder diagnostics; exclude them from Visual Director/Evaluator input.
+A renderer may be HTML-to-PDF, DOCX/PDF, native PDF or another host/downstream implementation. Design Studio does not choose one as visual authority. Record renderer identity/operational settings only for Orchestrator/Builder diagnostics; exclude them from Visual Director/Evaluator input.
 
 An unknown, errored or incomplete probe is not success. Capability handling must never silently return `full`, invent a visual score or claim a lower-evidence path is equivalent.
 
-Failures are durable facts. A deterministic operation produces declared valid evidence or routes through `halt` with the exact blocked/failed contract. Preserve partial durable evidence for diagnosis/resume.
+Failures are durable facts. A deterministic operation produces declared valid evidence or routes through `halt` with exact blocked/failed contract. Preserve partial durable evidence for diagnosis/resume.
 
 ## Mechanical detector boundary
 
@@ -56,11 +57,15 @@ The seam owns one normalized **current mechanical snapshot contract** and one su
 
 Hosts provide current source/browser/page-artifact facts through existing capabilities. Missing evidence is an incomplete pass rather than a clean result. The installed mechanical helper validates/normalizes those facts, creates stable finding identities, applies only exact authority-backed waivers and keeps previous findings as comparison history rather than current truth.
 
-The optional `pageArtifacts` input is an array parallel to browser passes. A completed page-artifact pass supplies target, positive page count, physical page size `{name,widthMm,heightMm}`, plus explicit failure arrays for printable-area overflow, content clipping, required furniture and print contrast. An incomplete pass supplies target, `completed:false` and exact reason. The helper never launches a renderer or judges pagination aesthetics.
+The optional `pageArtifacts` input is parallel to browser passes. A completed pass supplies target, positive page count, physical page size `{name,widthMm,heightMm}`, plus explicit failure arrays for printable-area overflow, content clipping, required furniture and print contrast. An incomplete pass supplies target, `completed:false` and exact reason. The helper never launches a renderer or judges pagination aesthetics.
 
 For resume compatibility, legacy detector values remain schema-readable in durable pre-#50 snapshots. The current helper emits only `design-studio`; accepting `impeccable` or `fallback` in an existing artifact does not re-enable those runtime branches.
 
 Mechanical checks report computed facts and severity/waiver evidence. They do not assign visual quality or replace source-blind evaluation.
+
+## Document contract publication
+
+`runtime/document-contract/index.mjs` implements `publish_document_visual_contract`. It accepts only an already accepted proposed visual contract, validates the required renderer-neutral v1 shape, creates output parent directories and writes JSON. It does not infer design values, read business source truth or select a renderer. Validation failure returns explicit error and must block downstream publication.
 
 ## Review lane
 
@@ -68,16 +73,11 @@ Interactive Review uses the same capability/evidence semantics without the Studi
 
 ## Document lane
 
-`references/document/document.md` composes the same stable operations for page artifacts. It does not fork a renderer-specific runtime or copy the browser workflow. Page-specific direction/evaluation remains source-blind; deterministic `page-artifact` facts join the same mechanical snapshot; accepted page-system output is a renderer-neutral `document-visual-contract.json` validated against the shipped schema.
+`references/document/document.md` composes the same stable operations for page artifacts. It does not fork a renderer-specific runtime or copy the browser workflow. Page-specific direction/evaluation remains source-blind; deterministic `page-artifact` facts join the same mechanical snapshot; accepted page-system output is published as renderer-neutral `document-visual-contract.json`.
 
 ## Adapter contract
 
-A host adapter may:
-
-1. translate host input into fields in `invocation.md`;
-2. provide concrete isolated-agent, file I/O, shell, browser and page-rendering capabilities;
-3. invoke stable operations in the order required by the canonical lane; and
-4. translate final artifacts/results back to the host.
+A host adapter may translate input from `invocation.md`; provide isolated-agent/file/shell/browser/page-rendering capabilities; invoke stable operations in lane order; and translate final results back to the host.
 
 An adapter may not own workflow decisions, artifact schemas, design methods, capability downgrade policy or acceptance rules. Claude compatibility commands remain adapters over this contract, not alternative runtimes.
 
