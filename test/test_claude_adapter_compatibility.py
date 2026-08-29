@@ -61,7 +61,6 @@ class ClaudeAdapterCompatibilityTests(unittest.TestCase):
             ".claude-plugin/",
             "commands/create.md",
             "commands/review.md",
-            "Claude Code",
         )
         for path in skill_root.rglob("*"):
             if not path.is_file() or path.suffix not in {".md", ".json", ".yaml", ".yml"}:
@@ -69,6 +68,11 @@ class ClaudeAdapterCompatibilityTests(unittest.TestCase):
             text = path.read_text()
             for marker in adapter_markers:
                 self.assertNotIn(marker, text, f"{path.relative_to(ROOT)} references root adapter {marker}")
+
+        evals = self.read("skills/design-studio/evals/evals.json")
+        self.assertNotIn(".claude-plugin/", evals)
+        self.assertNotIn("commands/create.md", evals)
+        self.assertNotIn("commands/review.md", evals)
 
     def test_isolated_skill_copy_preserves_supported_capability_without_adapters(self):
         required = [
