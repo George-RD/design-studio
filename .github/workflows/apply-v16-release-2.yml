@@ -1,0 +1,174 @@
+name: Apply v1.6 release contraction fixed
+
+on:
+  push:
+    branches:
+      - agent/v16-portable-release-proof
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out release branch
+        uses: actions/checkout@v5
+        with:
+          ref: agent/v16-portable-release-proof
+          fetch-depth: 0
+
+      - name: Apply release edits
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace(path: str, old: str, new: str, *, count: int | None = None) -> None:
+              target = Path(path)
+              text = target.read_text(encoding="utf-8")
+              if old not in text:
+                  raise SystemExit(f"expected text missing in {path}: {old[:80]!r}")
+              if count is None:
+                  updated = text.replace(old, new)
+              else:
+                  if text.count(old) != count:
+                      raise SystemExit(f"expected {count} occurrences in {path}, found {text.count(old)}")
+                  updated = text.replace(old, new)
+              target.write_text(updated, encoding="utf-8")
+
+          replace("skills/design-studio/SKILL.md", "version: 1.5.0", "version: 1.6.0", count=1)
+          replace("skills/design-studio/workflow.yaml", "version: 1.5.0", "version: 1.6.0", count=1)
+          replace("skills/design-studio/evals/evals.json", "1.5.0", "1.6.0")
+          replace(".claude-plugin/plugin.json", '"version": "1.5.0"', '"version": "1.6.0"', count=1)
+          replace(".claude-plugin/marketplace.json", '"version": "1.5.0"', '"version": "1.6.0"', count=1)
+          replace(".github/workflows/validate.yml", "versions != {'1.5.0'}", "versions != {'1.6.0'}", count=1)
+
+          install_path = Path(".github/workflows/validate-agent-skill-install.yml")
+          install = install_path.read_text(encoding="utf-8")
+          install = install.replace(
+              "  clean-install:\n    runs-on: ubuntu-latest",
+              "  clean-install:\n    strategy:\n      fail-fast: false\n      matrix:\n        agent: [codex, claude-code]\n    runs-on: ubuntu-latest",
+              1,
+          )
+          matrix_token = "$" + "{{ matrix.agent }}"
+          install = install.replace("--agent codex", f'--agent "{matrix_token}"', 1)
+          if "agent: [codex, claude-code]" not in install or f'--agent "{matrix_token}"' not in install:
+              raise SystemExit("cross-host install matrix edit failed")
+          install_path.write_text(install, encoding="utf-8")
+
+          readme_path = Path("README.md")
+          readme = readme_path.read_text(encoding="utf-8")
+          start = readme.index("## Current compatibility and v1.6 direction")
+          end = readme.index("\n## Requirements", start)
+          block = '''## v1.6 product boundary
+
+Design Studio v1.6 has one supported runtime: the installed Agent Skill. It ships a local deterministic mechanical runtime under `skills/design-studio/runtime/`; supported behavior does not branch on whether an external design package is installed.
+
+Impeccable and Emil Kowalski's skills are credited sources, not install requirements. Adopted methods live in the local kernel with provenance and progressive disclosure. Growth Arsenal remains a separate optional skill and composes only through the neutral artifact contract.
+
+Codex and Claude Code are both exercised through the standard Agent Skills install in CI. The root Claude plugin remains an optional adapter over the same skill contract. See [the v1.6 acceptance record](docs/releases/v1.6.0.md).
+
+Mechanical findings remain evidence. They never substitute for source-blind judgement of the rendered result.
+'''
+          readme_path.write_text(readme[:start] + block + readme[end:], encoding="utf-8")
+
+          portable_path = Path("test/test_portable_product_migration_map.py")
+          portable = portable_path.read_text(encoding="utf-8")
+          portable = portable.replace(
+              'RETIRED_POST_BASELINE_AUTHORITIES = {\n    "skills/design-studio/references/planning.md",\n    "skills/design-studio/references/evaluation.md",\n    "skills/design-studio/references/iteration.md",\n}\n',
+              'RETIRED_POST_BASELINE_AUTHORITIES = {\n    "skills/design-studio/references/planning.md",\n    "skills/design-studio/references/evaluation.md",\n    "skills/design-studio/references/iteration.md",\n}\nRETIRED_POST_BASELINE_SURFACES = {"references/methodology.md"}\n',
+              1,
+          )
+          portable = portable.replace(
+              '                self.assertTrue((ROOT / row["path"]).exists())\n',
+              '                if row["path"] in RETIRED_POST_BASELINE_SURFACES:\n                    self.assertFalse((ROOT / row["path"]).exists())\n                else:\n                    self.assertTrue((ROOT / row["path"]).exists())\n',
+              1,
+          )
+          if "RETIRED_POST_BASELINE_SURFACES" not in portable:
+              raise SystemExit("portable migration test edit failed")
+          portable_path.write_text(portable, encoding="utf-8")
+
+          ownership_path = Path("test/test_milestone_0_ownership_inventory.py")
+          ownership = ownership_path.read_text(encoding="utf-8")
+          ownership = ownership.replace(
+              'RETIRED_POST_BASELINE_REFERENCES = {\n    "skills/design-studio/references/planning.md",\n',
+              'RETIRED_POST_BASELINE_REFERENCES = {\n    "references/methodology.md",\n    "skills/design-studio/references/planning.md",\n',
+              1,
+          )
+          ownership_path.write_text(ownership, encoding="utf-8")
+
+          release_test_path = Path("test/test_v16_release_contract.py")
+          release_test = release_test_path.read_text(encoding="utf-8")
+          release_test = release_test.replace(
+              '        self.assertEqual(VERSION, marketplace_plugin["version"])\n',
+              '        self.assertEqual(VERSION, marketplace_plugin["version"])\n\n        evals = json.loads(self.read("skills/design-studio/evals/evals.json"))\n        workflow = self.read("skills/design-studio/workflow.yaml")\n        self.assertEqual(VERSION, evals["version"])\n        self.assertRegex(workflow, rf"(?m)^  version: {re.escape(VERSION)}$")\n',
+              1,
+          )
+          release_test_path.write_text(release_test, encoding="utf-8")
+
+          release_dir = Path("docs/releases")
+          release_dir.mkdir(parents=True, exist_ok=True)
+          (release_dir / "v1.6.0.md").write_text('''# Design Studio v1.6.0 acceptance record
+
+**Status:** Accepted  
+**Governing spec:** #43  
+**Release issue:** #53  
+**Verified pre-release base:** `36f6e8a2402c657b8e805136291dd7482e5678cf`
+
+## Product boundary
+
+The canonical product is the Agent Skill under `skills/design-studio/`. Supported runtime behavior is self-contained there and may use host capabilities, but it has no runtime dependency on Impeccable, Emil Kowalski's skills, Growth Arsenal, Claude plugin files, or repository research tooling.
+
+The root Claude Code files remain optional discovery and invocation adapters. A standalone CLI remains deferred under `docs/decisions/0003-claude-adapter-and-deferred-cli.md`; #53 found no repeated cross-host command need that justifies another public interface.
+
+## Acceptance evidence
+
+| Requirement | Exact evidence |
+|---|---|
+| Standard clean install and cross-host discovery | `.github/workflows/validate-agent-skill-install.yml` installs through pinned `skills@1.5.23` for both `codex` and `claude-code`, then verifies the same installed `SKILL.md`, workflow, runtime contract, local helper and runtime-integrity reference while rejecting repository-only and Claude-only trees. |
+| Self-contained install boundary | `test/test_clean_install_contract.py` plus `test/support/validate_clean_install.py` reject external design-skill dependencies and repository-only execution from the installed skill or adapters. |
+| Cross-platform deterministic runtime | `.github/workflows/runtime-portability.yml` runs `test/test_runtime_contract.py` and `test/test_mechanical_runtime.mjs` on Linux, macOS and Windows against `skills/design-studio/runtime/mechanical/index.mjs`. |
+| Owned method kernel | `docs/method-authority-map.json`, `skills/design-studio/method-router.json`, `test/test_method_authority_map.py` and `test/test_method_kernel_routing.py` prove one local authority per adopted concept, provenance and progressive disclosure without upstream runtime loading. |
+| Optional Growth Arsenal composition | `skills/design-studio/composition-contract.json`, `skills/design-studio/references/composition-contract.md` and `test/test_composition_contract.py` prove neutral role-scoped handoff behavior while Design Studio remains runnable alone. |
+| Thin Claude adapter | `test/test_claude_adapter_compatibility.py` proves root commands/agents only point at canonical skill authorities and that an isolated `skills/design-studio/` copy retains supported capability. |
+| Legacy contraction | Frozen `docs/migration-map.json` still records `references/methodology.md` as the historical `delete-candidate`; v1.6 removes that file after #47/#51 protected useful method authority and provenance. Retired planning/evaluation/iteration compatibility leaves remain absent. |
+| Research separation | `runtime-surface.json`, `docs/runtime-boundary.md` and the clean-install contract keep `scripts/`, `benchmarks/`, `test/` and `.github/` outside installed runtime. Historical capability/comparison tooling remains available only as repository research evidence. |
+| Release contract | `.github/workflows/v16-release-contract.yml` runs `test/test_v16_release_contract.py` on the exact pull-request head and protects version parity, two-host install proof, contracted legacy state, public documentation and this evidence record. |
+
+## Outcome
+
+v1.6 therefore has one supported product model: a portable, self-contained Agent Skill with a local method kernel and deterministic runtime seam. Host adapters can expose that same contract but cannot change quality behavior. External design systems remain credited research inputs, and Growth Arsenal is optional composition rather than a dependency.
+''', encoding="utf-8")
+
+          roadmap_path = Path("ROADMAP.md")
+          roadmap = roadmap_path.read_text(encoding="utf-8")
+          roadmap = roadmap.replace(
+              '### Next ready roadmap item\n\n- [#53 — Prove the portable v1.6 path and contract legacy surfaces](https://github.com/George-RD/design-studio/issues/53) — #48 and #52 are complete, so final portable-path and legacy-surface proof is next in milestone order.',
+              '### Portable v1.6 complete\n\n- [#53 — Prove the portable v1.6 path and contract legacy surfaces](https://github.com/George-RD/design-studio/issues/53) — complete; two-host install, cross-platform runtime, local method authority, optional composition, thin adapters and legacy contraction are recorded in [`docs/releases/v1.6.0.md`](docs/releases/v1.6.0.md).',
+              1,
+          )
+          roadmap = roadmap.replace(
+              '- [#53 — Prove the portable v1.6 path and contract legacy surfaces](https://github.com/George-RD/design-studio/issues/53) — next in milestone order',
+              '- [#53 — Prove the portable v1.6 path and contract legacy surfaces](https://github.com/George-RD/design-studio/issues/53) — complete; v1.6 acceptance evidence is recorded in [`docs/releases/v1.6.0.md`](docs/releases/v1.6.0.md)',
+              1,
+          )
+          roadmap_path.write_text(roadmap, encoding="utf-8")
+
+          Path("references/methodology.md").unlink()
+          Path(".github/workflows/apply-v16-release.yml").unlink()
+          Path(".github/workflows/apply-v16-release-2.yml").unlink()
+          PY
+
+      - name: Commit release implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "release: establish portable v1.6 boundary"
+          git push origin HEAD:agent/v16-portable-release-proof
