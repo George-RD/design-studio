@@ -4,6 +4,7 @@ from __future__ import annotations
 import importlib.util
 from pathlib import Path
 import sys
+from types import ModuleType
 from typing import Any, Sequence
 
 
@@ -25,14 +26,21 @@ else:
     sys.modules[BASE_MODULE_NAME] = base
     spec.loader.exec_module(base)
 
-for _name in dir(base):
-    if _name.startswith("__") or _name in {"main", "validate_role_tool_receipt"}:
-        continue
+_PROXIED_BASE_GLOBALS = frozenset(
+    name
+    for name in dir(base)
+    if not name.startswith("__")
+    and name not in {"main", "validate_role_tool_receipt"}
+)
+for _name in _PROXIED_BASE_GLOBALS:
     globals()[_name] = getattr(base, _name)
 
 core = base.core
 
-_base_builder_prompt = base.builder_prompt
+_ORIGINAL_BUILDER_PROMPT_MARKER = "_design_studio_hardening_original_builder_prompt"
+if not hasattr(base, _ORIGINAL_BUILDER_PROMPT_MARKER):
+    setattr(base, _ORIGINAL_BUILDER_PROMPT_MARKER, base.builder_prompt)
+_base_builder_prompt = getattr(base, _ORIGINAL_BUILDER_PROMPT_MARKER)
 
 
 def builder_prompt() -> str:
@@ -333,8 +341,18 @@ def validate_role_tool_receipt(
 base.validate_role_tool_receipt = validate_role_tool_receipt
 
 
+class _CapabilityGateProxyModule(ModuleType):
+    def __setattr__(self, name: str, value: Any) -> None:
+        super().__setattr__(name, value)
+        if name in _PROXIED_BASE_GLOBALS:
+            setattr(base, name, value)
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     return base.main(argv)
+
+
+sys.modules[__name__].__class__ = _CapabilityGateProxyModule
 
 
 if __name__ == "__main__":
