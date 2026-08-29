@@ -2,109 +2,56 @@
 
 Design Studio's executable roadmap lives in GitHub Issues. This file is intentionally a **map**, not a second task tracker.
 
-## Direction
+## Current product state
 
-Design Studio is becoming a **portable Agent Skill with one curated method kernel and one supported runtime**.
+Design Studio v1.7 is a portable design-engineering Agent Skill with one curated local method kernel and one supported internal runtime seam.
 
-The next phase prioritises simplification:
+- `skills/design-studio/` is the canonical product and standard Agent Skills / `npx skills` installation is the canonical distribution path.
+- Studio, Review and Document are first-class lanes over the same source-boundary, evidence and acceptance model.
+- Deterministic helpers remain implementation details behind `skills/design-studio/runtime-contract.md`.
+- Claude Code commands/plugin files are an optional thin adapter; a standalone public CLI remains deferred.
+- Growth Arsenal remains an independent offer/copy/business skill and composes through neutral artifacts rather than duplicated methods.
+- Historical benchmark and capability harnesses remain repository evidence/research, not installed product runtime.
 
-- standard Agent Skills / `npx skills` installation is the canonical distribution target;
-- Claude Code plugin/commands are optional thin adapters, not a second product;
-- a standalone CLI is deferred until a concrete need proves it adds value;
-- deterministic product tooling sits behind one internal runtime seam;
-- product runtime helpers are separated from benchmark/research harnesses;
-- external **method intake** is evidence-gated: useful Impeccable and Emil Kowalski methods are selectively consolidated into one non-duplicated local authority and progressively disclosed leaves;
-- Growth Arsenal remains an independent offer/copy/business skill and composes with Design Studio through neutral artifacts rather than duplicated methods;
-- the **feedback-to-eval loop** remains a learning mechanism, but broad dogfood is evidence rather than a mandatory roadmap phase. Use targeted comparisons only when they resolve a live method-intake uncertainty.
+The method/runtime architecture is governed by [ADR 0002: Design Studio owns its method kernel](docs/decisions/0002-owned-method-kernel.md). The adapter/CLI boundary is governed by [ADR 0003: Keep Claude Code as an adapter and defer the public CLI](docs/decisions/0003-claude-adapter-and-deferred-cli.md). Installer compatibility semantics are governed by [ADR 0004](docs/decisions/0004-installer-compatibility-proof.md).
 
-The method/runtime architecture is governed by [ADR 0002: Design Studio owns its method kernel](docs/decisions/0002-owned-method-kernel.md). The host-adapter and deferred-CLI boundary is governed by [ADR 0003: Keep Claude Code as an adapter and defer the public CLI](docs/decisions/0003-claude-adapter-and-deferred-cli.md).
+## v1.7 contraction and release closure
 
-## Authoritative spec
+[#74 — Harden the post-roadmap product boundary for v1.7](https://github.com/George-RD/design-studio/issues/74) is the governing spec for this bounded contraction.
 
-- [#43 — Simplify Design Studio into a portable skill kernel](https://github.com/George-RD/design-studio/issues/43)
+- [#75 — runtime-seam contraction](https://github.com/George-RD/design-studio/issues/75) — merged; routed methods depend on stable runtime operations rather than concrete helper paths.
+- [#76 — public Agent Skills installation proof](https://github.com/George-RD/design-studio/issues/76) — merged; pinned reproducible installation remains blocking while latest-installer drift is advisory.
+- [#77 — v1.7 versioning, metadata and public positioning](https://github.com/George-RD/design-studio/issues/77) — repository-owned version authority, README/product positioning and release-candidate evidence are merged. External repository description/topics and final release publication remain part of release closure.
+- [#78 — close v1.7 with release proof and maintenance mode](https://github.com/George-RD/design-studio/issues/78) — current release-closure issue. It owns final exact-head verification, the `v1.7.0` tag/GitHub Release, repository metadata verification and closure of the parent sequence.
 
-`#43` contains the user stories, implementation decisions, testing seams and scope boundaries for this roadmap.
+The prepared release evidence is in [`docs/releases/v1.7.0.md`](docs/releases/v1.7.0.md). It must remain **Prepared**, not Accepted, until #78's publication and exact-head gates are complete.
 
-## Execution graph
+## Maintenance frontier
 
-### Baseline complete
+After #78 closes, normal product work is maintenance/evidence-driven intake rather than another broad architecture milestone.
 
-- [#44 — Inventory the portable product boundary and migration map](https://github.com/George-RD/design-studio/issues/44) — baseline recorded in [`docs/migration-map.md`](docs/migration-map.md) and [`docs/migration-map.json`](docs/migration-map.json) against pre-change revision `492a874d0a7c935e51395d66f420608a997d9ed3`.
-- [#45 — Make the Agent Skill the canonical install and distribution surface](https://github.com/George-RD/design-studio/issues/45) — canonical Agent Skill install surface merged and verified.
-- [#46 — Establish one stable internal runtime seam before script reorganisation](https://github.com/George-RD/design-studio/issues/46) — stable runtime seam and follow-up review fixes merged and verified.
-- [#47 — Consolidate external design guidance into one method authority map](https://github.com/George-RD/design-studio/issues/47) — concept ownership, provenance, intake dispositions, domain boundaries and routing are recorded in [`docs/method-authority-map.json`](docs/method-authority-map.json) and [`docs/method-authority-map.md`](docs/method-authority-map.md).
-- [#48 — Define a modular Design Studio ↔ Growth Arsenal composition contract](https://github.com/George-RD/design-studio/issues/48) — neutral role-scoped artifact ownership, precedence/staleness rules and prompt-order-independent composition are defined in [`skills/design-studio/composition-contract.json`](skills/design-studio/composition-contract.json) and its installed reference.
-- [#49 — Separate shipped runtime helpers from benchmark and research tooling](https://github.com/George-RD/design-studio/issues/49) — current distribution boundary, clean-install dependency checks and real Agent Skill package proof are recorded in [`docs/runtime-boundary.md`](docs/runtime-boundary.md) and [`runtime-surface.json`](runtime-surface.json).
-- [#50 — Normalize product runtime script families behind the shared seam](https://github.com/George-RD/design-studio/issues/50) — the first shipped helper is the standard-library-only local mechanical runtime; historical browser/capability/benchmark families remain repository-only and the old environment-dependent detector branch is removed.
-- [#51 — Route curated design methods through progressive-disclosure leaves](https://github.com/George-RD/design-studio/issues/51) — signal-based routing, bounded leaf contracts, seven provenance-backed local method adaptations and compatibility-stub retirement are implemented through [`skills/design-studio/method-router.json`](skills/design-studio/method-router.json).
-- [#52 — Reduce Claude Code integration to a thin adapter and defer the standalone CLI](https://github.com/George-RD/design-studio/issues/52) — Claude commands and agent discovery files are thin optional adapters over the canonical skill, adapter compatibility is contract-tested, and ADR 0003 records the evidence threshold and shared runtime seam for any future CLI.
+New architecture or method work is promoted to the product roadmap only when at least one trigger exists:
 
-The migration map classifies the pre-change product boundary. The method authority map resolves that inventory into the current one-authority-per-concept contract without making external repositories runtime dependencies. The runtime boundary records the current installed/adaptor/repository-only split without changing the frozen migration baseline.
+- a **concrete failure class** in a supported workflow;
+- **repeated evidence** that the current method/runtime produces avoidable rework, weak decisions or recovery failures;
+- a **meaningful ecosystem/upstream change** that can affect a supported install, runtime or method contract.
 
-### Portable v1.6 complete
+Every promoted change also needs a **bounded acceptance test** before implementation. A new source, method, helper, adapter or public interface is not justified by novelty or convenience alone. ADR 0002 and ADR 0003 revisit triggers remain the architecture-level guardrails.
 
-- [#53 — Prove the portable v1.6 path and contract legacy surfaces](https://github.com/George-RD/design-studio/issues/53) — complete; two-host install, cross-platform runtime, local method authority, optional composition, thin adapters and legacy contraction are recorded in [`docs/releases/v1.6.0.md`](docs/releases/v1.6.0.md).
+External method intake stays selective and provenance-backed. Useful changes from Impeccable, Emil Kowalski's skills or other sources are evaluated against a named failure/capability gap and adopted only when the smallest coherent local intervention has evidence.
 
-### Runtime simplification
+**Historical research and capability maintenance** remains explicitly separate from normal product roadmap work. Benchmark fixtures, source-blind comparison harnesses, browser/capability reliability work and old migration evidence may be maintained when needed, but they do not become product roadmap work unless a supported product contract is affected.
 
-- [#49 — Separate shipped runtime helpers from benchmark and research tooling](https://github.com/George-RD/design-studio/issues/49) — complete; runtime/research dependency boundary is enforced without moving historical tooling
-- [#50 — Normalize product runtime script families behind the shared seam](https://github.com/George-RD/design-studio/issues/50) — complete; local mechanical evidence is behind the shared seam and research-only capability/browser runners remain outside the installed product
+## Work selection
 
-### Method consolidation and modular composition
+GitHub Issues are authoritative for completion, blockers and the next executable item.
 
-- [#51 — Route curated design methods through progressive-disclosure leaves](https://github.com/George-RD/design-studio/issues/51) — complete; one signal router exposes bounded local authorities and adopted method slices without upstream runtime dependencies
-- [#48 — Define a modular Design Studio ↔ Growth Arsenal composition contract](https://github.com/George-RD/design-studio/issues/48) — complete; role/scope/state and provenance identify product/copy/design authority without prompt-order or filename collisions
-- [Growth Arsenal #34 — Make Growth Arsenal a portable Agent Skill and compose cleanly with Design Studio](https://github.com/George-RD/growth-arsenal/issues/34) — inventory/packaging work can continue; final composition adoption is unblocked by Design Studio #48
+1. Continue an existing open or draft implementation before starting competing work.
+2. Otherwise select an explicitly ready, unblocked implementation issue.
+3. If there is no ready issue, `/implement` must stop cleanly. Do not invent product work, reopen historical milestones or promote research maintenance without a bounded ticket.
 
-### Adapter contraction and release proof
-
-- [#52 — Reduce Claude Code integration to a thin adapter and defer the standalone CLI](https://github.com/George-RD/design-studio/issues/52) — complete; Claude-specific surfaces contribute discovery and invocation only, while ADR 0003 defers a public CLI until repeated need proves it
-- [#53 — Prove the portable v1.6 path and contract legacy surfaces](https://github.com/George-RD/design-studio/issues/53) — complete; v1.6 acceptance evidence is recorded in [`docs/releases/v1.6.0.md`](docs/releases/v1.6.0.md)
-
-## Dependency sketch
-
-```text
-#44 inventory
- ├─> #45 canonical Agent Skill install ─────────────────────────┐
- ├─> #46 runtime seam ─> #49 runtime/research split ─> #50 script normalisation ─┐
- │                    └───────────────────────────────> #51 method leaves ────────┤
- └─> #47 method authority ─> #51 method leaves ──────────────────────────────────┤
-                         └─> #48 Growth Arsenal contract ─────────────────────────┤
-
-#45 + #50 + #51 ─> #52 thin Claude adapter / CLI deferral ───────────────────────┤
-#48 + #52 ─> #53 portable v1.6 proof                                             │
-                                                                                  ▼
-                                                                                v1.6
-```
-
-## Non-blocking maintenance
-
-- [#42 — Harden the capability gate against timing and safe self-inspection flakes](https://github.com/George-RD/design-studio/issues/42) remains a separate repository-research reliability issue. #50 reviewed the overlap and did not promote its browser-launch, capability-gate or timing machinery into the installed runtime.
-
-## Planning and implementation discipline
-
-Repo-owned Matt Pocock engineering skills are installed under `.agents/skills/`, based on reviewed source revision `6654f6b60cd9d5be8b54c6fafe44346dabeb3b76`.
-
-Use:
-
-1. `to-spec` for durable feature/spec synthesis;
-2. `to-tickets` for dependency-aware tracer bullets;
-3. `implement` with `tdd` at agreed seams for behavioral code changes;
-4. `codebase-design` when the runtime interface/seam itself is being shaped;
-5. `code-review` against both repository standards and the originating issue/spec.
-
-GitHub Issues are authoritative for completion and blockers. Do not mirror active issue checkboxes back into this file.
+Planning and implementation use the repository-owned skills under `.agents/skills/`: `to-spec`, `to-tickets`, `codebase-design`, `implement`, `tdd` and `code-review` as appropriate.
 
 ## Historical evidence
 
-The earlier milestone roadmap, Impeccable boundary experiment, frozen fixtures, blind comparison transaction and Horaxon dogfood evidence remain in repository history and benchmark/research artifacts. ADR 0002 supersedes the required-Impeccable runtime direction.
-
-The following archived Milestone 0 markers are retained only as historical evidence contracts for the existing benchmark tests. **They are not executable roadmap items and must not be used to select work:**
-
-- [x] Inventory every Design Studio step, reference, schema and check. Evidence: `benchmarks/milestone-0/OWNERSHIP_INVENTORY.md`.
-- [x] Identify workflows that only reproduce an Impeccable command and record the old delegate/delete disposition.
-- [x] Controlled source-blind agent, browser and evidence capability gates.
-- [ ] Run the same fixed briefs through: retained as an **optional research comparison, not a release gate**.
-- [ ] Confirm the smallest differentiated product: superseded by #43's portable-kernel outcome and #53's release proof.
-
-Retain that evidence when useful, but do not run historical comparisons or continue dogfood solely to advance old roadmap checkboxes.
+The pre-v1.7 migration map, v1.6 release record, frozen Milestone 0 fixtures, Impeccable boundary experiments, blind comparison transactions and Horaxon dogfood evidence remain available in repository history and their existing docs/benchmark locations. They are evidence, not an active execution graph.
