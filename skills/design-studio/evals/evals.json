@@ -170,7 +170,7 @@
         "SKILL.md version is 1.5.0",
         "workflow.yaml version is 1.5.0",
         "evals.json version is 1.5.0",
-        "portable version validation does not require Claude Code plugin metadata"
+        "portable version validation uses only installed skill metadata"
       ]
     },
     {
