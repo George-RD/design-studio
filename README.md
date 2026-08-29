@@ -108,7 +108,7 @@ Completed iterations are immutable. A failed or interrupted run resumes from the
 
 In the current v1.5 release, Impeccable is optional. When its CLI is available, Design Studio uses source, desktop and mobile detector passes for mechanical preflight. Without it, the workflow records `detector: fallback` and runs a smaller browser-computed gate.
 
-The v1.6 roadmap removes this environment-dependent split. It targets one self-contained Design Studio runtime with a curated local method kernel. Impeccable and Emil Kowalski's skills are credited research inputs, not install requirements. Growth Arsenal remains a separate optional skill for offer and copy work. See [ADR 0002](docs/decisions/0002-owned-method-kernel.md).
+The v1.6 roadmap removes this environment-dependent split. It targets one self-contained Design Studio runtime with a curated local method kernel. External systems are research inputs. Impeccable and Emil Kowalski's skills are credited sources, not install requirements. Growth Arsenal remains a separate optional skill for offer and copy work. See [ADR 0002](docs/decisions/0002-owned-method-kernel.md).
 
 Mechanical findings remain evidence. They never substitute for source-blind judgement of the rendered result.
 
