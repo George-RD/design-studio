@@ -62,6 +62,14 @@ def _read_report(path: Path) -> dict[str, Any]:
     return value
 
 
+def _bounded_output(value: str | bytes | None) -> str:
+    if isinstance(value, bytes):
+        text = value.decode("utf-8", errors="replace")
+    else:
+        text = str(value or "")
+    return text[-2000:]
+
+
 def run_attempt(
     *,
     index: int,
@@ -109,8 +117,8 @@ def run_attempt(
             "urlBlocked": False,
             "contractPassed": False,
             "error": f"browser attempt timed out after {timeout_seconds}s",
-            "stdout": (error.stdout or "")[-2000:],
-            "stderr": (error.stderr or "")[-2000:],
+            "stdout": _bounded_output(error.stdout),
+            "stderr": _bounded_output(error.stderr),
         }
 
     report_path = attempt_dir / "browser-report.json"
@@ -125,8 +133,8 @@ def run_attempt(
             "urlBlocked": False,
             "contractPassed": False,
             "error": "browser attempt did not create browser-report.json",
-            "stdout": completed.stdout[-2000:],
-            "stderr": completed.stderr[-2000:],
+            "stdout": _bounded_output(completed.stdout),
+            "stderr": _bounded_output(completed.stderr),
         }
 
     try:
@@ -142,8 +150,8 @@ def run_attempt(
             "urlBlocked": False,
             "contractPassed": False,
             "error": f"{type(error).__name__}: {error}",
-            "stdout": completed.stdout[-2000:],
-            "stderr": completed.stderr[-2000:],
+            "stdout": _bounded_output(completed.stdout),
+            "stderr": _bounded_output(completed.stderr),
         }
     network = report.get("network")
     if not isinstance(network, dict):
