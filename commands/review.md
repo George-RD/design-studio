@@ -1,6 +1,6 @@
 ---
 name: review
-description: Audit and polish an existing UI through deterministic preflight plus browser-grounded visual review, without starting the full create loop.
+description: Optional Claude Code command adapter for invoking the canonical Design Studio review workflow.
 argument-hint: "<path-or-url> [constraints] | --report-only <path-or-url> | --mechanical-only <path-or-url>"
 allowed-tools:
   - Read
