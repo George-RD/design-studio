@@ -4,8 +4,8 @@ This directory contains deterministic helpers that ship with the Design Studio A
 
 ## Runtime policy
 
-- Node.js 20+ and the Node standard library only. No install-time package dependency is required.
-- Helpers use Node path, file and process APIs rather than shell-specific command syntax so the same contract works on Linux, macOS and Windows.
+- Helpers use the Node standard library only. No install-time package dependency is required; CI validates the current runtime contract with Node 24 on Linux, macOS and Windows.
+- Helpers use Node path, file and process APIs rather than shell-specific command syntax so the same contract works across those platforms.
 - The host supplies capabilities such as file access, shell execution and browser automation. A helper may validate or normalize facts from those capabilities; it does not own a second host or workflow policy.
 - Repository-only research and capability tooling stays outside the installed runtime. It is not copied here merely because it contains similar historical behavior.
 
@@ -36,7 +36,7 @@ For each completed browser pass provide:
 
 - requested and actual viewport dimensions;
 - document scroll/client widths;
-- primary-action usability and reduced-motion verification;
+- motion presence and reduced-motion verification;
 - explicit failure evidence for contrast, clipping, keyboard reachability, focus, touch target size, resource loading and fatal console errors.
 
 Each explicit failure item carries `location`, `value` and human-readable `evidence`. Stable finding identity is derived from rule ID, target, normalized location and relevant value. Evidence wording and timestamps do not alter the signature.
