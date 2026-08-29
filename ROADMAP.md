@@ -4,7 +4,7 @@ Design Studio's executable roadmap lives in GitHub Issues. This file is intentio
 
 ## Current product state
 
-Design Studio v1.7 is a portable design-engineering Agent Skill with one curated local method kernel and one supported internal runtime seam.
+Design Studio v1.7 is a portable design-engineering Agent Skill with one curated method kernel and one supported runtime seam. The kernel and runtime are local to the installed product.
 
 - `skills/design-studio/` is the canonical product and standard Agent Skills / `npx skills` installation is the canonical distribution path.
 - Studio, Review and Document are first-class lanes over the same source-boundary, evidence and acceptance model.
@@ -38,7 +38,7 @@ New architecture or method work is promoted to the product roadmap only when at 
 
 Every promoted change also needs a **bounded acceptance test** before implementation. A new source, method, helper, adapter or public interface is not justified by novelty or convenience alone. ADR 0002 and ADR 0003 revisit triggers remain the architecture-level guardrails.
 
-External method intake stays selective and provenance-backed. Useful changes from Impeccable, Emil Kowalski's skills or other sources are evaluated against a named failure/capability gap and adopted only when the smallest coherent local intervention has evidence.
+External method intake stays selective and provenance-backed. Useful changes from Impeccable, Emil Kowalski's skills or other sources are evaluated against a named failure/capability gap and adopted only when the smallest coherent local intervention has evidence. The feedback-to-eval loop remains the promotion path: recurring dogfood failures become explicit evaluation criteria before they justify kernel changes.
 
 **Historical research and capability maintenance** remains explicitly separate from normal product roadmap work. Benchmark fixtures, source-blind comparison harnesses, browser/capability reliability work and old migration evidence may be maintained when needed, but they do not become product roadmap work unless a supported product contract is affected.
 
