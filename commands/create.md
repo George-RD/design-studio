@@ -16,21 +16,8 @@ allowed-tools:
 
 # Design Studio: Create
 
-Run the Studio lane from `skills/design-studio/SKILL.md` and `skills/design-studio/workflow.yaml`.
+This command is a Claude Code adapter over the canonical Agent Skill.
 
-Parse `$ARGUMENTS` into:
+Load `skills/design-studio/SKILL.md` and `skills/design-studio/invocation.md`. Map `$ARGUMENTS` to the Studio inputs defined there, using Claude Code's `Agent` tool as the host implementation of `isolated_subagents`, then execute `skills/design-studio/workflow.yaml` end to end.
 
-- `user_prompt`: the remaining request.
-- `existing_site`: local path after `--overhaul`, when present.
-- `existing_url`: URL after `--overhaul`, when present.
-- `overhaul_goals`: text after `--goals`, when present.
-- `budget_override`: `quick`, `standard`, `ambitious`, or an explicit integer after `--budget`; the workflow clamps it to the supported range.
-
-Rules:
-
-1. Audit/polish-only language routes to `/design-studio:review`; do not start Studio.
-2. Load existing `PRODUCT.md`, `DESIGN.md`, and the relevant surface brief before asking questions.
-3. Execute the workflow end to end. Do not collapse Visual Director, Builder and Evaluator into one context.
-4. Preserve every iteration under its immutable run directory. Never ask an agent to self-commit.
-5. The Evaluator writes observations and scores only. The Orchestrator alone writes decisions.
-6. On completion, run the bounded finish pass on the selected build, copy the accepted final tree to `harness-output/site/`, then codify and report.
+Do not add command-specific workflow logic or a second quality mode. The skill owns routing, role boundaries, iteration rules, evaluation and acceptance.

@@ -104,6 +104,7 @@ jobs:
               raise SystemExit('expected at least 29 design-studio evals')
 
           required_refs = [
+              'skills/design-studio/invocation.md',
               'skills/design-studio/references/runtime-integrity.md',
               'skills/design-studio/references/copy.md',
               'skills/design-studio/references/quality-gates.md',
@@ -118,6 +119,7 @@ jobs:
               'role="group" aria-label="Design Studio run board"',
               'role="img" aria-label="Four preserved iterations',
               'aria-label="Copy Design Studio create command"',
+              'npx skills add George-RD/design-studio',
               '/plugin marketplace add George-RD/design-studio',
               '/plugin install design-studio@design-studio',
               'data-handoff-demo',
@@ -152,6 +154,14 @@ jobs:
           readme = (root / 'README.md').read_text()
           if len(readme.splitlines()) > 130:
               raise SystemExit('README exceeded the concise 130-line budget')
+          required_readme = [
+              'npx skills add George-RD/design-studio',
+              '/plugin marketplace add George-RD/design-studio',
+              '/plugin install design-studio@design-studio',
+          ]
+          absent_readme = [marker for marker in required_readme if marker not in readme]
+          if absent_readme:
+              raise SystemExit(f'missing README install contract: {absent_readme}')
           for asset in ('docs/readme-banner.svg', 'docs/readme-flow.svg'):
               if asset not in readme:
                   raise SystemExit(f'README does not use {asset}')
@@ -215,6 +225,10 @@ jobs:
               raise SystemExit('docs CSS and JS must stay in maintainable external files')
           PY
           node --check docs/app.js
+
+      - name: Validate clean Agent Skill install contract
+        shell: bash
+        run: python3 -m unittest discover -s test -p 'test_clean_install_contract.py' -v
 
       - name: Start documentation server
         shell: bash
