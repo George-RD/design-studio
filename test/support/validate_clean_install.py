@@ -15,7 +15,7 @@ PUBLIC_INSTALL_FACING_FILES = (
     Path(".claude-plugin") / "plugin.json",
     Path(".claude-plugin") / "marketplace.json",
 )
-EXTERNAL_DESIGN_SKILLS = ("impeccable", "emil kowalski", "growth arsenal")
+EXTERNAL_DESIGN_SKILLS = ("impeccable", "emil kowalski", "emilkowalski", "growth arsenal")
 INVOCATION_TOKENS = {
     "--overhaul",
     "--goals",
@@ -32,6 +32,7 @@ INVOCATION_TOKENS = {
     "Evaluator",
     "Orchestrator",
 }
+PLUGIN_ONLY_MARKERS = ("commands/", "../commands/", "../../commands/", ".claude-plugin/")
 
 
 def read_text(path: Path, errors: list[str]) -> str:
@@ -69,6 +70,7 @@ def external_dependency_errors(path: Path, text: str) -> list[str]:
             phrase in lower
             for phrase in (
                 "not required",
+                "neither is required",
                 "does not require",
                 "do not require",
                 "no external",
@@ -85,6 +87,8 @@ def external_dependency_errors(path: Path, text: str) -> list[str]:
                 " is required",
                 " required to ",
                 "must install",
+                "must use",
+                "depends on",
                 "requires ",
                 "require ",
                 "prerequisite",
@@ -105,6 +109,7 @@ def validate(root: Path) -> list[str]:
 
     skill_text = read_text(skill_path, errors)
     workflow_text = read_text(workflow_path, errors)
+    runtime_paths: set[Path] = {skill_path, workflow_path, invocation_path}
 
     if skill_text:
         if not skill_text.startswith("---\n"):
@@ -123,13 +128,14 @@ def validate(root: Path) -> list[str]:
             errors.append("SKILL.md must route to invocation.md")
 
         for reference in references:
-            if reference.startswith(("commands/", "../commands/", "../../commands/", ".claude-plugin/")):
+            if reference.startswith(PLUGIN_ONLY_MARKERS):
                 errors.append(f"plugin-only surface reference from SKILL.md: {reference}")
                 continue
             resolved = skill_root / reference
             if not path_is_inside(resolved, skill_root):
                 errors.append(f"required reference escapes the skill package: {reference}")
                 continue
+            runtime_paths.add(resolved)
             if not resolved.is_file():
                 errors.append(f"missing required reference: {reference}")
 
@@ -139,8 +145,10 @@ def validate(root: Path) -> list[str]:
             resolved = skill_root / procedure
             if not path_is_inside(resolved, skill_root):
                 errors.append(f"workflow procedure escapes the skill package: {procedure}")
-            elif not resolved.is_file():
-                errors.append(f"missing workflow procedure: {procedure}")
+            else:
+                runtime_paths.add(resolved)
+                if not resolved.is_file():
+                    errors.append(f"missing workflow procedure: {procedure}")
 
         capability_match = re.search(r"^\s*required:\s*\[([^\]]*)\]", workflow_text, re.M)
         if capability_match is None:
@@ -163,18 +171,17 @@ def validate(root: Path) -> list[str]:
         if missing_tokens:
             errors.append(f"invocation contract is missing required host/run tokens: {missing_tokens}")
 
-    if skill_root.is_dir():
-        for path in skill_root.rglob("*"):
-            if not path.is_file():
-                continue
-            relative = path.relative_to(root)
-            text = path.read_text(errors="replace")
-            errors.extend(external_dependency_errors(relative, text))
-            for marker in ("commands/", "../commands/", "../../commands/", ".claude-plugin/"):
-                if marker in text:
-                    errors.append(
-                        f"plugin-only surface dependency inside installed skill: {relative} contains {marker!r}"
-                    )
+    for path in sorted(runtime_paths):
+        if not path.is_file():
+            continue
+        relative = path.relative_to(root)
+        text = path.read_text(errors="replace")
+        errors.extend(external_dependency_errors(relative, text))
+        for marker in PLUGIN_ONLY_MARKERS:
+            if marker in text:
+                errors.append(
+                    f"plugin-only surface dependency inside runtime graph: {relative} contains {marker!r}"
+                )
 
     for relative in PUBLIC_INSTALL_FACING_FILES:
         path = root / relative
