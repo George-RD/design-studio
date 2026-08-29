@@ -8,7 +8,7 @@ import unittest
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-MODULE_PATH = REPO_ROOT / "scripts" / "validate_clean_install.py"
+MODULE_PATH = REPO_ROOT / "test" / "support" / "validate_clean_install.py"
 
 
 def load_validator():
@@ -50,7 +50,7 @@ class CleanInstallContractTests(unittest.TestCase):
     def test_missing_in_skill_invocation_contract_is_rejected(self) -> None:
         temporary, root = self.copy_repository()
         self.addCleanup(temporary.cleanup)
-        invocation = root / "skills" / "design-studio" / "references" / "invocation.md"
+        invocation = root / "skills" / "design-studio" / "invocation.md"
         invocation.unlink()
 
         errors = self.validator.validate(root)
@@ -62,9 +62,9 @@ class CleanInstallContractTests(unittest.TestCase):
         self.addCleanup(temporary.cleanup)
         skill_path = root / "skills" / "design-studio" / "SKILL.md"
         skill = skill_path.read_text()
-        skill = skill.replace("`references/invocation.md`", "`../../commands/create.md`")
+        skill = skill.replace("`invocation.md`", "`../../commands/create.md`")
         skill_path.write_text(skill)
-        (root / "skills" / "design-studio" / "references" / "invocation.md").unlink()
+        (root / "skills" / "design-studio" / "invocation.md").unlink()
 
         errors = self.validator.validate(root)
 
