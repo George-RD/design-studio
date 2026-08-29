@@ -1,0 +1,42 @@
+name: Validate runtime portability
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
+    paths:
+      - 'skills/design-studio/runtime/**'
+      - 'test/test_mechanical_runtime.mjs'
+      - '.github/workflows/runtime-portability.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'skills/design-studio/runtime/**'
+      - 'test/test_mechanical_runtime.mjs'
+      - '.github/workflows/runtime-portability.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  mechanical-runtime:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out exact revision
+        uses: actions/checkout@v5
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Validate mechanical runtime contract
+        run: node --test test/test_mechanical_runtime.mjs
