@@ -37,6 +37,17 @@ Design Studio is a portable design-engineering method kernel. Keep the always-lo
 
 `method-router.json` is routing data, not another method authority. Canonical ownership remains in `docs/method-authority-map.json`.
 
+## Required references
+
+- `invocation.md`
+- `workflow.yaml`
+- `runtime-contract.md`
+- `method-router.json`
+- `references/context.md`
+- `references/runtime-integrity.md`
+
+These are the installed kernel contract. Specialist leaves named by `method-router.json` are conditional, not always-loaded required references.
+
 ## Lanes
 
 | Lane | Trigger | Execution authority |
