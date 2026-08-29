@@ -1,0 +1,54 @@
+name: Validate Agent Skill install
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  clean-install:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out exact revision
+        uses: actions/checkout@v5
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install through standard Agent Skills CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          target="$(mktemp -d)"
+          cd "$target"
+
+          npx --yes skills@1.5.23 add "$GITHUB_WORKSPACE" \
+            --skill design-studio \
+            --agent codex \
+            --copy \
+            --yes
+
+          installed_skill="$(find "$target" -type f -path '*/design-studio/SKILL.md' -print -quit)"
+          test -n "$installed_skill"
+          skill_root="$(dirname "$installed_skill")"
+
+          grep -qx 'name: design-studio' "$installed_skill"
+          test -f "$skill_root/invocation.md"
+          test -f "$skill_root/workflow.yaml"
+          test -f "$skill_root/references/runtime-integrity.md"
+
+          if find "$skill_root" -type f \( -path '*/commands/*' -o -path '*/.claude-plugin/*' \) -print -quit | grep -q .; then
+            echo "plugin-only surface leaked into installed skill" >&2
+            exit 1
+          fi
