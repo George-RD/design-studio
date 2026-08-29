@@ -23,6 +23,7 @@ on:
       - "test/test_browser_completion_contract.py"
       - "test/test_browser_submission_attribution.py"
       - "test/test_capability_gate_hardening.py"
+      - "test/test_browser_stress_timeout_evidence.py"
       - "test/test_browser_profile_cleanup.mjs"
       - "test/test_browser_motion_evidence.mjs"
       - "test/test_browser_websocket_ready.mjs"
@@ -73,6 +74,7 @@ jobs:
           python3 -m unittest discover -s test -p 'test_copilot_cli_tool_receipt_turns.py' -v
           python3 -m unittest discover -s test -p 'test_copilot_cli_agent_receipt.py' -v
           python3 -m unittest discover -s test -p 'test_capability_gate_hardening.py' -v
+          python3 -m unittest discover -s test -p 'test_browser_stress_timeout_evidence.py' -v
           node --test test/test_browser_profile_cleanup.mjs
           node --test test/test_browser_motion_evidence.mjs
           node --test test/test_browser_websocket_ready.mjs
