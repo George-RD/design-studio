@@ -1,18 +1,18 @@
 {
   "name": "design-studio",
-  "version": "1.6.0",
-  "description": "Optional Claude Code adapter for the portable Design Studio Agent Skill. Provides host discovery and invocation only; canonical design and runtime behavior lives under skills/design-studio/.",
+  "version": "1.7.0",
+  "description": "Optional, thin Claude Code adapter for the portable Design Studio Agent Skill with Studio, Review and Document design-engineering lanes. Canonical methods and runtime behavior live under skills/design-studio/.",
   "author": { "name": "George Reid-Dowd" },
   "keywords": [
+    "design-engineering",
+    "agent-skill",
     "frontend",
-    "design",
+    "design-review",
+    "document-design",
     "multi-agent",
     "evaluation",
-    "iteration",
     "design-system",
-    "design-tokens",
     "browser-automation",
-    "code-anchoring",
     "resumable-workflows"
   ],
   "repository": "https://github.com/George-RD/design-studio"

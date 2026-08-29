@@ -1,9 +1,9 @@
 ---
 name: design-studio
 description: >-
-  Multi-agent visual design workflow for new surfaces, redesigns, paginated artifacts and high-value
-  iteration. Separates product framing, visual direction, implementation and blind rendered evaluation.
-version: 1.6.0
+  Portable design-engineering Agent Skill for Studio, Review and paginated Document work. Separates
+  product framing, source-blind visual direction and evaluation, implementation and deterministic evidence.
+version: 1.7.0
 ---
 
 # Design Studio
