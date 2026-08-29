@@ -121,7 +121,7 @@ workflow:
       type: object
       required: [detector, snapshotId, generatedAt, passes, findings]
       properties:
-        detector: { enum: [design-studio] }
+        detector: { enum: [design-studio, impeccable, fallback] }
         findings: { type: array }
 
     observation:
