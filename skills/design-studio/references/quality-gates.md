@@ -36,4 +36,6 @@ Every invocation is a complete current snapshot. Stable finding identity derives
 
 ## Source provenance
 
-Adopted local method slice: `pbakaus/impeccable` at revision `63b04e2530f5c7b41ea83c133daab24f34912456`, Apache-2.0. Design Studio adapts the repeatable technical-check and explicit finding/severity model only. The local helper, evidence schema, signatures, waiver semantics and rule set are Design Studio implementations; no upstream CLI, command taxonomy, prompt library or source file is required or vendored.
+Adopted local method slice: `pbakaus/impeccable` at revision `63b04e2530f5c7b41ea83c133daab24f34912456`, Apache-2.0. This is provenance only; the upstream project is not required at runtime.
+
+Design Studio adapts the repeatable technical-check and explicit finding/severity model only. The local helper, evidence schema, signatures, waiver semantics and rule set are Design Studio implementations; no upstream CLI, command taxonomy, prompt library or source file is vendored.
