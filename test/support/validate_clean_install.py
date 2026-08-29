@@ -9,9 +9,7 @@ import sys
 
 SKILL_ROOT = Path("skills") / "design-studio"
 GENERIC_REQUIRED_CAPABILITIES = {"file_io", "shell", "isolated_subagents"}
-INSTALL_FACING_FILES = (
-    SKILL_ROOT / "SKILL.md",
-    SKILL_ROOT / "workflow.yaml",
+PUBLIC_INSTALL_FACING_FILES = (
     Path("README.md"),
     Path("docs") / "index.html",
     Path(".claude-plugin") / "plugin.json",
@@ -169,14 +167,16 @@ def validate(root: Path) -> list[str]:
         for path in skill_root.rglob("*"):
             if not path.is_file():
                 continue
+            relative = path.relative_to(root)
             text = path.read_text(errors="replace")
+            errors.extend(external_dependency_errors(relative, text))
             for marker in ("commands/", "../commands/", "../../commands/", ".claude-plugin/"):
                 if marker in text:
                     errors.append(
-                        f"plugin-only surface dependency inside installed skill: {path.relative_to(root)} contains {marker!r}"
+                        f"plugin-only surface dependency inside installed skill: {relative} contains {marker!r}"
                     )
 
-    for relative in INSTALL_FACING_FILES:
+    for relative in PUBLIC_INSTALL_FACING_FILES:
         path = root / relative
         text = read_text(path, errors)
         if text:
