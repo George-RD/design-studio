@@ -164,14 +164,13 @@
     },
     {
       "id": 14,
-      "prompt": "Validate the Design Studio plugin version metadata.",
-      "expected_output": "Plugin, marketplace, skill, workflow and eval versions agree.",
+      "prompt": "Validate the installed Design Studio version metadata.",
+      "expected_output": "The portable skill, workflow and eval metadata agree without requiring a host-specific adapter.",
       "assertions": [
-        ".claude-plugin/plugin.json version is 1.5.0",
-        ".claude-plugin/marketplace.json plugin version is 1.5.0",
         "SKILL.md version is 1.5.0",
         "workflow.yaml version is 1.5.0",
-        "evals.json version is 1.5.0"
+        "evals.json version is 1.5.0",
+        "portable version validation does not require Claude Code plugin metadata"
       ]
     },
     {
