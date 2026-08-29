@@ -46,7 +46,7 @@ class ClaudeAdapterCompatibilityTests(unittest.TestCase):
                 self.assertIn("plugin stub", body)
                 self.assertIn("Load that file as the full system prompt", body)
 
-    def test_portable_runtime_tree_has_no_dependency_on_root_claude_adapter(self):
+    def test_portable_skill_tree_has_no_dependency_on_root_claude_adapter(self):
         skill_root = ROOT / "skills/design-studio"
         required = [
             "SKILL.md",
@@ -68,8 +68,6 @@ class ClaudeAdapterCompatibilityTests(unittest.TestCase):
         )
         for path in skill_root.rglob("*"):
             if not path.is_file() or path.suffix not in {".md", ".json", ".yaml", ".yml"}:
-                continue
-            if "evals" in path.relative_to(skill_root).parts:
                 continue
             text = path.read_text()
             for marker in adapter_markers:
