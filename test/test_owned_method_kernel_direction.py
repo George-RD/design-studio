@@ -72,12 +72,14 @@ class OwnedMethodKernelDirectionTests(unittest.TestCase):
         """Primary user guidance must describe one local runtime without upstream requirements."""
         readme = README_PATH.read_text(encoding="utf-8")
         self.assertIn("## v1.6 product boundary", readme)
-        self.assertIn("one supported runtime", readme)
+        self.assertIn("one self-contained Design Studio runtime", readme)
         self.assertIn("local deterministic mechanical runtime", readme)
+        self.assertIn("External systems are research inputs, not runtime dependencies", readme)
         self.assertIn(
             "Impeccable and Emil Kowalski's skills are credited sources, not install requirements",
             readme,
         )
+        self.assertIn("ADR 0002", readme)
         self.assertNotIn("detector: fallback", readme)
         self.assertNotIn(
             "The v1.6 roadmap makes a compatible Impeccable install required",
