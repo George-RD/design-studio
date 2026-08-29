@@ -15,8 +15,8 @@ The public distribution contract also needs to stay separate from the runtime co
 Keep three complementary CI signals in `.github/workflows/validate-agent-skill-install.yml`:
 
 1. **Pinned exact-revision proof, blocking.** Install the checked-out revision from `$GITHUB_WORKSPACE` with `skills@1.5.23`, verify the installed package, and execute the shipped deterministic mechanical runtime. This remains the reproducible product proof.
-2. **Pinned public-source proof, blocking.** Install `George-RD/design-studio#main` with `skills@1.5.23` for both `codex` and `claude-code`, verify required installed files, execute the installed mechanical runtime, and reject repository-only leakage. On a pull request this explicitly tests merged `main`, not the unmerged PR head. On a push to `main`, the public install must also match the checked-out merged revision at selected package files.
-3. **Latest-installer public-source proof, advisory.** Repeat the public install with `skills@latest` for both representative hosts. `continue-on-error: true` makes this a drift signal rather than a release gate because an upstream installer release must not erase the known-good product proof.
+2. **Pinned public-source proof, blocking.** Install the canonical public source `George-RD/design-studio` with `skills@1.5.23` for both `codex` and `claude-code`, verify required installed files, execute the installed mechanical runtime, and reject repository-only leakage. The repository default branch is `main`. On a pull request this explicitly tests merged `main`, not the unmerged PR head. On a push to `main`, the public install must also match the checked-out merged revision at selected package files.
+3. **Latest-installer public-source proof, advisory.** Repeat the same canonical public install with `skills@latest` for both representative hosts. `continue-on-error: true` makes this a drift signal rather than a release gate because an upstream installer release must not erase the known-good product proof.
 
 `npx skills` is an installation mechanism only. It is not a Design Studio runtime dependency, and no skills.sh registration or publishing step is required for installation from the public GitHub repository. The `skills` CLI resolves the repository source directly.
 
@@ -26,7 +26,7 @@ Keep three complementary CI signals in `.github/workflows/validate-agent-skill-i
 
 ### Positive
 
-- CI now proves both the repository package itself and public GitHub-source resolution.
+- CI now proves both the repository package itself and the canonical public GitHub-source install path.
 - Reproducibility remains anchored to a known installer version.
 - Installer drift is visible without allowing an unrelated upstream release to invalidate the known-good product proof.
 - Pull-request evidence cannot be mistaken for proof that an unmerged head is already available from the public source.
@@ -48,6 +48,10 @@ Rejected because a moving installer would make failures non-reproducible and cou
 
 Rejected because it does not prove the public `George-RD/design-studio` source can be discovered and installed.
 
+### Test a branch-qualified source instead of the canonical command
+
+Rejected because `npx skills add George-RD/design-studio` is the public install contract. CI should exercise the same source form users are told to use while separately stating that the repository default branch is `main`.
+
 ### Make latest-installer compatibility blocking
 
 Rejected because Design Studio does not control upstream installer releases. Latest compatibility is useful evidence, but the pinned public and exact-revision proofs remain the release gates.
@@ -58,4 +62,4 @@ Rejected because installation resolves directly from the GitHub repository. A re
 
 ## Revisit triggers
 
-Revisit this decision if the `skills` CLI removes direct GitHub-source installation, if branch/ref semantics change, if another installer becomes the canonical Agent Skills distribution path, or if repeated advisory failures show that latest-installer compatibility should be promoted to a controlled blocking upgrade process.
+Revisit this decision if the `skills` CLI removes direct GitHub-source installation, if default-branch resolution semantics change, if another installer becomes the canonical Agent Skills distribution path, or if repeated advisory failures show that latest-installer compatibility should be promoted to a controlled blocking upgrade process.
