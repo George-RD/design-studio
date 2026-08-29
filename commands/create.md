@@ -1,6 +1,6 @@
 ---
 name: create
-description: Create or overhaul a distinctive frontend through isolated direction, implementation, mechanical preflight, blind evaluation, bounded iteration and design-system capture.
+description: Optional Claude Code command adapter for invoking the canonical Design Studio create or overhaul workflow.
 argument-hint: "<prompt> | --overhaul <path-or-url> [--goals <text>] [--budget quick|standard|ambitious|<n>] <prompt>"
 allowed-tools:
   - Read
