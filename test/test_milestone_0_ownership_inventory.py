@@ -14,6 +14,11 @@ ROADMAP_PATH = ROOT / "ROADMAP.md"
 
 BASELINE_REVISION = "7e8a1df3a9ce6ade1116d804abfc7b1189d61381"
 IMPECCABLE_REVISION = "aee6ce9352b842217b3f57c78296a7a4fa35a7f3"
+RETIRED_POST_BASELINE_REFERENCES = {
+    "skills/design-studio/references/planning.md",
+    "skills/design-studio/references/evaluation.md",
+    "skills/design-studio/references/iteration.md",
+}
 LABEL_ACTIONS = {
     "core": "keep",
     "impeccable": "delegate",
@@ -106,6 +111,7 @@ class MilestoneZeroOwnershipInventoryTests(unittest.TestCase):
             path.relative_to(ROOT).as_posix()
             for path in reference_root.rglob("*.md")
         }
+        expected.update(RETIRED_POST_BASELINE_REFERENCES)
         expected.update(
             {
                 ".claude-plugin/plugin.json",
@@ -131,7 +137,10 @@ class MilestoneZeroOwnershipInventoryTests(unittest.TestCase):
         for path, label, target, reason in rows:
             with self.subTest(path=path):
                 self.assertIn(label, LABEL_ACTIONS)
-                self.assertTrue((ROOT / path).is_file())
+                if path in RETIRED_POST_BASELINE_REFERENCES:
+                    self.assertFalse((ROOT / path).exists())
+                else:
+                    self.assertTrue((ROOT / path).is_file())
                 self.assertTrue(reason.strip())
                 self.assertEqual(label == "core", not target)
 
