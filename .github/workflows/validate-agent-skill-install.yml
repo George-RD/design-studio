@@ -47,6 +47,8 @@ jobs:
           test -f "$skill_root/invocation.md"
           test -f "$skill_root/workflow.yaml"
           test -f "$skill_root/runtime-contract.md"
+          test -f "$skill_root/runtime/README.md"
+          test -f "$skill_root/runtime/mechanical/index.mjs"
           test -f "$skill_root/references/runtime-integrity.md"
 
           for forbidden in scripts benchmarks test .github commands .claude-plugin; do
