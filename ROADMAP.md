@@ -34,17 +34,18 @@ The governing architecture is [ADR 0002: Design Studio owns its method kernel](d
 - [#46 — Establish one stable internal runtime seam before script reorganisation](https://github.com/George-RD/design-studio/issues/46) — stable runtime seam and follow-up review fixes merged and verified.
 - [#47 — Consolidate external design guidance into one method authority map](https://github.com/George-RD/design-studio/issues/47) — concept ownership, provenance, intake dispositions, domain boundaries and routing are recorded in [`docs/method-authority-map.json`](docs/method-authority-map.json) and [`docs/method-authority-map.md`](docs/method-authority-map.md).
 - [#49 — Separate shipped runtime helpers from benchmark and research tooling](https://github.com/George-RD/design-studio/issues/49) — current distribution boundary, clean-install dependency checks and real Agent Skill package proof are recorded in [`docs/runtime-boundary.md`](docs/runtime-boundary.md) and [`runtime-surface.json`](runtime-surface.json).
+- [#50 — Normalize product runtime script families behind the shared seam](https://github.com/George-RD/design-studio/issues/50) — the first shipped helper is the standard-library-only local mechanical runtime; historical browser/capability/benchmark families remain repository-only and the old environment-dependent detector branch is removed.
 
 The migration map classifies the pre-change product boundary. The method authority map resolves that inventory into the current one-authority-per-concept contract without making external repositories runtime dependencies. The runtime boundary records the current installed/adaptor/repository-only split without changing the frozen migration baseline.
 
 ### Next ready roadmap item
 
-- [#50 — Normalize product runtime script families behind the shared seam](https://github.com/George-RD/design-studio/issues/50) — first ready item in roadmap order; dependencies #46 and #49 are complete.
+- [#51 — Route curated design methods through progressive-disclosure leaves](https://github.com/George-RD/design-studio/issues/51) — first ready item in roadmap order; dependencies #46 and #47 are complete.
 
 ### Runtime simplification
 
 - [#49 — Separate shipped runtime helpers from benchmark and research tooling](https://github.com/George-RD/design-studio/issues/49) — complete; runtime/research dependency boundary is enforced without moving historical tooling
-- [#50 — Normalize product runtime script families behind the shared seam](https://github.com/George-RD/design-studio/issues/50) — unblocked by completed #46 and #49
+- [#50 — Normalize product runtime script families behind the shared seam](https://github.com/George-RD/design-studio/issues/50) — complete; local mechanical evidence is behind the shared seam and research-only capability/browser runners remain outside the installed product
 
 ### Method consolidation and modular composition
 
@@ -75,7 +76,7 @@ The migration map classifies the pre-change product boundary. The method authori
 
 ## Non-blocking maintenance
 
-- [#42 — Harden the capability gate against timing and safe self-inspection flakes](https://github.com/George-RD/design-studio/issues/42) remains a separate reliability issue. #50 must decide whether any of that gate belongs to the shipped runtime; research-only reliability work should not silently expand the portable product.
+- [#42 — Harden the capability gate against timing and safe self-inspection flakes](https://github.com/George-RD/design-studio/issues/42) remains a separate repository-research reliability issue. #50 reviewed the overlap and did not promote its browser-launch, capability-gate or timing machinery into the installed runtime.
 
 ## Planning and implementation discipline
 
