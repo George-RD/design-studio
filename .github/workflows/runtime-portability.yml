@@ -5,13 +5,23 @@ on:
     branches: [main]
     types: [opened, reopened, synchronize]
     paths:
+      - 'skills/design-studio/SKILL.md'
+      - 'skills/design-studio/workflow.yaml'
+      - 'skills/design-studio/runtime-contract.md'
       - 'skills/design-studio/runtime/**'
+      - 'skills/design-studio/references/quality-gates.md'
+      - 'test/test_runtime_contract.py'
       - 'test/test_mechanical_runtime.mjs'
       - '.github/workflows/runtime-portability.yml'
   push:
     branches: [main]
     paths:
+      - 'skills/design-studio/SKILL.md'
+      - 'skills/design-studio/workflow.yaml'
+      - 'skills/design-studio/runtime-contract.md'
       - 'skills/design-studio/runtime/**'
+      - 'skills/design-studio/references/quality-gates.md'
+      - 'test/test_runtime_contract.py'
       - 'test/test_mechanical_runtime.mjs'
       - '.github/workflows/runtime-portability.yml'
 
@@ -38,5 +48,13 @@ jobs:
         with:
           node-version: 24
 
-      - name: Validate mechanical runtime contract
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Validate runtime seam contract
+        run: python -m unittest test.test_runtime_contract -v
+
+      - name: Validate mechanical runtime behavior
         run: node --test test/test_mechanical_runtime.mjs
