@@ -5,6 +5,7 @@
 | [0001: Make Impeccable the required design foundation](0001-impeccable-foundation.md) | Superseded | Historical boundary research and migration assumptions from the external-foundation direction. |
 | [0002: Design Studio owns its method kernel](0002-owned-method-kernel.md) | Accepted | One supported local runtime, evidence-gated method intake, progressive disclosure and dogfood learning. |
 | [0003: Keep Claude Code as an adapter and defer the public CLI](0003-claude-adapter-and-deferred-cli.md) | Accepted | Claude Code is optional host integration over the canonical Agent Skill; a CLI waits for evidence and must wrap the same runtime seam. |
+| [0004: Prove public installation without making the installer part of the runtime](0004-installer-compatibility-proof.md) | Accepted | Pinned local and public install proofs stay blocking; latest-installer public compatibility is advisory and the installer remains outside the runtime. |
 
 When records conflict, the newest accepted ADR that explicitly supersedes an earlier record is authoritative.
 
