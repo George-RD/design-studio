@@ -34,6 +34,13 @@ const BROWSER_FAILURE_RULES = [
   ['fatalConsoleErrors', 'fatal-console-error'],
 ];
 
+const PAGE_ARTIFACT_FAILURE_RULES = [
+  ['printableAreaOverflowFailures', 'printable-area-overflow'],
+  ['clippedContentFailures', 'page-content-clipping'],
+  ['furnitureFailures', 'document-furniture'],
+  ['printContrastFailures', 'print-contrast'],
+];
+
 function requireObject(value, name) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new MechanicalInputError(`${name} must be an object`);
@@ -65,6 +72,13 @@ function requireNonNegativeInteger(value, name) {
 function requirePositiveInteger(value, name) {
   if (!Number.isInteger(value) || value <= 0) {
     throw new MechanicalInputError(`${name} must be a positive integer`);
+  }
+  return value;
+}
+
+function requirePositiveNumber(value, name) {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+    throw new MechanicalInputError(`${name} must be a positive number`);
   }
   return value;
 }
@@ -298,6 +312,47 @@ function evaluateBrowserPass(browserPass, index) {
   };
 }
 
+function readPageSize(value, name) {
+  const pageSize = requireObject(value, name);
+  return {
+    name: requireString(pageSize.name, `${name}.name`),
+    widthMm: requirePositiveNumber(pageSize.widthMm, `${name}.widthMm`),
+    heightMm: requirePositiveNumber(pageSize.heightMm, `${name}.heightMm`),
+  };
+}
+
+function evaluatePageArtifactPass(pageArtifact, index) {
+  const name = `pageArtifacts[${index}]`;
+  const target = requireString(pageArtifact.target, `${name}.target`);
+  const completed = requireBoolean(pageArtifact.completed, `${name}.completed`);
+  if (!completed) {
+    return {
+      pass: {
+        target,
+        kind: 'page-artifact',
+        completed: false,
+        reason: requireString(pageArtifact.reason, `${name}.reason`),
+      },
+      findings: [],
+    };
+  }
+
+  const pageCount = requirePositiveInteger(pageArtifact.pageCount, `${name}.pageCount`);
+  const pageSize = readPageSize(pageArtifact.pageSize, `${name}.pageSize`);
+  const findings = [];
+
+  for (const [field, ruleId] of PAGE_ARTIFACT_FAILURE_RULES) {
+    findings.push(
+      ...findingsFromFailureArray(target, ruleId, requireFailureArray(pageArtifact[field], `${name}.${field}`)),
+    );
+  }
+
+  return {
+    pass: { target, kind: 'page-artifact', completed: true, pageCount, pageSize },
+    findings,
+  };
+}
+
 function applyWaivers(findings, waivers) {
   if (!Array.isArray(waivers)) {
     throw new MechanicalInputError('waivers must be an array');
@@ -373,11 +428,20 @@ export function evaluateMechanicalSnapshot(input) {
     evaluateBrowserPass(requireObject(item, `browser[${index}]`), index),
   );
 
+  const pageArtifactInput = record.pageArtifacts ?? [];
+  if (!Array.isArray(pageArtifactInput)) {
+    throw new MechanicalInputError('pageArtifacts must be an array');
+  }
+  const pageArtifacts = pageArtifactInput.map((item, index) =>
+    evaluatePageArtifactPass(requireObject(item, `pageArtifacts[${index}]`), index),
+  );
+
+  const currentResults = [source, ...browser, ...pageArtifacts];
   const findings = applyWaivers(
-    [source, ...browser].flatMap((result) => result.findings),
+    currentResults.flatMap((result) => result.findings),
     record.waivers ?? [],
   ).sort((left, right) => left.signature.localeCompare(right.signature));
-  const passes = [source.pass, ...browser.map((result) => result.pass)];
+  const passes = currentResults.map((result) => result.pass);
   const comparison = normalizeComparisonSnapshot(record.comparisonSnapshot ?? null);
   const currentSignatures = new Set(findings.map((finding) => finding.signature));
   const notReproduced = comparison

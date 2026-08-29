@@ -1,78 +1,88 @@
 # Internal runtime contract
 
-This file defines the **host-neutral deterministic seam** used by the Design Studio Agent Skill and by optional host adapters. It is an internal protocol, not a public CLI and not an executable package by itself.
+This file defines the **host-neutral deterministic seam** used by the Design Studio Agent Skill and optional host adapters. It is an internal protocol, not a public CLI or executable package by itself.
 
 ## Authority boundaries
 
-- `workflow.yaml` owns the step graph and artifact schemas.
-- `references/runtime-integrity.md` owns the integrity invariants for roots, capability evidence, resume, append-only events, unattended assignment and final acceptance.
-- This contract owns the names, inputs/outputs and failure semantics of deterministic operations that a supported run may invoke.
-- This contract does not restate those schemas. Callers write and validate the shapes defined by `workflow.yaml` and obey the invariants in `references/runtime-integrity.md`.
-- Source-blind Visual Director/Evaluator boundaries and immutable completed iterations are preconditions. No runtime adapter may weaken them.
+- `workflow.yaml` owns the interactive Studio step graph and shared artifact schemas.
+- `references/document/document.md` owns the progressively disclosed paginated-artifact procedure without creating a second copy of the Studio graph.
+- `references/runtime-integrity.md` owns integrity invariants for roots, capability evidence, resume, append-only events, unattended assignment and final acceptance.
+- This contract owns deterministic operation names, inputs/outputs and failure semantics used by supported lanes.
+- Source-blind Visual Director/Evaluator boundaries and immutable completed iterations are preconditions. No adapter or renderer may weaken them.
 
-The seam deliberately describes **what must happen**, not which language performs it. Historical benchmark/capability scripts remain research or repository-support tooling rather than being promoted wholesale. A shipped helper is introduced only for bounded deterministic behavior that a supported operation actually needs.
+The seam describes **what must happen**, not which language or renderer performs it. Repository benchmark/capability scripts remain research/support tooling. A shipped helper is introduced only for bounded deterministic behavior a supported operation actually needs.
 
 ## Stable operations
 
 | Operation | Inputs | Result / durable evidence |
 |---|---|---|
-| `initialise` | prompt identity, mode, requested budget, optional run ID | create or reopen the run contract; write `run.json`, initialise `scores.json`, and record completion through `append_event` |
-| `resume_validate` | run identity plus recorded manifests, events and immutable iteration evidence | either the first incomplete valid workflow step or an explicit invalid/blocked result; never overwrite completed evidence |
-| `resolve_roots` | explicit target plus repository/application evidence | `roots.json` containing proven repo/app/context roots or external-URL status |
-| `probe_capabilities` | actual host/tool probes and target evidence | `capabilities.json`, an evaluation plan and any required budget clamp; missing required capability blocks before planning |
-| `prepare_direction_assignment` | run identity, iteration, candidate IDs, pinned/user-selection mode | committed `direction-assignment.json` before candidate generation, with hidden unattended seed/index |
-| `mechanical_preflight` | current source/browser facts plus applicable design/brief constraints and optional comparison snapshot | one complete current `mechanical-findings.json` snapshot from the supported local rule set; old findings do not stay open by history alone |
-| `decide` | current observation, current mechanical snapshot, score history, run budget/pivot state and selection mode | one ordered workflow decision and transition, recorded through `append_event`; visual judgement remains Evaluator evidence rather than runtime invention |
-| `finish_select` | eligible immutable evaluated iterations and current mechanical evidence | `finish/selection.json`, copied selected tree/serve contract/direction and fresh viewport evidence |
-| `finish_correction_decide` | selected-tree evidence plus correction verdict, mechanical snapshot and viewport evidence | deterministic choice of accepted corrected tree or retained selected tree in `finish/final-tree.json` |
-| `accept` | final-tree declaration, source iteration, serve evidence, viewport evidence, mechanical snapshot and immutability/tree-manifest evidence | `finish/acceptance.json`; failure halts without publishing or codifying the tree |
-| `report` | final run evidence, assumptions, decisions, finish and acceptance state | `report.md`, terminal `run.json` state and final `append_event` record |
-| `halt` | exact failed or blocked contract plus current durable run evidence | preserve completed artifacts, append the exact failure through `append_event`, set terminal halted state and publish no winner or accepted tree |
-| `append_event` | step, status, sequence, iteration, artifact paths and exact message/failure contract | append one new line to `events.jsonl`; earlier events are never edited |
+| `initialise` | prompt identity, mode, requested budget, optional run ID | create/reopen run contract; write `run.json`, initialise scores/evidence and record completion through `append_event` |
+| `resume_validate` | run identity plus recorded manifests/events/immutable iteration evidence | first incomplete valid step/procedure action or explicit invalid/blocked result; never overwrite completed evidence |
+| `resolve_roots` | explicit target plus repository/application/document evidence | `roots.json` containing proven roots/target status |
+| `probe_capabilities` | actual host/tool probes and target evidence | `capabilities.json`, evaluation plan and any required budget clamp; missing generic required capability blocks before planning |
+| `prepare_direction_assignment` | run identity, iteration, candidate IDs, pinned/user-selection mode | committed assignment before candidate generation, with hidden unattended seed/index |
+| `mechanical_preflight` | current source, browser and/or page-artifact facts plus applicable constraints and optional comparison snapshot | one complete current `mechanical-findings.json` snapshot from the supported local rule set; history never keeps an absent finding open |
+| `decide` | current observation, mechanical snapshot, score history, budget/pivot state and selection mode | ordered lane decision recorded through `append_event`; visual judgement remains Evaluator evidence |
+| `finish_select` | eligible immutable evaluated iterations/artifacts and current mechanical evidence | final selection plus copied/identified accepted candidate and fresh required rendered evidence |
+| `finish_correction_decide` | selected evidence plus correction verdict, mechanical snapshot and required rendered evidence | deterministic choice of accepted correction or retained selected candidate |
+| `accept` | final candidate declaration, source iteration, rendered evidence, mechanical snapshot and immutability/manifest evidence | acceptance receipt; failure halts without publishing or codifying authority |
+| `report` | final evidence, assumptions, decisions, finish and acceptance state | terminal report/run state and final `append_event` record |
+| `halt` | exact failed/blocked contract plus durable evidence | preserve completed artifacts, append exact failure, set halted state and publish no winner |
+| `append_event` | step/action, status, sequence, iteration, artifact paths and exact message/failure contract | append one new line to `events.jsonl`; earlier events are never edited |
 
-These identifiers are the stable internal vocabulary. A host may implement operations directly or use shipped helpers behind the seam, but adapters must preserve their observable artifacts and failure semantics.
+A host may implement operations directly or use shipped helpers, but adapters preserve observable artifacts and failure semantics.
 
 ## Capability and failure semantics
 
-Required Studio capabilities are `file_io`, `shell` and `isolated_subagents`. If any required capability is absent or cannot be proven, **block before planning**. Record the failed probe when the host can still write evidence. Do not substitute a smaller workflow.
+Generic required capabilities are `file_io`, `shell` and `isolated_subagents`. If any is absent or cannot be proven, **block before planning**. Record the failed probe when the host can still write evidence. Do not substitute a smaller workflow.
 
-Visual-decision capability is represented by a runnable/reachable target plus browser automation able to attempt the required viewports:
+Interactive visual-decision capability is a runnable/reachable target plus browser automation able to attempt the required viewports. Paginated visual-decision capability is a complete ordered rendered artifact/page-image set with verifiable page order, count and physical page sizes; `page_artifact_rendering` is the optional host capability that may produce that evidence.
 
-- `full`: Studio may build, evaluate and select only when visual-decision capability is proven.
-- `build-once-unselected`: when Studio can build but cannot make browser-grounded visual judgement, clamp the build budget to one, run the current mechanical preflight, preserve the build and halt without a winner.
-- `mechanical-review`: Review may return deterministic mechanical evidence with `visual_status: unverified` when visual inspection is unavailable or a required viewport cannot be verified.
+Use the same evaluation-plan vocabulary for every lane:
 
-An unknown, errored or incomplete probe is not success. Capability handling must be explicit and must **never silently** return `full`, invent a visual score, or claim a lower-quality path is equivalent.
+- `full`: the lane has the rendered evidence required for source-blind visual judgement and may select a winner.
+- `build-once-unselected`: creation can produce one build/artifact but cannot make grounded visual judgement; clamp to one build, run available mechanical preflight, preserve evidence and halt without a winner.
+- `mechanical-review`: Review/Document review may return deterministic evidence with visual status `unverified` when required rendered evidence is unavailable.
 
-Failures are durable workflow facts. A deterministic operation must either produce its declared valid evidence or route through `halt` with the exact blocked/failed contract. Partial evidence that is already durable is preserved for diagnosis and resume.
+A renderer may be HTML→PDF, DOCX/PDF, native PDF or another host/downstream implementation. Design Studio does not choose one as visual authority. Record renderer identity and operational settings only for Orchestrator/Builder diagnostics; exclude them from Visual Director/Evaluator input.
+
+An unknown, errored or incomplete probe is not success. Capability handling must never silently return `full`, invent a visual score or claim a lower-evidence path is equivalent.
+
+Failures are durable facts. A deterministic operation produces declared valid evidence or routes through `halt` with the exact blocked/failed contract. Preserve partial durable evidence for diagnosis/resume.
 
 ## Mechanical detector boundary
 
-The seam owns one normalized **current mechanical snapshot contract** and one supported local deterministic rule set. External detector presence must not change the supported checks, severity semantics or outcome.
+The seam owns one normalized **current mechanical snapshot contract** and one supported local deterministic rule set. External detector or renderer presence must not change supported checks, severity semantics or outcome.
 
-Hosts provide current source and browser facts through their existing file/browser capabilities. Missing evidence is recorded as an incomplete pass rather than a clean result. The installed mechanical helper validates and normalizes those facts, creates stable finding identities, applies only exact authority-backed waivers and keeps previous findings as comparison history rather than current truth.
+Hosts provide current source/browser/page-artifact facts through existing capabilities. Missing evidence is an incomplete pass rather than a clean result. The installed mechanical helper validates/normalizes those facts, creates stable finding identities, applies only exact authority-backed waivers and keeps previous findings as comparison history rather than current truth.
 
-For resume compatibility, legacy detector values remain schema-readable in durable pre-#50 snapshots. The current helper emits only `design-studio`; accepting `impeccable` or `fallback` in an existing artifact does not re-enable those runtime branches and no new supported run may select them.
+The optional `pageArtifacts` input is an array parallel to browser passes. A completed page-artifact pass supplies target, positive page count, physical page size `{name,widthMm,heightMm}`, plus explicit failure arrays for printable-area overflow, content clipping, required furniture and print contrast. An incomplete pass supplies target, `completed:false` and exact reason. The helper never launches a renderer or judges pagination aesthetics.
 
-Mechanical checks report source/browser-computed facts and severity/waiver evidence. They do not assign visual quality and do not replace the source-blind Evaluator.
+For resume compatibility, legacy detector values remain schema-readable in durable pre-#50 snapshots. The current helper emits only `design-studio`; accepting `impeccable` or `fallback` in an existing artifact does not re-enable those runtime branches.
+
+Mechanical checks report computed facts and severity/waiver evidence. They do not assign visual quality or replace source-blind evaluation.
 
 ## Review lane
 
-Review uses the same capability/evidence semantics without running the Studio iteration graph. Host adapters map Review input into the canonical skill, run the deterministic root/capability/mechanical operations needed by `references/review/polish.md`, and use `mechanical-review` when visual verification is unavailable. Review adapters may not create a separate detector policy or degradation mode.
+Interactive Review uses the same capability/evidence semantics without the Studio iteration graph. Host adapters run deterministic root/capability/mechanical operations needed by `references/review/polish.md` and use `mechanical-review` when visual verification is unavailable.
+
+## Document lane
+
+`references/document/document.md` composes the same stable operations for page artifacts. It does not fork a renderer-specific runtime or copy the browser workflow. Page-specific direction/evaluation remains source-blind; deterministic `page-artifact` facts join the same mechanical snapshot; accepted page-system output is a renderer-neutral `document-visual-contract.json` validated against the shipped schema.
 
 ## Adapter contract
 
 A host adapter may:
 
-1. translate host-specific input into the fields in `invocation.md`;
-2. provide concrete implementations for host capabilities such as isolated subagents, file I/O, shell and browser automation;
-3. invoke the operations above in the order required by the canonical skill/workflow; and
-4. translate the final artifacts/result back to the host.
+1. translate host input into fields in `invocation.md`;
+2. provide concrete isolated-agent, file I/O, shell, browser and page-rendering capabilities;
+3. invoke stable operations in the order required by the canonical lane; and
+4. translate final artifacts/results back to the host.
 
-A host adapter may not own workflow decisions, artifact schemas, design methods, capability downgrade policy or acceptance rules. Claude compatibility commands are adapters over this contract, not alternative runtimes.
+An adapter may not own workflow decisions, artifact schemas, design methods, capability downgrade policy or acceptance rules. Claude compatibility commands remain adapters over this contract, not alternative runtimes.
 
 ## Research boundary
 
-The following are **excluded from the runtime seam**: blind comparison, lane matrix generation, benchmark fixture validation, model probing, preference transactions and other Milestone 0 research harness behavior.
+Blind comparison, lane matrix generation, frozen benchmark validation, model probing, preference transactions and other historical Milestone 0 research behavior are excluded from the installed runtime seam.
 
-Repository research tooling may call a genuinely shared shipped helper later, but a supported installed Design Studio run must not import or shell into benchmark/research tooling merely because similar machinery already exists there. The physical shipped-runtime/research separation defined by #49 remains authoritative.
+Repository research tooling may call a genuinely shared helper later, but a supported installed run must not import or shell into repository-only research tooling because similar machinery exists there. The shipped-runtime/research separation from #49 remains authoritative.
