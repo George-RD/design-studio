@@ -12,6 +12,10 @@ permissions:
 
 jobs:
   clean-install:
+    strategy:
+      fail-fast: false
+      matrix:
+        agent: [codex, claude-code]
     runs-on: ubuntu-latest
     steps:
       - name: Check out exact revision
@@ -35,7 +39,7 @@ jobs:
 
           npx --yes skills@1.5.23 add "$GITHUB_WORKSPACE" \
             --skill design-studio \
-            --agent codex \
+            --agent "${{ matrix.agent }}" \
             --copy \
             --yes
 
