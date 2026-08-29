@@ -34,4 +34,6 @@ Blocker: broken primary control, inaccessible keyboard path, focus trap, silent 
 
 ## Source provenance
 
-Adopted local method slices: `emilkowalski/skills` at revision `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`, MIT. Design Studio adapts (1) the purpose/frequency gate from `skills/improve-animations/SKILL.md`, (2) bounded timing/interruptibility heuristics from `skills/animate/SKILL.md`, and (3) concise evidence for rejected animation opportunities. Values are contextual review ranges, not framework-specific prescriptions. No upstream runtime or animation toolchain is required.
+Adopted local method slices: `emilkowalski/skills` at revision `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7`, MIT. This is provenance only; the upstream project is not required at runtime.
+
+Design Studio adapts (1) the purpose/frequency gate from `skills/improve-animations/SKILL.md`, (2) bounded timing/interruptibility heuristics from `skills/animate/SKILL.md`, and (3) concise evidence for rejected animation opportunities. Values are contextual review ranges, not framework-specific prescriptions. No upstream animation toolchain is vendored.
