@@ -52,6 +52,8 @@ The seam owns one normalized **current mechanical snapshot contract** and one su
 
 Hosts provide current source and browser facts through their existing file/browser capabilities. Missing evidence is recorded as an incomplete pass rather than a clean result. The installed mechanical helper validates and normalizes those facts, creates stable finding identities, applies only exact authority-backed waivers and keeps previous findings as comparison history rather than current truth.
 
+For resume compatibility, legacy detector values remain schema-readable in durable pre-#50 snapshots. The current helper emits only `design-studio`; accepting `impeccable` or `fallback` in an existing artifact does not re-enable those runtime branches and no new supported run may select them.
+
 Mechanical checks report source/browser-computed facts and severity/waiver evidence. They do not assign visual quality and do not replace the source-blind Evaluator.
 
 ## Review lane
