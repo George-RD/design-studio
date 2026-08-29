@@ -35,6 +35,7 @@ class RuntimeContractTests(unittest.TestCase):
             "finish_correction_decide",
             "accept",
             "report",
+            "halt",
         )
 
         for operation in operations:

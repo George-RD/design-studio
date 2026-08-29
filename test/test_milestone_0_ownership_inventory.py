@@ -100,13 +100,34 @@ class MilestoneZeroOwnershipInventoryTests(unittest.TestCase):
         self.assertEqual({"core"}, set(grouped))
         self.assertEqual(8, len(actual))
 
-    def test_frozen_reference_inventory_surfaces_are_unique_and_valid(self) -> None:
-        # This inventory is historical evidence pinned to BASELINE_REVISION. New
-        # post-baseline runtime references belong to the current migration map and
-        # must not mutate this frozen Milestone 0 snapshot.
+    def test_every_runtime_reference_and_compatibility_surface_is_covered(self) -> None:
+        reference_root = ROOT / "skills/design-studio/references"
+        expected = {
+            path.relative_to(ROOT).as_posix()
+            for path in reference_root.rglob("*.md")
+        }
+        expected.update(
+            {
+                ".claude-plugin/plugin.json",
+                ".claude-plugin/marketplace.json",
+                "skills/design-studio/SKILL.md",
+                "skills/design-studio/workflow.yaml",
+                "skills/design-studio/agents/design-agent.md",
+                "skills/design-studio/agents/evaluator.md",
+                "skills/design-studio/evals/evals.json",
+                "skills/design-studio/assets/design-system-skill/README.md",
+                "skills/design-studio/assets/design-system-skill/SKILL.md.template",
+                "commands/create.md",
+                "commands/review.md",
+                "agents/design-agent.md",
+                "agents/evaluator.md",
+                "references/methodology.md",
+            }
+        )
         rows = self.inventory["references"]
         paths = [row[0] for row in rows]
         self.assertEqual(len(paths), len(set(paths)))
+        self.assertEqual(expected, set(paths))
         for path, label, target, reason in rows:
             with self.subTest(path=path):
                 self.assertIn(label, LABEL_ACTIONS)

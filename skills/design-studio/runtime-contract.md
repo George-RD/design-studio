@@ -27,6 +27,7 @@ The seam deliberately describes **what must happen**, not which language or curr
 | `finish_correction_decide` | selected-tree evidence plus correction verdict, mechanical snapshot and viewport evidence | deterministic choice of accepted corrected tree or retained selected tree in `finish/final-tree.json` |
 | `accept` | final-tree declaration, source iteration, serve evidence, viewport evidence, mechanical snapshot and immutability/tree-manifest evidence | `finish/acceptance.json`; failure halts without publishing or codifying the tree |
 | `report` | final run evidence, assumptions, decisions, finish and acceptance state | `report.md`, terminal `run.json` state and final `append_event` record |
+| `halt` | exact failed or blocked contract plus current durable run evidence | preserve completed artifacts, append the exact failure through `append_event`, set terminal halted state and publish no winner or accepted tree |
 | `append_event` | step, status, sequence, iteration, artifact paths and exact message/failure contract | append one new line to `events.jsonl`; earlier events are never edited |
 
 These identifiers are the stable internal vocabulary. A host may implement them directly or through shipped helpers introduced later, but adapters must preserve their observable artifacts and failure semantics.
@@ -43,7 +44,7 @@ Visual-decision capability is represented by a runnable/reachable target plus br
 
 An unknown, errored or incomplete probe is not success. Capability handling must be explicit and must **never silently** return `full`, invent a visual score, or claim a lower-quality path is equivalent.
 
-Failures are durable workflow facts. A deterministic operation must either produce its declared valid evidence or return/record an explicit blocked/failed contract. Partial evidence that is already durable is preserved for diagnosis and resume.
+Failures are durable workflow facts. A deterministic operation must either produce its declared valid evidence or route through `halt` with the exact blocked/failed contract. Partial evidence that is already durable is preserved for diagnosis and resume.
 
 ## Mechanical detector boundary
 
