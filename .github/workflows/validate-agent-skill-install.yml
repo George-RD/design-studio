@@ -55,6 +55,33 @@ jobs:
           test -f "$skill_root/runtime/mechanical/index.mjs"
           test -f "$skill_root/references/runtime-integrity.md"
 
+          cmp "$GITHUB_WORKSPACE/skills/design-studio/SKILL.md" "$installed_skill"
+          cmp "$GITHUB_WORKSPACE/skills/design-studio/workflow.yaml" "$skill_root/workflow.yaml"
+          cmp "$GITHUB_WORKSPACE/skills/design-studio/runtime/mechanical/index.mjs" "$skill_root/runtime/mechanical/index.mjs"
+
+          cat > "$target/mechanical-input.json" <<'JSON'
+          {
+            "schemaVersion": 1,
+            "generatedAt": "2026-08-29T00:00:00Z",
+            "source": {
+              "target": "site source",
+              "completed": false,
+              "reason": "clean-install smoke proof"
+            },
+            "browser": [],
+            "waivers": []
+          }
+          JSON
+
+          node "$skill_root/runtime/mechanical/index.mjs" \
+            "$target/mechanical-input.json" \
+            "$target/mechanical-output.json"
+          node -e '
+            const fs = require("node:fs");
+            const result = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+            if (result.detector !== "design-studio" || !Array.isArray(result.findings)) process.exit(1);
+          ' "$target/mechanical-output.json"
+
           for forbidden in scripts benchmarks test .github commands .claude-plugin; do
             if find "$skill_root" -type d -name "$forbidden" -print -quit | grep -q .; then
               echo "$forbidden leaked into installed skill" >&2
