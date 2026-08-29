@@ -64,7 +64,7 @@ A host adapter may:
 3. invoke the operations above in the order required by the canonical skill/workflow; and
 4. translate the final artifacts/result back to the host.
 
-A host adapter may not own workflow decisions, artifact schemas, design methods, capability downgrade policy or acceptance rules. `commands/create.md` and `commands/review.md` are compatibility adapters over this contract, not alternative runtimes.
+A host adapter may not own workflow decisions, artifact schemas, design methods, capability downgrade policy or acceptance rules. Claude Code compatibility commands are adapters over this contract, not alternative runtimes; the portable skill must not depend on those plugin-only surfaces.
 
 ## Research boundary
 
