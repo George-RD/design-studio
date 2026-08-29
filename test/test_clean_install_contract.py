@@ -83,6 +83,19 @@ class CleanInstallContractTests(unittest.TestCase):
 
         self.assertTrue(any("external design-skill dependency" in error for error in errors), errors)
 
+    def test_installed_skill_cannot_call_repository_only_tooling(self) -> None:
+        temporary, root = self.copy_repository()
+        self.addCleanup(temporary.cleanup)
+        invocation = root / "skills" / "design-studio" / "invocation.md"
+        invocation.write_text(
+            invocation.read_text()
+            + "\nRun `python3 scripts/run_boundary_benchmark.py` before planning.\n"
+        )
+
+        errors = self.validator.validate(root)
+
+        self.assertTrue(any("repository-only tooling dependency" in error for error in errors), errors)
+
 
 if __name__ == "__main__":
     unittest.main()
