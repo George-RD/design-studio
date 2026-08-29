@@ -51,7 +51,7 @@ When a request mixes audit and redesign, Studio owns the task unless the user ex
 Load `invocation.md` to map host input and isolated roles. Then load `references/context.md`, `runtime-contract.md` and `references/runtime-integrity.md` before planning.
 
 - `roots.json` records repository, app and context roots with evidence.
-- `capabilities.json` records the browser, runnable target, detector, question and copy tools that actually exist.
+- `capabilities.json` records the browser, runnable target, question and copy tools that actually exist.
 - `events.jsonl` is the append-only step journal used for resume.
 - `PRODUCT.md` is durable product truth.
 - `COPY.md` is optional durable voice, claim and terminology guidance.
