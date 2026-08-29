@@ -33,6 +33,27 @@ INVOCATION_TOKENS = {
     "Orchestrator",
 }
 PLUGIN_ONLY_MARKERS = ("commands/", "../commands/", "../../commands/", ".claude-plugin/")
+REPOSITORY_ONLY_MARKERS = ("scripts/", "benchmarks/", "test/", ".github/")
+DEPENDENCY_ACTION_MARKERS = (
+    " run ",
+    "run `",
+    "execute ",
+    "invoke ",
+    "call ",
+    "shell ",
+    "import ",
+    "python ",
+    "python3 ",
+    "node ",
+)
+NEGATED_DEPENDENCY_MARKERS = (
+    "must not",
+    "do not",
+    "does not",
+    "not part of",
+    "excluded from",
+    "repository-only",
+)
 
 
 def read_text(path: Path, errors: list[str]) -> str:
@@ -96,6 +117,21 @@ def external_dependency_errors(path: Path, text: str) -> list[str]:
         ):
             errors.append(
                 f"external design-skill dependency in {path}:{line_number}: {line.strip()}"
+            )
+    return errors
+
+
+def repository_only_dependency_errors(path: Path, text: str) -> list[str]:
+    errors: list[str] = []
+    for line_number, line in enumerate(text.splitlines(), start=1):
+        lower = re.sub(r"\s+", " ", line.lower())
+        if not any(marker in lower for marker in REPOSITORY_ONLY_MARKERS):
+            continue
+        if any(marker in lower for marker in NEGATED_DEPENDENCY_MARKERS):
+            continue
+        if any(marker in lower for marker in DEPENDENCY_ACTION_MARKERS):
+            errors.append(
+                f"repository-only tooling dependency in {path}:{line_number}: {line.strip()}"
             )
     return errors
 
@@ -177,6 +213,7 @@ def validate(root: Path) -> list[str]:
         relative = path.relative_to(root)
         text = path.read_text(errors="replace")
         errors.extend(external_dependency_errors(relative, text))
+        errors.extend(repository_only_dependency_errors(relative, text))
         for marker in PLUGIN_ONLY_MARKERS:
             if marker in text:
                 errors.append(
