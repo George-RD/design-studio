@@ -1,8 +1,8 @@
 # Runtime distribution boundary
 
-**Status:** Authoritative from issue #49, updated by #50  
-**Governing spec:** [#43](https://github.com/George-RD/design-studio/issues/43)  
-**Governing decision:** [ADR 0002](decisions/0002-owned-method-kernel.md)  
+**Status:** Authoritative from issue #49, updated by #50 and #76  
+**Governing spec:** [#43](https://github.com/George-RD/design-studio/issues/43), extended by [#74](https://github.com/George-RD/design-studio/issues/74)  
+**Governing decisions:** [ADR 0002](decisions/0002-owned-method-kernel.md), [ADR 0004](decisions/0004-installer-compatibility-proof.md)  
 **Machine-readable boundary:** [`runtime-surface.json`](../runtime-surface.json)
 
 Design Studio has one canonical installed product: the Agent Skill under `skills/design-studio/`. The stable deterministic interface is [`runtime-contract.md`](../skills/design-studio/runtime-contract.md). A supported run may use only behavior carried by that installed skill plus capabilities supplied by the host.
@@ -32,8 +32,12 @@ Historical Milestone 0 comparison evidence remains available under `benchmarks/m
 The boundary is protected at observable distribution and behavior seams:
 
 1. `test/support/validate_clean_install.py` scans the complete installed skill and optional adapters and rejects positive execution/import dependencies on repository-only roots.
-2. `.github/workflows/validate-agent-skill-install.yml` installs Design Studio through the pinned standard Agent Skills CLI and verifies the resulting package contains the shipped runtime helper but no repository-only or Claude-only surfaces.
-3. `.github/workflows/runtime-portability.yml` runs the mechanical runtime contract on Linux, macOS and Windows.
+2. `.github/workflows/validate-agent-skill-install.yml` retains a blocking exact-revision proof that installs the checked-out repository with pinned `skills@1.5.23`, verifies the shipped runtime and rejects repository-only or Claude-only leakage.
+3. The same workflow has a blocking `public-source-install` proof for `George-RD/design-studio#main` across Codex and Claude Code. Pull requests explicitly test merged `main`; pushes to `main` additionally require selected installed files to match the merged checkout.
+4. Its `advisory-latest-installer` job repeats the public-source proof with `skills@latest` and `continue-on-error: true`. This detects installer drift without replacing the reproducible release gate; see ADR 0004.
+5. `.github/workflows/runtime-portability.yml` runs the mechanical runtime contract on Linux, macOS and Windows.
+
+`npx skills` is distribution tooling, not an installed-runtime requirement. Once the Agent Skill is copied, supported behavior depends on the installed files and host capabilities rather than the installer.
 
 `runtime-surface.json` is the single machine-readable current distribution classification used by repository validation. `ROADMAP.md` remains a map to issue state rather than duplicating this implementation contract.
 
