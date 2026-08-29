@@ -19,6 +19,8 @@ No upstream repository is required at runtime. Impeccable and Emil Kowalski's sk
 | https://github.com/pbakaus/impeccable | `63b04e2530f5c7b41ea83c133daab24f34912456` | Apache-2.0 | Research input only; no runtime dependency |
 | https://github.com/emilkowalski/skills | `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7` | MIT | Research input only; no runtime dependency |
 
+The source registry's `currentDisposition: observe` applies to each upstream repository as a whole. The concept-level JSON map is authoritative for individual method dispositions, so a bounded method can be an `adapt-local` candidate without promoting the upstream source into a product dependency.
+
 `adapt-local` and `vendor-slice` mean **candidate**, not already adopted. A later implementation PR must cite the source ID and exact revision, describe modifications, preserve required notices when source material is copied, and protect the retained benefit with evidence or tests. `observe` and `reject` authorize no copying and create no runtime dependency.
 
 ## Canonical concept authorities
