@@ -104,7 +104,7 @@ jobs:
               raise SystemExit('expected at least 29 design-studio evals')
 
           required_refs = [
-              'skills/design-studio/references/invocation.md',
+              'skills/design-studio/invocation.md',
               'skills/design-studio/references/runtime-integrity.md',
               'skills/design-studio/references/copy.md',
               'skills/design-studio/references/quality-gates.md',
@@ -228,7 +228,7 @@ jobs:
 
       - name: Validate clean Agent Skill install contract
         shell: bash
-        run: python3 -m unittest test/test_clean_install_contract.py
+        run: python3 -m unittest discover -s test -p 'test_clean_install_contract.py' -v
 
       - name: Start documentation server
         shell: bash
