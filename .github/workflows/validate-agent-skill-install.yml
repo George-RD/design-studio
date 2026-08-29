@@ -23,7 +23,7 @@ jobs:
 
       - name: Validate public install contract
         shell: bash
-        run: python3 -m unittest test/test_public_source_install_contract.py -v
+        run: python3 test/test_public_source_install_contract.py -v
 
   clean-install:
     strategy:
