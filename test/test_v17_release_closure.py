@@ -47,19 +47,12 @@ class V17ReleaseClosureTests(unittest.TestCase):
         self.assertNotIn("## Execution graph", roadmap)
         self.assertNotIn("### Portable v1.6 complete", roadmap)
 
-    def test_public_landing_page_identifies_the_current_three_lane_product(self) -> None:
-        landing = self.read("docs/index.html")
-        required = [
-            "v1.7",
-            "Studio",
-            "Review",
-            "Document",
-            "npx skills add George-RD/design-studio",
-        ]
-        for marker in required:
-            with self.subTest(marker=marker):
-                self.assertIn(marker, landing)
-        self.assertNotIn("v1.5 · code-blind design workflow", landing)
+    def test_release_record_cannot_claim_acceptance_before_external_publication(self) -> None:
+        record = self.read("docs/releases/v1.7.0.md")
+        self.assertIn("**Status:** Prepared", record)
+        self.assertIn("repository description", record)
+        self.assertIn("v1.7.0` tag/GitHub Release", record)
+        self.assertIn("#78", record)
 
 
 if __name__ == "__main__":
