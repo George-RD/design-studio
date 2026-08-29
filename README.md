@@ -1,16 +1,6 @@
-<picture>
-  <img src="docs/readme-banner.svg" width="100%" alt="Design Studio. Keep code out of the design decision." />
-</picture>
+<picture><img src="docs/readme-banner.svg" width="100%" alt="Design Studio. Keep code out of the design decision." /></picture>
 
-<p align="center">
-  <a href="https://george-rd.github.io/design-studio/"><strong>See the workflow</strong></a>
-  ·
-  <a href="#install"><strong>Install</strong></a>
-  ·
-  <a href="ROADMAP.md"><strong>Roadmap</strong></a>
-  ·
-  <a href="https://github.com/George-RD/design-studio/issues"><strong>Issues</strong></a>
-</p>
+<p align="center"><a href="https://george-rd.github.io/design-studio/"><strong>See the workflow</strong></a> · <a href="#install"><strong>Install</strong></a> · <a href="ROADMAP.md"><strong>Roadmap</strong></a> · <a href="https://github.com/George-RD/design-studio/issues"><strong>Issues</strong></a></p>
 
 # Design Studio
 
@@ -18,9 +8,7 @@ Design Studio is a portable design-engineering Agent Skill for creating, reviewi
 
 The Builder sees the implementation. The agents choosing and judging the design do not. Code can implement the idea; it does not get to choose it.
 
-<picture>
-  <img src="docs/readme-flow.svg" width="100%" alt="Product truth moves to a source-blind Visual Director, then to a source-aware Builder, through browser checks, and into blind evaluation before the Orchestrator selects a build." />
-</picture>
+<picture><img src="docs/readme-flow.svg" width="100%" alt="Product truth moves to a source-blind Visual Director, then to a source-aware Builder, through browser checks, and into blind evaluation before the Orchestrator selects a build." /></picture>
 
 ## Lanes
 
