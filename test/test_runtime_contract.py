@@ -6,7 +6,8 @@ import unittest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SKILL_ROOT = REPO_ROOT / "skills" / "design-studio"
-CONTRACT_PATH = SKILL_ROOT / "references" / "runtime-contract.md"
+CONTRACT_PATH = SKILL_ROOT / "runtime-contract.md"
+WORKFLOW_PATH = SKILL_ROOT / "workflow.yaml"
 
 
 class RuntimeContractTests(unittest.TestCase):
@@ -17,12 +18,12 @@ class RuntimeContractTests(unittest.TestCase):
     def test_runtime_contract_is_part_of_the_canonical_skill_graph(self) -> None:
         skill = (SKILL_ROOT / "SKILL.md").read_text()
 
-        self.assertIn("`references/runtime-contract.md`", skill)
+        self.assertIn("`runtime-contract.md`", skill)
 
-    def test_contract_names_the_stable_deterministic_operations(self) -> None:
+    def test_contract_names_operations_that_exist_in_the_canonical_workflow(self) -> None:
         contract = self.contract_text()
-
-        for operation in (
+        workflow = WORKFLOW_PATH.read_text()
+        operations = (
             "initialise",
             "resume_validate",
             "resolve_roots",
@@ -34,10 +35,14 @@ class RuntimeContractTests(unittest.TestCase):
             "finish_correction_decide",
             "accept",
             "report",
-            "append_event",
-        ):
+        )
+
+        for operation in operations:
             with self.subTest(operation=operation):
                 self.assertIn(f"`{operation}`", contract)
+                self.assertIn(f"- id: {operation}\n", workflow)
+        self.assertIn("`append_event`", contract)
+        self.assertIn("events.jsonl", workflow)
 
     def test_contract_keeps_schema_and_integrity_authority_outside_the_seam(self) -> None:
         contract = self.contract_text()
@@ -46,8 +51,9 @@ class RuntimeContractTests(unittest.TestCase):
         self.assertIn("`references/runtime-integrity.md` owns the integrity invariants", contract)
         self.assertIn("does not restate those schemas", contract)
 
-    def test_contract_has_explicit_capability_and_failure_semantics(self) -> None:
+    def test_contract_capability_semantics_match_the_machine_workflow(self) -> None:
         contract = self.contract_text()
+        workflow = WORKFLOW_PATH.read_text()
 
         for token in (
             "file_io",
@@ -61,6 +67,8 @@ class RuntimeContractTests(unittest.TestCase):
         ):
             with self.subTest(token=token):
                 self.assertIn(token, contract)
+        self.assertIn("required: [file_io, shell, isolated_subagents]", workflow)
+        self.assertIn("enum: [full, build-once-unselected, mechanical-review]", workflow)
 
     def test_contract_excludes_research_only_concepts(self) -> None:
         contract = self.contract_text()
@@ -79,7 +87,7 @@ class RuntimeContractTests(unittest.TestCase):
         for relative in ("commands/create.md", "commands/review.md"):
             command = (REPO_ROOT / relative).read_text()
             with self.subTest(command=relative):
-                self.assertIn("skills/design-studio/references/runtime-contract.md", command)
+                self.assertIn("skills/design-studio/runtime-contract.md", command)
                 self.assertIn("canonical Agent Skill", command)
 
     def test_contract_does_not_promote_research_scripts_into_product_runtime(self) -> None:
