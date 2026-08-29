@@ -6,8 +6,11 @@ on:
     paths:
       - "scripts/run_copilot_cli_agent_capability.py"
       - "scripts/run_copilot_cli_agent_capability_gate.py"
+      - "scripts/run_copilot_cli_agent_capability_gate_base.py"
       - "scripts/run_browser_capability.mjs"
+      - "scripts/run_browser_capability_base.mjs"
       - "scripts/run_browser_capability_completion.mjs"
+      - "scripts/run_browser_capability_stress.py"
       - "scripts/browser_motion_evidence.mjs"
       - "scripts/browser_profile_cleanup.mjs"
       - "scripts/browser_websocket_ready.mjs"
@@ -22,9 +25,11 @@ on:
       - "test/test_browser_capability_regressions.py"
       - "test/test_browser_completion_contract.py"
       - "test/test_browser_submission_attribution.py"
+      - "test/test_capability_gate_hardening.py"
       - "test/test_browser_profile_cleanup.mjs"
       - "test/test_browser_motion_evidence.mjs"
       - "test/test_browser_websocket_ready.mjs"
+      - "test/fixtures/browser-delayed-external-request/**"
       - "benchmarks/milestone-0/AGENT_HARNESS.md"
       - "benchmarks/milestone-0/MODEL_HARNESS.md"
       - "benchmarks/milestone-0/evidence/**"
@@ -39,6 +44,7 @@ env:
   COPILOT_CLI_VERSION: "1.0.74"
   COPILOT_MODEL: "auto"
   CAPABILITY_OUTPUT: harness-output/benchmarks/milestone-0/agent-capability
+  BROWSER_STRESS_OUTPUT: harness-output/benchmarks/milestone-0/browser-stress
 
 jobs:
   capability-contract:
@@ -68,16 +74,20 @@ jobs:
           python3 -m unittest discover -s test -p 'test_copilot_cli_output_bounds.py' -v
           python3 -m unittest discover -s test -p 'test_copilot_cli_tool_receipt_turns.py' -v
           python3 -m unittest discover -s test -p 'test_copilot_cli_agent_receipt.py' -v
+          python3 -m unittest discover -s test -p 'test_capability_gate_hardening.py' -v
           node --test test/test_browser_profile_cleanup.mjs
           node --test test/test_browser_motion_evidence.mjs
           node --test test/test_browser_websocket_ready.mjs
           python3 -m py_compile \
             scripts/run_copilot_cli_agent_capability.py \
-            scripts/run_copilot_cli_agent_capability_gate.py
+            scripts/run_copilot_cli_agent_capability_gate.py \
+            scripts/run_copilot_cli_agent_capability_gate_base.py \
+            scripts/run_browser_capability_stress.py
           node --check scripts/browser_profile_cleanup.mjs
           node --check scripts/browser_motion_evidence.mjs
           node --check scripts/browser_websocket_ready.mjs
           node --check scripts/run_browser_capability.mjs
+          node --check scripts/run_browser_capability_base.mjs
           node --check scripts/run_browser_capability_completion.mjs
 
       - name: Preserve browser security regressions
@@ -86,6 +96,23 @@ jobs:
           python3 -m unittest discover -s test -p 'test_browser_capability_regressions.py' -v
           python3 -m unittest discover -s test -p 'test_browser_completion_contract.py' -v
           python3 -m unittest discover -s test -p 'test_browser_submission_attribution.py' -v
+
+      - name: Stress delayed browser security classification
+        run: |
+          set -euo pipefail
+          python3 scripts/run_browser_capability_stress.py \
+            --root test/fixtures/browser-delayed-external-request \
+            --output-dir "${BROWSER_STRESS_OUTPUT}" \
+            --run-count 3
+
+      - name: Upload browser stress evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-capability-stress-${{ github.run_id }}
+          path: ${{ env.BROWSER_STRESS_OUTPUT }}
+          if-no-files-found: error
+          retention-days: 14
 
   live-agent-capability:
     needs: capability-contract
