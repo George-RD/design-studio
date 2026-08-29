@@ -1,0 +1,1 @@
+../../../scripts/run_copilot_cli_agent_capability.py
