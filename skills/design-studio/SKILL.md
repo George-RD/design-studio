@@ -48,7 +48,7 @@ When a request mixes audit and redesign, Studio owns the task unless the user ex
 
 ## Context and run integrity
 
-Load `invocation.md` to map host input and isolated roles. Then load `references/context.md` and `references/runtime-integrity.md` before planning.
+Load `invocation.md` to map host input and isolated roles. Then load `references/context.md`, `runtime-contract.md` and `references/runtime-integrity.md` before planning.
 
 - `roots.json` records repository, app and context roots with evidence.
 - `capabilities.json` records the browser, runnable target, detector, question and copy tools that actually exist.
@@ -63,7 +63,7 @@ Inspect before asking. Ask only for material gaps. Mark unattended inferences as
 
 ## Studio execution
 
-Run `workflow.yaml` end to end.
+Run `workflow.yaml` end to end. Invoke deterministic operations through `runtime-contract.md`; host adapters translate capabilities and inputs but do not own a second runtime policy.
 
 1. **Root and probe**: resolve repository, app and context roots; probe required and optional tools before spending an iteration.
 2. **Plan**: confirm product truth, classify the surface as `persuade`, `operate`, `read` or `experience`, capture a baseline for overhauls and choose a finite build budget.
@@ -141,7 +141,7 @@ Only after acceptance may Orchestrator replace `harness-output/site/`. Git histo
 
 ## Review lane
 
-Execute `references/review/polish.md` without `workflow.yaml`.
+Execute `references/review/polish.md` through `runtime-contract.md` without `workflow.yaml`.
 
 - Resolve roots and probe the runnable target first.
 - Deterministic checks own source and browser-computed facts such as exact contrast, overflow and token drift.
@@ -164,6 +164,7 @@ Execute `references/review/polish.md` without `workflow.yaml`.
 |---|---|
 | Host input mapping and isolated-role invocation | `invocation.md` |
 | Product, copy, design and surface context | `references/context.md` |
+| Deterministic runtime operations and failure semantics | `runtime-contract.md` |
 | Roots, capabilities, resume, assignment and acceptance | `references/runtime-integrity.md` |
 | Machine workflow, paths and decisions | `workflow.yaml` |
 | Visual Director prompt | `agents/design-agent.md` |
