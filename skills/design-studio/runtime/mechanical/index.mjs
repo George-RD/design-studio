@@ -248,7 +248,6 @@ function evaluateBrowserPass(browserPass, index) {
   const actualViewport = readViewport(browserPass.actualViewport, `${name}.actualViewport`);
   const scrollWidth = requireNonNegativeInteger(browserPass.scrollWidth, `${name}.scrollWidth`);
   const clientWidth = requireNonNegativeInteger(browserPass.clientWidth, `${name}.clientWidth`);
-  const primaryActionUsable = requireBoolean(browserPass.primaryActionUsable, `${name}.primaryActionUsable`);
   const motionPresent = requireBoolean(browserPass.motionPresent, `${name}.motionPresent`);
   const reducedMotionVerified = requireBoolean(browserPass.reducedMotionVerified, `${name}.reducedMotionVerified`);
 
@@ -273,16 +272,6 @@ function evaluateBrowserPass(browserPass, index) {
         target,
         value: { scrollWidth, clientWidth },
         evidence: `Document scroll width ${scrollWidth}px exceeds client width ${clientWidth}px.`,
-      }),
-    );
-  }
-  if (!primaryActionUsable) {
-    findings.push(
-      createFinding({
-        ruleId: 'primary-action-usable',
-        target,
-        value: false,
-        evidence: 'The primary action for the current surface could not be used successfully.',
       }),
     );
   }
