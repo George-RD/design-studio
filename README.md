@@ -63,13 +63,15 @@ The skill owns input mapping, isolated roles and workflow rules. Host adapters o
 
 ## Install
 
-Canonical Agent Skill install:
+The canonical, host-portable artifact is the Agent Skill:
 
 ```bash
 npx skills add George-RD/design-studio
 ```
 
-Claude Code plugin support remains an optional convenience:
+A capable host can also copy `skills/design-studio/` into its local skills directory. It needs file I/O, shell access and isolated subagents; a complete visual run also needs a runnable target and browser automation. Removing or not installing the Claude plugin does not reduce supported Design Studio capability on a capable host.
+
+Claude Code plugin support is an optional convenience adapter:
 
 ```text
 /plugin marketplace add George-RD/design-studio
@@ -77,12 +79,7 @@ Claude Code plugin support remains an optional convenience:
 /reload-plugins
 ```
 
-The Claude CLI equivalents are:
-
-```bash
-claude plugin marketplace add George-RD/design-studio
-claude plugin install design-studio@design-studio
-```
+Claude CLI equivalents: `claude plugin marketplace add George-RD/design-studio` and `claude plugin install design-studio@design-studio`.
 
 ## Runtime boundary
 

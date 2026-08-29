@@ -1,0 +1,46 @@
+name: Claude adapter compatibility
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.claude-plugin/**'
+      - 'agents/**'
+      - 'commands/**'
+      - 'skills/design-studio/**'
+      - 'docs/decisions/**'
+      - 'README.md'
+      - 'ROADMAP.md'
+      - 'test/test_claude_adapter_compatibility.py'
+      - '.github/workflows/claude-adapter-compatibility.yml'
+  push:
+    branches: [main]
+    paths:
+      - '.claude-plugin/**'
+      - 'agents/**'
+      - 'commands/**'
+      - 'skills/design-studio/**'
+      - 'docs/decisions/**'
+      - 'README.md'
+      - 'ROADMAP.md'
+      - 'test/test_claude_adapter_compatibility.py'
+      - '.github/workflows/claude-adapter-compatibility.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  compatibility:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out exact revision
+        uses: actions/checkout@v5
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Validate Claude adapter contract
+        run: |
+          python3 -m unittest discover -s test -p 'test_claude_adapter_compatibility.py' -v
+          python3 -m py_compile test/test_claude_adapter_compatibility.py
