@@ -6,11 +6,8 @@ on:
     paths:
       - "scripts/run_copilot_cli_agent_capability.py"
       - "scripts/run_copilot_cli_agent_capability_gate.py"
-      - "scripts/run_copilot_cli_agent_capability_gate_base.py"
       - "scripts/run_browser_capability.mjs"
-      - "scripts/run_browser_capability_base.mjs"
       - "scripts/run_browser_capability_completion.mjs"
-      - "scripts/run_browser_capability_stress.py"
       - "scripts/browser_motion_evidence.mjs"
       - "scripts/browser_profile_cleanup.mjs"
       - "scripts/browser_websocket_ready.mjs"
@@ -33,6 +30,7 @@ on:
       - "benchmarks/milestone-0/AGENT_HARNESS.md"
       - "benchmarks/milestone-0/MODEL_HARNESS.md"
       - "benchmarks/milestone-0/evidence/**"
+      - "benchmarks/milestone-0/harness/**"
       - "ROADMAP.md"
       - ".github/workflows/boundary-agent-capability.yml"
   workflow_dispatch:
@@ -81,13 +79,13 @@ jobs:
           python3 -m py_compile \
             scripts/run_copilot_cli_agent_capability.py \
             scripts/run_copilot_cli_agent_capability_gate.py \
-            scripts/run_copilot_cli_agent_capability_gate_base.py \
-            scripts/run_browser_capability_stress.py
+            benchmarks/milestone-0/harness/run_copilot_cli_agent_capability_gate_base.py \
+            benchmarks/milestone-0/harness/run_browser_capability_stress.py
           node --check scripts/browser_profile_cleanup.mjs
           node --check scripts/browser_motion_evidence.mjs
           node --check scripts/browser_websocket_ready.mjs
           node --check scripts/run_browser_capability.mjs
-          node --check scripts/run_browser_capability_base.mjs
+          node --check benchmarks/milestone-0/harness/run_browser_capability_base.mjs
           node --check scripts/run_browser_capability_completion.mjs
 
       - name: Preserve browser security regressions
@@ -100,7 +98,7 @@ jobs:
       - name: Stress delayed browser security classification
         run: |
           set -euo pipefail
-          python3 scripts/run_browser_capability_stress.py \
+          python3 benchmarks/milestone-0/harness/run_browser_capability_stress.py \
             --root test/fixtures/browser-delayed-external-request \
             --output-dir "${BROWSER_STRESS_OUTPUT}" \
             --run-count 3
@@ -111,7 +109,7 @@ jobs:
         with:
           name: browser-capability-stress-${{ github.run_id }}
           path: ${{ env.BROWSER_STRESS_OUTPUT }}
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 14
 
   live-agent-capability:

@@ -7,8 +7,12 @@ import sys
 from typing import Any, Sequence
 
 
-BASE_PATH = Path(__file__).resolve().with_name(
-    "run_copilot_cli_agent_capability_gate_base.py"
+BASE_PATH = (
+    Path(__file__).resolve().parents[1]
+    / "benchmarks"
+    / "milestone-0"
+    / "harness"
+    / "run_copilot_cli_agent_capability_gate_base.py"
 )
 BASE_MODULE_NAME = "run_copilot_cli_agent_capability_gate_base"
 if BASE_MODULE_NAME in sys.modules:
@@ -27,6 +31,21 @@ for _name in dir(base):
     globals()[_name] = getattr(base, _name)
 
 core = base.core
+
+_base_builder_prompt = base.builder_prompt
+
+
+def builder_prompt() -> str:
+    original = base._BASE_BUILDER_PROMPT
+    base._BASE_BUILDER_PROMPT = globals()["_BASE_BUILDER_PROMPT"]
+    try:
+        return _base_builder_prompt()
+    finally:
+        base._BASE_BUILDER_PROMPT = original
+
+
+base.builder_prompt = builder_prompt
+core.builder_prompt = builder_prompt
 
 
 def validate_role_tool_receipt(

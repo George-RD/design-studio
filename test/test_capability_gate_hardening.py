@@ -14,7 +14,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 GATE_PATH = ROOT / "scripts" / "run_copilot_cli_agent_capability_gate.py"
 BROWSER_PATH = ROOT / "scripts" / "run_browser_capability.mjs"
-STRESS_PATH = ROOT / "scripts" / "run_browser_capability_stress.py"
+STRESS_PATH = ROOT / "benchmarks" / "milestone-0" / "harness" / "run_browser_capability_stress.py"
 
 
 def load_module(path: Path, module_name: str):
@@ -284,10 +284,9 @@ class BrowserStartupClassificationTests(unittest.TestCase):
         root.mkdir()
         wrapper = root / BROWSER_PATH.name
         shutil.copy2(BROWSER_PATH, wrapper)
-        (root / "run_browser_capability_base.mjs").write_text(
-            stub_source,
-            encoding="utf-8",
-        )
+        base = root.parent / "benchmarks" / "milestone-0" / "harness" / "run_browser_capability_base.mjs"
+        base.parent.mkdir(parents=True, exist_ok=True)
+        base.write_text(stub_source, encoding="utf-8")
         site = root / "site"
         site.mkdir()
         (site / "index.html").write_text("<!doctype html>", encoding="utf-8")

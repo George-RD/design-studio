@@ -6,7 +6,7 @@ import { join, resolve } from 'node:path';
 import process from 'node:process';
 
 const BASE_BROWSER_SCRIPT = fileURLToPath(
-  new URL('./run_browser_capability_base.mjs', import.meta.url),
+  new URL('../benchmarks/milestone-0/harness/run_browser_capability_base.mjs', import.meta.url),
 );
 const CAPTURE_LIMIT = 64_000;
 const DIAGNOSTIC_LIMIT = 2_000;

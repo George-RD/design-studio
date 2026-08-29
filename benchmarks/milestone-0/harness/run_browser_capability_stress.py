@@ -12,7 +12,7 @@ import sys
 from typing import Any, Sequence
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[3]
 BROWSER_SCRIPT = ROOT / "scripts" / "run_browser_capability.mjs"
 DEFAULT_EXPECTED_URL = "https://example.invalid/delayed.png"
 DEFAULT_RUN_COUNT = 3
