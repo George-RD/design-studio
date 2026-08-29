@@ -1,0 +1,49 @@
+name: Apply v1.6 release contraction final
+
+on:
+  push:
+    branches:
+      - agent/v16-portable-release-proof
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out release branch
+        uses: actions/checkout@v5
+        with:
+          ref: agent/v16-portable-release-proof
+          fetch-depth: 0
+
+      - name: Reuse validated migration transform
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          workflow = Path('.github/workflows/apply-v16-release-3.yml').read_text(encoding='utf-8')
+          marker = "          python3 - <<'PY'\n"
+          start = workflow.index(marker) + len(marker)
+          end = workflow.index("\n          PY\n", start)
+          lines = workflow[start:end].splitlines()
+          script = "\n".join(line[10:] if line.startswith("          ") else line for line in lines)
+          exec(compile(script, 'v16-release-transform.py', 'exec'))
+          Path('.github/workflows/apply-v16-release-4.yml').unlink()
+          release = Path('docs/releases/v1.6.0.md')
+          release.write_text('\n'.join(line.rstrip() for line in release.read_text(encoding='utf-8').splitlines()) + '\n', encoding='utf-8')
+          PY
+
+      - name: Commit release implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "release: establish portable v1.6 boundary"
+          git push origin HEAD:agent/v16-portable-release-proof
