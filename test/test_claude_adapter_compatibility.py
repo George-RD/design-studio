@@ -65,6 +65,7 @@ class ClaudeAdapterCompatibilityTests(unittest.TestCase):
             ".claude-plugin/",
             "commands/create.md",
             "commands/review.md",
+            "Claude Code",
         )
         for path in skill_root.rglob("*"):
             if not path.is_file() or path.suffix not in {".md", ".json", ".yaml", ".yml"}:
