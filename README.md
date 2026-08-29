@@ -79,6 +79,8 @@ Claude Code plugin support is an optional convenience adapter:
 /reload-plugins
 ```
 
+Claude CLI equivalents: `claude plugin marketplace add George-RD/design-studio` and `claude plugin install design-studio@design-studio`.
+
 ## Runtime boundary
 
 The standard Agent Skills install contains `skills/design-studio/`. Root `commands/`, `agents/` and `.claude-plugin/` remain optional compatibility adapters.
