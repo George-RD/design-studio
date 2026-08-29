@@ -102,3 +102,166 @@ jobs:
               exit 1
             fi
           done
+
+  public-source-install:
+    strategy:
+      fail-fast: false
+      matrix:
+        agent: [codex, claude-code]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out exact revision
+        uses: actions/checkout@v5
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: State public revision expectation
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "Public source George-RD/design-studio#main represents merged main; PR head ${{ github.event.pull_request.head.sha }} is not public yet. This leg verifies the public installer path against merged main."
+            echo "PUBLIC_PARITY=0" >> "$GITHUB_ENV"
+          else
+            echo "Public source George-RD/design-studio#main is expected to match merged main commit ${{ github.sha }}."
+            echo "PUBLIC_PARITY=1" >> "$GITHUB_ENV"
+          fi
+
+      - name: Install from public GitHub source with pinned CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          target="$(mktemp -d)"
+          cd "$target"
+
+          npx --yes skills@1.5.23 add George-RD/design-studio#main \
+            --skill design-studio \
+            --agent "${{ matrix.agent }}" \
+            --copy \
+            --yes
+
+          installed_skill="$(find "$target" -type f -path '*/design-studio/SKILL.md' -print -quit)"
+          test -n "$installed_skill"
+          skill_root="$(dirname "$installed_skill")"
+
+          grep -qx 'name: design-studio' "$installed_skill"
+          test -f "$skill_root/invocation.md"
+          test -f "$skill_root/workflow.yaml"
+          test -f "$skill_root/runtime-contract.md"
+          test -f "$skill_root/runtime/README.md"
+          test -f "$skill_root/runtime/mechanical/index.mjs"
+          test -f "$skill_root/references/runtime-integrity.md"
+
+          if [[ "$PUBLIC_PARITY" == "1" ]]; then
+            cmp "$GITHUB_WORKSPACE/skills/design-studio/SKILL.md" "$installed_skill"
+            cmp "$GITHUB_WORKSPACE/skills/design-studio/workflow.yaml" "$skill_root/workflow.yaml"
+            cmp "$GITHUB_WORKSPACE/skills/design-studio/runtime/mechanical/index.mjs" "$skill_root/runtime/mechanical/index.mjs"
+          fi
+
+          cat > "$target/mechanical-input.json" <<'JSON'
+          {
+            "schemaVersion": 1,
+            "generatedAt": "2026-08-29T00:00:00Z",
+            "source": {
+              "target": "site source",
+              "completed": false,
+              "reason": "public-source install smoke proof"
+            },
+            "browser": [],
+            "waivers": []
+          }
+          JSON
+
+          node "$skill_root/runtime/mechanical/index.mjs" \
+            "$target/mechanical-input.json" \
+            "$target/mechanical-output.json"
+          node -e '
+            const fs = require("node:fs");
+            const result = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+            if (result.detector !== "design-studio" || !Array.isArray(result.findings)) process.exit(1);
+          ' "$target/mechanical-output.json"
+
+          for forbidden in scripts benchmarks test .github commands .claude-plugin; do
+            if find "$skill_root" -type d -name "$forbidden" -print -quit | grep -q .; then
+              echo "$forbidden leaked into installed skill" >&2
+              exit 1
+            fi
+          done
+
+  advisory-latest-installer:
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        agent: [codex, claude-code]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: State advisory semantics
+        shell: bash
+        run: echo "This is advisory because an upstream installer release must not erase the known-good product proof; see ADR 0004."
+
+      - name: Install from public GitHub source with latest CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          target="$(mktemp -d)"
+          cd "$target"
+
+          npx --yes skills@latest add George-RD/design-studio#main \
+            --skill design-studio \
+            --agent "${{ matrix.agent }}" \
+            --copy \
+            --yes
+
+          installed_skill="$(find "$target" -type f -path '*/design-studio/SKILL.md' -print -quit)"
+          test -n "$installed_skill"
+          skill_root="$(dirname "$installed_skill")"
+
+          grep -qx 'name: design-studio' "$installed_skill"
+          test -f "$skill_root/invocation.md"
+          test -f "$skill_root/workflow.yaml"
+          test -f "$skill_root/runtime-contract.md"
+          test -f "$skill_root/runtime/README.md"
+          test -f "$skill_root/runtime/mechanical/index.mjs"
+          test -f "$skill_root/references/runtime-integrity.md"
+
+          cat > "$target/mechanical-input.json" <<'JSON'
+          {
+            "schemaVersion": 1,
+            "generatedAt": "2026-08-29T00:00:00Z",
+            "source": {
+              "target": "site source",
+              "completed": false,
+              "reason": "latest-installer public-source smoke proof"
+            },
+            "browser": [],
+            "waivers": []
+          }
+          JSON
+
+          node "$skill_root/runtime/mechanical/index.mjs" \
+            "$target/mechanical-input.json" \
+            "$target/mechanical-output.json"
+          node -e '
+            const fs = require("node:fs");
+            const result = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+            if (result.detector !== "design-studio" || !Array.isArray(result.findings)) process.exit(1);
+          ' "$target/mechanical-output.json"
+
+          for forbidden in scripts benchmarks test .github commands .claude-plugin; do
+            if find "$skill_root" -type d -name "$forbidden" -print -quit | grep -q .; then
+              echo "$forbidden leaked into installed skill" >&2
+              exit 1
+            fi
+          done
