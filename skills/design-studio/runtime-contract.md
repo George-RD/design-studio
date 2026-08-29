@@ -4,10 +4,11 @@ This file defines the **host-neutral deterministic seam** used by the Design Stu
 
 ## Authority boundaries
 
-- `workflow.yaml` owns the interactive Studio step graph and shared artifact schemas.
+- `workflow.yaml` owns the step graph and artifact schemas for interactive Studio.
 - `references/document/document.md` owns the progressively disclosed paginated-artifact procedure without creating a second copy of the Studio graph.
-- `references/runtime-integrity.md` owns integrity invariants for roots, capability evidence, resume, append-only events, unattended assignment and final acceptance.
+- `references/runtime-integrity.md` owns the integrity invariants for roots, capability evidence, resume, append-only events, unattended assignment and final acceptance.
 - This contract owns deterministic operation names, inputs/outputs and failure semantics used by supported lanes.
+- This contract does not restate those schemas. Callers obey the lane authority plus `references/runtime-integrity.md`.
 - Source-blind Visual Director/Evaluator boundaries and immutable completed iterations are preconditions. No adapter or renderer may weaken them.
 
 The seam describes **what must happen**, not which language or renderer performs it. Repository benchmark/capability scripts remain research/support tooling. A shipped helper is introduced only for bounded deterministic behavior a supported operation actually needs.
@@ -83,6 +84,6 @@ An adapter may not own workflow decisions, artifact schemas, design methods, cap
 
 ## Research boundary
 
-Blind comparison, lane matrix generation, frozen benchmark validation, model probing, preference transactions and other historical Milestone 0 research behavior are excluded from the installed runtime seam.
+Blind comparison, lane matrix generation, fixture validation, model probing, preference transactions and other historical Milestone 0 research behavior are excluded from the runtime seam.
 
-Repository research tooling may call a genuinely shared helper later, but a supported installed run must not import or shell into repository-only research tooling because similar machinery exists there. The shipped-runtime/research separation from #49 remains authoritative.
+Repository research tooling may call a genuinely shared helper later, but a supported installed run must not import or shell into benchmark/research tooling merely because similar machinery exists there. The shipped-runtime/research separation from #49 remains authoritative.

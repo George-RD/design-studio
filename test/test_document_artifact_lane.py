@@ -138,6 +138,28 @@ class DocumentArtifactLaneTests(unittest.TestCase):
         self.assertIn("pagination", published)
         self.assertIn("qa", published)
 
+    def test_invalid_document_contract_is_not_published(self) -> None:
+        """Reject a non-renderer-neutral contract before any downstream artifact exists."""
+        fixture_dir = ROOT / "test" / "fixtures" / "document-artifact" / "horaxon-foundation-sprint"
+        invalid = self.load(fixture_dir / "document-visual-contract.json")
+        invalid["rendererNeutral"] = False
+        publisher = SKILL_ROOT / "runtime" / "document-contract" / "index.mjs"
+
+        with tempfile.TemporaryDirectory() as directory:
+            proposed = Path(directory) / "invalid.json"
+            output = Path(directory) / "harness-output" / "design-system" / "document-visual-contract.json"
+            proposed.write_text(json.dumps(invalid), encoding="utf-8")
+            run = subprocess.run(
+                ["node", str(publisher), str(proposed), str(output)],
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(2, run.returncode)
+            self.assertFalse(output.exists())
+            self.assertIn("rendererNeutral must be true", run.stderr)
+
     def test_mechanical_runtime_normalizes_page_artifact_facts(self) -> None:
         """Join deterministic page facts to the existing current mechanical snapshot."""
         runtime = SKILL_ROOT / "runtime" / "mechanical" / "index.mjs"

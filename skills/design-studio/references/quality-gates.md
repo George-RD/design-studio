@@ -26,7 +26,7 @@ Run from the installed skill root:
 node runtime/mechanical/index.mjs <input-json> <mechanical-findings-json>
 ```
 
-The Node-standard-library helper writes the canonical current `mechanical-findings.json`. Hand that snapshot to Evaluator/Review/Document evaluation and later acceptance. External detector or renderer availability must not change supported rule semantics.
+The Node-standard-library helper writes the canonical current `mechanical-findings.json`. Hand that snapshot to Evaluator/Review/Document evaluation and later acceptance. External detector availability must not change the supported rule set or result semantics; renderer availability must not change those semantics either.
 
 ## Authority boundary
 
