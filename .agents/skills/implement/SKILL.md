@@ -6,6 +6,8 @@ disable-model-invocation: true
 
 Implement the work described by the user in the spec or tickets.
 
+When selecting work from the issue tracker, continue an existing open/draft implementation first. Otherwise choose only an explicitly ready, unblocked implementation issue. If there is no ready issue, stop cleanly and report that the queue is empty; do not invent product work, reopen historical roadmap items, or promote research maintenance without a new bounded ticket.
+
 Use `/tdd` where possible at the seams established by the source spec, ticket, ADR or existing public interface.
 
 During implementation, run focused typechecking/static validation and the smallest relevant test files regularly. Complete each behavioral slice before starting the next.
