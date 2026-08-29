@@ -1,0 +1,49 @@
+name: Validate method authority map
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "ROADMAP.md"
+      - "docs/method-authority-map.json"
+      - "docs/method-authority-map.md"
+      - "docs/method-sources.json"
+      - "docs/migration-map.json"
+      - "docs/decisions/0002-owned-method-kernel.md"
+      - "references/**"
+      - "skills/design-studio/**"
+      - "test/test_method_authority_map.py"
+      - ".github/workflows/method-authority-map.yml"
+  push:
+    branches: [main]
+    paths:
+      - "ROADMAP.md"
+      - "docs/method-authority-map.json"
+      - "docs/method-authority-map.md"
+      - "docs/method-sources.json"
+      - "docs/migration-map.json"
+      - "docs/decisions/0002-owned-method-kernel.md"
+      - "references/**"
+      - "skills/design-studio/**"
+      - "test/test_method_authority_map.py"
+      - ".github/workflows/method-authority-map.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  method-authority-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out exact revision
+        uses: actions/checkout@v5
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Validate authority, provenance, and routing
+        run: |
+          python3 -m unittest discover -s test -p 'test_method_authority_map.py' -v
+          python3 -m json.tool docs/method-authority-map.json > /dev/null
+          python3 -m py_compile test/test_method_authority_map.py

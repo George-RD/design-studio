@@ -30,24 +30,25 @@ The governing architecture is [ADR 0002: Design Studio owns its method kernel](d
 ### Baseline complete
 
 - [#44 — Inventory the portable product boundary and migration map](https://github.com/George-RD/design-studio/issues/44) — baseline recorded in [`docs/migration-map.md`](docs/migration-map.md) and [`docs/migration-map.json`](docs/migration-map.json) against pre-change revision `492a874d0a7c935e51395d66f420608a997d9ed3`.
+- [#45 — Make the Agent Skill the canonical install and distribution surface](https://github.com/George-RD/design-studio/issues/45) — canonical Agent Skill install surface merged and verified.
+- [#46 — Establish one stable internal runtime seam before script reorganisation](https://github.com/George-RD/design-studio/issues/46) — stable runtime seam and follow-up review fixes merged and verified.
+- [#47 — Consolidate external design guidance into one method authority map](https://github.com/George-RD/design-studio/issues/47) — concept ownership, provenance, intake dispositions, domain boundaries and routing are recorded in [`docs/method-authority-map.json`](docs/method-authority-map.json) and [`docs/method-authority-map.md`](docs/method-authority-map.md).
 
-The map classifies current surfaces, script families, method overlaps and protected behavior without changing production behavior. It also keeps the frozen Milestone 0 inventory as historical evidence rather than current architecture.
+The migration map classifies the pre-change product boundary. The method authority map resolves that inventory into the current one-authority-per-concept contract without making external repositories runtime dependencies.
 
-### Current frontier after #44
+### Next ready roadmap item
 
-- [#45 — Make the Agent Skill the canonical install and distribution surface](https://github.com/George-RD/design-studio/issues/45) — unblocked by #44
-- [#46 — Establish one stable internal runtime seam before script reorganisation](https://github.com/George-RD/design-studio/issues/46) — unblocked by #44
-- [#47 — Consolidate external design guidance into one method authority map](https://github.com/George-RD/design-studio/issues/47) — unblocked by #44
+- [#49 — Separate shipped runtime helpers from benchmark and research tooling](https://github.com/George-RD/design-studio/issues/49) — first ready item in roadmap order; dependency #46 is complete.
 
 ### Runtime simplification
 
-- [#49 — Separate shipped runtime helpers from benchmark and research tooling](https://github.com/George-RD/design-studio/issues/49) — blocked by #46
+- [#49 — Separate shipped runtime helpers from benchmark and research tooling](https://github.com/George-RD/design-studio/issues/49) — unblocked by completed #46
 - [#50 — Normalize product runtime script families behind the shared seam](https://github.com/George-RD/design-studio/issues/50) — blocked by #49
 
 ### Method consolidation and modular composition
 
-- [#51 — Route curated design methods through progressive-disclosure leaves](https://github.com/George-RD/design-studio/issues/51) — blocked by #46 and #47
-- [#48 — Define a modular Design Studio ↔ Growth Arsenal composition contract](https://github.com/George-RD/design-studio/issues/48) — blocked by #47
+- [#51 — Route curated design methods through progressive-disclosure leaves](https://github.com/George-RD/design-studio/issues/51) — dependencies #46 and #47 are complete
+- [#48 — Define a modular Design Studio ↔ Growth Arsenal composition contract](https://github.com/George-RD/design-studio/issues/48) — dependency #47 is complete
 - [Growth Arsenal #34 — Make Growth Arsenal a portable Agent Skill and compose cleanly with Design Studio](https://github.com/George-RD/growth-arsenal/issues/34) — can start with inventory; final composition is blocked by Design Studio #48
 
 ### Adapter contraction and release proof
