@@ -236,13 +236,6 @@
   ],
   "leaves": [
     {
-      "path": "references/design-intent.md",
-      "authorityRole": "canonical",
-      "conceptIds": [
-        "design-intent"
-      ]
-    },
-    {
       "path": "references/rationale.md",
       "authorityRole": "canonical",
       "conceptIds": [
