@@ -8,6 +8,20 @@ A host starting Design Studio must provide the generic capabilities declared in 
 
 Use the host's isolated-agent mechanism for Planner, VisualDirector, Builder, Evaluator and Orchestrator. Preserve the source-visibility and decision boundaries in `SKILL.md`; do not collapse roles into one shared context because a host uses a different agent API.
 
+## Design Intent input mapping
+
+Before lane-specific input mapping, translate the user request and current authority evidence into one result defined by `design-intent-contract.json` and `references/design-intent.md`:
+
+- `lane` and `designMode`: one of the contract's Studio, Review or Document mode pairs.
+- `surface`: interactive surface kind or `paginated-artifact`.
+- `visualAuthority`: current accepted visual authority, or `none` when no compatible authority exists.
+- `compositionState`: current state resolved through `composition-contract.json`, not prompt order or filename.
+- `systemEffect`: the requested durable effect; execution records the actual accepted effect later.
+- `requiredCapabilities` and `selectedProcedures`: existing host capability names and installed procedure paths.
+- `assumptions`, `unresolved`, and `precedenceRule`: explicit classification evidence.
+
+Apply the ranked precedence in `references/design-intent.md` before loading a lane procedure. The validated result maps to the existing `task`, `surface`, `interaction` and `evidence` router signals. Host adapters preserve this result and do not add another intent taxonomy.
+
 ## Studio input mapping
 
 For an interactive create, build, or redesign request, map host input to the workflow's named inputs before `initialise`:
@@ -19,8 +33,6 @@ For an interactive create, build, or redesign request, map host input to the wor
 - `optional_run_id`: explicit run identifier only when resuming a known run.
 
 Supported adapter vocabulary is `--overhaul`, `--goals`, and `--budget`. Free-form hosts may populate the same named inputs directly.
-
-Audit or polish-only language routes to Review instead of Studio unless the user explicitly asks for a redesign.
 
 ## Review input mapping
 
@@ -46,7 +58,7 @@ A quote, invoice, statement of work/SOW, proposal, discovery or architecture rep
 - `document_visual_contract`: optional existing `document-visual-contract.json` to preserve or extend.
 - `budget_override` and `optional_run_id`: same semantics as Studio when a create loop is required.
 
-A browser-based dashboard or interactive report remains Studio/Review even if it can later export PDF. Page/print intent is the differentiator.
+A browser-based dashboard or interactive report remains Studio/Review even if it can later export PDF. Page/print intent is the differentiator under the Design Intent precedence rules.
 
 The host probes page rendering/export as optional `page_artifact_rendering` capability for this lane. Renderer identity is operational evidence for Orchestrator/Builder only and must not enter Visual Director or Evaluator context.
 
