@@ -96,19 +96,10 @@ class OwnedMethodKernelDirectionTests(unittest.TestCase):
         self.assertNotIn("Impeccable becomes the required base design engine", roadmap)
         self.assertNotIn("current Design Studio with Impeccable enabled", roadmap)
 
-        # Preserve the completed historical evidence contracts without keeping
-        # the old comparison architecture as a release gate.
-        self.assertIn(
-            "- [x] Inventory every Design Studio step, reference, schema and check.",
-            roadmap,
-        )
-        self.assertIn(
-            "- [x] Identify workflows that only reproduce an Impeccable command",
-            roadmap,
-        )
+        self.assertIn("Historical research and capability maintenance", roadmap)
         self.assertIn("benchmarks/milestone-0/OWNERSHIP_INVENTORY.md", roadmap)
-        self.assertIn("- [ ] Confirm the smallest differentiated product:", roadmap)
-        self.assertIn("- [ ] Run the same fixed briefs through:", roadmap)
+        self.assertNotIn("- [x] Inventory every Design Studio step", roadmap)
+        self.assertNotIn("- [ ] Run the same fixed briefs through", roadmap)
 
     def test_upstream_sources_are_pinned_research_inputs_not_runtime_switches(self) -> None:
         """Validate every source record, then protect the known exact source pins."""

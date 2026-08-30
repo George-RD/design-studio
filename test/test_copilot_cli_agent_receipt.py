@@ -90,12 +90,10 @@ class CopilotCliAgentReceiptTests(unittest.TestCase):
         ):
             self.assertIn(marker, document)
 
-        self.assertIn(
-            "- [x] Controlled source-blind agent, browser and evidence capability gates.",
-            roadmap,
-        )
+        self.assertIn("Milestone 0 ownership inventory", roadmap)
         self.assertIn("one supported runtime", roadmap)
-        self.assertIn("optional research comparison, not a release gate", roadmap)
+        self.assertIn("optional research, not a release gate", roadmap)
+        self.assertNotIn("- [x] Controlled source-blind", roadmap)
         self.assertNotIn("[ ] current Design Studio with Impeccable enabled", roadmap)
 
     def test_only_hardened_gate_is_an_executable_entrypoint(self):

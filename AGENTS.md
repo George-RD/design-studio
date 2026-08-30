@@ -1,21 +1,17 @@
 # Agent guidance
 
-## Agent skills
+## Work authority
 
-### Issue tracker
+GitHub Issues are the executable backlog. `ROADMAP.md` maps current product state and frontier; it is not a task queue. Before selecting work, read `docs/agents/work-selection.md` and `docs/agents/issue-tracker.md`.
 
-GitHub Issues in `George-RD/design-studio` are the durable tracker for specs and implementation tickets. See `docs/agents/issue-tracker.md`.
+## Repository conventions
 
-### Triage labels
+- For triage labels, read `docs/agents/triage-labels.md`.
+- Before architecture changes, read relevant decisions under `docs/decisions/` and `docs/agents/domain.md`.
+- For specifications, tickets, and test-seam decisions, compose the installed skill with `docs/agents/planning.md`.
+- For code review, compose `code-review` with `docs/agents/code-review.md`.
+- For module deepening, compose `codebase-design` with `docs/agents/codebase-design.md`.
 
-Use the default Matt Pocock triage vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, and `wontfix`. See `docs/agents/triage-labels.md`.
+## Installed engineering skills
 
-### Domain docs
-
-This is a single-context repository. Read relevant decisions under `docs/decisions/` before changing architecture; use `CONTEXT.md` if one is added later. See `docs/agents/domain.md`.
-
-### Installed engineering skills
-
-Repo-owned editable adaptations of selected `mattpocock/skills` engineering workflows live under `.agents/skills/`. The reviewed upstream source is commit `6654f6b60cd9d5be8b54c6fafe44346dabeb3b76`, but the checked-in repository tree is the canonical reproducible copy and contains deliberate local changes. It does not update automatically.
-
-Do not refresh these files from an unpinned `npx skills` install. Use upstream installs only in a scratch/worktree for comparison, record the exact upstream revision, and deliberately merge accepted changes while preserving local adaptations and the MIT notice. See `.agents/skills/README.md`.
+Skills listed in `skills-lock.json` are upstream-managed copies of `mattpocock/skills`; do not patch their directories locally. Before installing, updating, or reconfiguring them, read `docs/agents/skill-updates.md`.

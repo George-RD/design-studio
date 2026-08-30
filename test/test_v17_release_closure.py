@@ -13,17 +13,17 @@ class V17ReleaseClosureTests(unittest.TestCase):
     def read(self, path: str) -> str:
         return (ROOT / path).read_text(encoding="utf-8")
 
-    def test_implement_stops_cleanly_when_issue_queue_has_no_ready_work(self) -> None:
-        skill = self.read(".agents/skills/implement/SKILL.md")
-        self.assertIn("no ready issue", skill.lower())
-        self.assertIn("stop cleanly", skill.lower())
-        self.assertIn("do not invent", skill.lower())
+    def test_work_selection_stops_cleanly_when_queue_has_no_ready_work(self) -> None:
+        selection = self.read("docs/agents/work-selection.md")
+        self.assertIn("ready-for-agent", selection)
+        self.assertIn("no ready issue", selection.lower())
+        self.assertIn("stop cleanly", selection.lower())
+        self.assertIn("do not invent", selection.lower())
 
-    def test_issue_tracker_points_selection_at_the_clean_stop_rule(self) -> None:
+    def test_issue_tracker_routes_to_the_work_selection_authority(self) -> None:
         tracker = self.read("docs/agents/issue-tracker.md")
         self.assertIn("ready-for-agent", tracker)
-        self.assertIn("no ready issue", tracker.lower())
-        self.assertIn("stop cleanly", tracker.lower())
+        self.assertIn("docs/agents/work-selection.md", tracker)
 
     def test_roadmap_is_a_v17_maintenance_frontier_not_a_second_task_tracker(self) -> None:
         roadmap = self.read("ROADMAP.md")
