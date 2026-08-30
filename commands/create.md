@@ -1,6 +1,6 @@
 ---
 name: create
-description: Optional Claude Code command adapter for invoking the canonical Design Studio create or overhaul workflow.
+description: Optional Claude Code command adapter for canonical Design Studio create, extend, or overhaul work.
 argument-hint: "<prompt> | --overhaul <path-or-url> [--goals <text>] [--budget quick|standard|ambitious|<n>] <prompt>"
 allowed-tools:
   - Read
@@ -18,6 +18,6 @@ allowed-tools:
 
 This file is an optional Claude Code adapter over the canonical Agent Skill in `skills/design-studio/`.
 
-Load `skills/design-studio/SKILL.md`, `skills/design-studio/invocation.md` and `skills/design-studio/runtime-contract.md`. Map `$ARGUMENTS` to the Studio inputs defined by the skill, use Claude Code's `Agent` tool as the host implementation of `isolated_subagents`, and delegate execution to `skills/design-studio/workflow.yaml` through that shared runtime contract.
+Load `skills/design-studio/SKILL.md`, `skills/design-studio/invocation.md`, `skills/design-studio/design-intent-contract.json`, `skills/design-studio/references/design-intent.md` and `skills/design-studio/runtime-contract.md`. Map `$ARGUMENTS` to one validated Design Intent before loading Studio execution authority. Use Claude Code's `Agent` tool as the host implementation of `isolated_subagents`, then delegate the selected create, extend or overhaul mode to `skills/design-studio/workflow.yaml` through the shared runtime contract.
 
-The adapter contributes invocation metadata only; the installed skill owns design methods, workflow decisions and deterministic runtime behavior.
+The adapter contributes invocation metadata only; the installed skill owns Design Intent, design methods, workflow decisions and deterministic runtime behavior.
