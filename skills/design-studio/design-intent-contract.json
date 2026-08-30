@@ -12,6 +12,11 @@
     "interaction",
     "evidence"
   ],
+  "laneProcedures": [
+    "workflow.yaml",
+    "references/review/polish.md",
+    "references/document/document.md"
+  ],
   "requiredFields": [
     "schemaVersion",
     "lane",
@@ -136,6 +141,7 @@
       ],
       "systemEffects": [
         "preserve",
+        "extract",
         "none"
       ],
       "requiredProcedure": "references/review/polish.md",
@@ -242,7 +248,7 @@
     {
       "rank": 4,
       "id": "audit-or-polish-only",
-      "signal": "The request asks only to audit, review, fix or polish an interactive surface while preserving its visual world.",
+      "signal": "The request audits, reviews, fixes, polishes or extracts candidate conventions from an interactive surface without replacing its visual world.",
       "allowedModes": [
         "polish"
       ]
@@ -341,6 +347,37 @@
           "The request preserves the current interactive visual world."
         ],
         "unresolved": [],
+        "precedenceRule": "audit-or-polish-only"
+      }
+    },
+    {
+      "id": "existing-codebase-extraction",
+      "promptVariants": [
+        "Review this existing product codebase and extract its current design conventions without redesigning it."
+      ],
+      "result": {
+        "schemaVersion": 1,
+        "lane": "Review",
+        "designMode": "polish",
+        "surface": "experience",
+        "visualAuthority": "none",
+        "compositionState": "not-applicable",
+        "systemEffect": "extract",
+        "requiredCapabilities": [
+          "file_io",
+          "shell",
+          "isolated_subagents",
+          "browser_automation"
+        ],
+        "selectedProcedures": [
+          "references/review/polish.md"
+        ],
+        "assumptions": [
+          "Current implementation conventions are evidence, not accepted visual authority."
+        ],
+        "unresolved": [
+          "Issue #93 owns candidate verification and promotion into durable authority."
+        ],
         "precedenceRule": "audit-or-polish-only"
       }
     },
