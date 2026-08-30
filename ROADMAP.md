@@ -17,7 +17,7 @@ The current product boundary is governed by [ADR 0002](docs/decisions/0002-owned
 
 ## Current executable frontier
 
-The bounded v1.7 contraction is governed by [#74](https://github.com/George-RD/design-studio/issues/74). [#77](https://github.com/George-RD/design-studio/issues/77) owns the remaining repository metadata and publication work. [#78](https://github.com/George-RD/design-studio/issues/78) closes the release after #77, exact-head validation, and the `v1.7.0` tag/GitHub Release are complete.
+The bounded v1.7 contraction is governed by [#74](https://github.com/George-RD/design-studio/issues/74). Completed implementation evidence remains linked through [#75](https://github.com/George-RD/design-studio/issues/75) for the runtime seam and [#76](https://github.com/George-RD/design-studio/issues/76) for public-source installation. [#77](https://github.com/George-RD/design-studio/issues/77) owns the remaining repository metadata and publication work. [#78](https://github.com/George-RD/design-studio/issues/78) closes the release after #77, exact-head validation, and the `v1.7.0` tag/GitHub Release are complete.
 
 Prepared release evidence remains in [`docs/releases/v1.7.0.md`](docs/releases/v1.7.0.md). GitHub issue state, labels, and blockers determine executable work; this map does not restate their checklists.
 
