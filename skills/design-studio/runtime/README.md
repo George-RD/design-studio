@@ -9,6 +9,18 @@ This directory contains deterministic helpers that ship with the Design Studio A
 - The host supplies file access, shell, browser automation and optional page rendering. Helpers validate/normalize supplied evidence; they do not own a host, renderer or workflow policy.
 - Repository-only research/capability tooling stays outside installed runtime.
 
+## Design Intent
+
+`design-intent/index.mjs` implements `validate_design_intent`. It validates one supplied Design Intent result against `../design-intent-contract.json` and writes the same result when the required fields, enums, mode/lane/surface relationship, precedence rule and selected lane procedure are consistent.
+
+```text
+node runtime/design-intent/index.mjs input.json validated-intent.json
+```
+
+With no paths it reads JSON from standard input and writes JSON to standard output. Exit `0` means valid intent, exit `2` invalid supplied intent/JSON, exit `1` unexpected runtime error.
+
+The helper does not infer intent from a prompt, resolve artifact authority, invoke another skill, select a procedure, or execute a lane. The host/orchestrator supplies the classification after following `references/design-intent.md`; this validator protects one shared adapter seam.
+
 ## Mechanical preflight
 
 `mechanical/index.mjs` implements `mechanical_preflight`. It accepts current source/browser/page-artifact evidence, evaluates deterministic rules, applies exact authority-backed waivers and writes one normalized current snapshot.
@@ -37,6 +49,6 @@ The helper requires `surface: paginated-artifact`, `rendererNeutral: true`, a de
 
 ## Migration boundary
 
-The page-artifact extension is additive to mechanical schema version 1: existing source/browser snapshots remain unchanged when no page passes are supplied. The publication helper is a separate operation and does not turn a renderer into installed runtime or alter the frozen historical benchmark harness.
+Design Intent validation is additive to the stable runtime seam and does not replace lane execution. The page-artifact extension remains additive to mechanical schema version 1: existing source/browser snapshots remain unchanged when no page passes are supplied. The publication helper is a separate operation and does not turn a renderer into installed runtime or alter the frozen historical benchmark harness.
 
 Issue #42 remains separate repository-research reliability work. Future helpers should exist only for bounded deterministic behavior required by supported runtime operations.

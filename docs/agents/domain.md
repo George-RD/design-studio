@@ -16,7 +16,7 @@ This repository is single-context. System decisions live under `docs/decisions/`
 
 ## Vocabulary
 
-Use the project's established terms such as **owned method kernel**, **source-blind direction**, **source-aware Builder**, **source-blind evaluation**, **method intake**, **runtime seam**, and **adapter** consistently. Do not introduce synonyms when an existing term is adequate.
+Use the project's established terms such as **Design Intent**, **owned method kernel**, **source-blind direction**, **source-aware Builder**, **source-blind evaluation**, **method intake**, **runtime seam**, and **adapter** consistently. Do not introduce synonyms when an existing term is adequate.
 
 ## ADR conflicts
 
