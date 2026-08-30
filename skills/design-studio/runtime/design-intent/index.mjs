@@ -6,6 +6,8 @@ import { pathToFileURL } from 'node:url';
 const CONTRACT = JSON.parse(
   readFileSync(new URL('../../design-intent-contract.json', import.meta.url), 'utf8'),
 );
+const REQUIRED_FIELDS = new Set(CONTRACT.requiredFields);
+const LANE_PROCEDURES = new Set(CONTRACT.laneProcedures);
 const PRECEDENCE_RULES = new Map(CONTRACT.precedence.map((rule) => [rule.id, rule]));
 
 export class DesignIntentInputError extends Error {
@@ -49,6 +51,15 @@ function requireFields(record) {
     if (!Object.hasOwn(record, field)) {
       throw new DesignIntentInputError(`design intent must include ${field}`);
     }
+  }
+
+  const unexpected = Object.keys(record)
+    .filter((field) => !REQUIRED_FIELDS.has(field))
+    .sort();
+  if (unexpected.length) {
+    throw new DesignIntentInputError(
+      `design intent has unexpected fields: ${unexpected.join(', ')}`,
+    );
   }
 }
 
@@ -135,6 +146,13 @@ export function validateDesignIntent(input) {
     throw new DesignIntentInputError(
       `selectedProcedures must include ${modeRule.requiredProcedure} for ${designMode}`,
     );
+  }
+  for (const procedure of selectedProcedures) {
+    if (LANE_PROCEDURES.has(procedure) && procedure !== modeRule.requiredProcedure) {
+      throw new DesignIntentInputError(
+        `selectedProcedures cannot include lane procedure ${procedure} for ${designMode}`,
+      );
+    }
   }
 
   const precedence = PRECEDENCE_RULES.get(precedenceRule);
