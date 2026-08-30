@@ -4,14 +4,17 @@
 - **Decision date:** 2026-08-30
 - **Owners:** Design Studio maintainers
 - **Governing spec:** [#88](https://github.com/George-RD/design-studio/issues/88)
-- **Implementation gate:** [#78](https://github.com/George-RD/design-studio/issues/78) must close before product behaviour changes
+- **Implementation baseline:** verified v1.7 head `d6614f81e6d487ba2f20bca0aff7fe7e5c3d3e3c`, frozen at `release/v1.7.0`
+- **Publication ordering:** [#98](https://github.com/George-RD/design-studio/issues/98) depends on [#78](https://github.com/George-RD/design-studio/issues/78); v1.8 cannot publish before parked v1.7 publication closes
 - **Relationship:** Refines ADR 0002. It does not supersede ADR 0002, ADR 0003, or ADR 0004.
 
 ## Context
 
 Design Studio v1.7 owns one portable method kernel and already supports Studio, Review, and Document work. It also has a neutral artifact contract with Growth Arsenal and can codify accepted visual work into durable design-system outputs.
 
-The remaining failure class sits at the front door:
+Repository-owned v1.7 work was merged and exact-head verified at `d6614f81e6d487ba2f20bca0aff7fe7e5c3d3e3c`. The `release/v1.7.0` branch freezes that product baseline. Issues #77 and #78 now contain only external repository metadata, tag, GitHub Release, and final acceptance publication that require a publication-capable environment.
+
+The remaining product failure class sits at the front door:
 
 - users still choose design workflows through prompt wording rather than one explicit intent contract;
 - adding a page inside an accepted visual world can enter the same divergent exploration used for a new visual world;
@@ -22,6 +25,12 @@ The remaining failure class sits at the front door:
 The architecture review identified one high-leverage seam: decide intent and authority once, then route lane work, adjacent-skill composition, and design-system effects from that decision.
 
 ## Decision
+
+### Separate implementation readiness from release publication
+
+v1.8 implementation may proceed from the frozen, verified v1.7 baseline while #77 and #78 remain parked as `ready-for-human`. This avoids treating unavailable GitHub publication operations as technical prerequisites for unrelated product work.
+
+Release order remains strict at the publication boundary. #98 depends on #78, so the `v1.8.0` tag and GitHub Release cannot overtake `v1.7.0`. Any release-only acceptance commit on `release/v1.7.0` requires exact-head verification before tagging. Later v1.8 product commits do not rewrite the frozen v1.7 release line.
 
 ### Design Studio is the front door
 
@@ -80,6 +89,8 @@ After routing, composition, and lifecycle behaviour settles, apply writing-for-a
 
 ### Positive
 
+- Publication-environment limitations no longer idle safe product implementation.
+- Release ordering remains explicit and testable at #98.
 - Users can invoke one skill without remembering internal lanes or prompt combinations.
 - Create, extend, polish, overhaul, and paginated work have explicit and testable semantics.
 - Review and Document avoid unrelated Studio lifecycle context.
@@ -90,6 +101,7 @@ After routing, composition, and lifecycle behaviour settles, apply writing-for-a
 
 ### Costs and risks
 
+- Maintaining a frozen release branch adds a small release-management obligation until v1.7 publication completes.
 - Design Intent becomes a load-bearing contract and needs representative ambiguity fixtures.
 - Cross-repository composition requires coordinated public contracts and release sequencing.
 - A portable design-system profile adds migration and parity obligations.
@@ -97,9 +109,17 @@ After routing, composition, and lifecycle behaviour settles, apply writing-for-a
 - An eager composition preflight could add work to simple requests unless strategy-sensitive branches remain explicit.
 - Instruction pruning performed too early could remove behaviour that later structural tickets still need.
 
-These costs are accepted because the current manual routing and skill stacking already create inconsistent output and repeated human steering.
+These costs are accepted because the prior gate confused publication capability with implementation safety, while manual routing and skill stacking already create inconsistent output and repeated human steering.
 
 ## Alternatives rejected
+
+### Block all v1.8 implementation on v1.7 publication
+
+Rejected because repository metadata, tag, and GitHub Release operations do not change the verified product baseline needed by #89. Preserving order at #98 gives the release guarantee without idling unrelated implementation.
+
+### Publish v1.7 from the moving main branch later
+
+Rejected because v1.8 implementation can change product behaviour and release evidence. `release/v1.7.0` keeps the verified v1.7 line explicit.
 
 ### Create a separate Website Studio skill
 
@@ -129,6 +149,7 @@ Rejected because Design Studio owns its supported runtime and design-system auth
 
 Revisit this decision if:
 
+- the frozen v1.7 line cannot be published independently without product ambiguity;
 - repeated dogfood shows that the six modes cannot classify supported work without frequent manual override;
 - a separate website product develops distinct users, lifecycle, or acceptance authority beyond Design Studio;
 - public cross-skill invocation remains unavailable across representative hosts and artifact handoff cannot provide equivalent composition;
