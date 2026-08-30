@@ -53,6 +53,7 @@ class V17ReleaseClosureTests(unittest.TestCase):
         self.assertIn("v1.7 · portable design-engineering Agent Skill", landing)
         self.assertIn("Studio · Review · Document", landing)
         self.assertNotIn("Design Studio v1.5", landing)
+        self.assertNotIn("Optional Impeccable gate", landing)
 
     def test_release_record_cannot_claim_acceptance_before_external_publication(self) -> None:
         record = self.read("docs/releases/v1.7.0.md")
