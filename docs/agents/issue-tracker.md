@@ -1,26 +1,26 @@
 # Issue tracker: GitHub
 
-Issues and specs for this repository live in GitHub Issues for `George-RD/design-studio`.
+GitHub Issues in `George-RD/design-studio` are the authoritative executable backlog. Publish durable specs and implementation tickets there; `ROADMAP.md` only maps product state and frontier.
 
-## Conventions
+## Publishing
 
-- Publish specs as GitHub issues.
-- Publish implementation work as one GitHub issue per tracer-bullet ticket.
-- Put `Blocked by: #<n>` references in ticket bodies when native issue-dependency tooling is unavailable to the current agent.
-- Apply the `ready-for-agent` state label to fully specified tickets when the label exists in the tracker.
-- When selecting work, continue an existing open/draft implementation before choosing a new ready issue.
-- If there is no ready issue, `/implement` must stop cleanly rather than invent work or reviving historical roadmap items.
-- Do not treat pull requests as a feature-request/triage surface by default.
-- Do not modify or close a parent spec issue when creating implementation tickets from it.
+- Publish each specification as one issue.
+- Publish implementation work as one issue per tracer-bullet ticket.
+- Apply `ready-for-agent` only when the contract in `docs/agents/planning.md` is complete.
+- Do not treat pull requests as a feature-request or triage surface by default.
+- Do not close or rewrite a parent specification when deriving implementation tickets.
 
-## Pull requests as a triage surface
+## Relationships
 
-**PRs as a request surface: no.**
+- Put the governing specification in each implementation ticket's `Parent` section.
+- Prefer native GitHub sub-issue and blocking relationships when the available tooling supports them.
+- Otherwise put `Blocked by: #<n>` references in the ticket body.
+- Record only immediate blockers; transitive blockers are derived from the graph.
 
-## When a skill says "publish to the issue tracker"
+## Reading work
 
-Create a GitHub issue in this repository.
+- Read an issue's full body, comments, labels, and open blockers before acting.
+- When an implementation ticket names a parent, follow that relationship to the governing specification.
+- For specification review, use both the parent specification and the implementation ticket: the parent owns product requirements; the child owns slice-specific acceptance criteria.
 
-## When a skill says "fetch the relevant ticket"
-
-Read the full issue body and comments before acting.
+Work selection is defined once in `docs/agents/work-selection.md`.

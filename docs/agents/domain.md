@@ -6,7 +6,7 @@ How engineering skills should consume this repository's domain documentation.
 
 - Read `CONTEXT.md` if it exists.
 - Read the relevant accepted or superseding records in `docs/decisions/` before proposing architecture changes.
-- Read `ROADMAP.md` only as a navigation/index document; durable planned work should be represented by GitHub issues.
+- Use [`ROADMAP.md`](../../ROADMAP.md) according to its authority statement; represent durable planned work as GitHub issues.
 
 If `CONTEXT.md` does not exist, proceed silently. Create or extend domain vocabulary only when real terminology needs to be made durable.
 

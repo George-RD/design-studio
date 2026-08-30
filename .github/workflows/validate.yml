@@ -228,6 +228,10 @@ jobs:
         shell: bash
         run: python3 -m unittest discover -s test -p 'test_clean_install_contract.py' -v
 
+      - name: Validate engineering skill ownership
+        shell: bash
+        run: python3 -m unittest discover -s test -p 'test_engineering_skill_management.py' -v
+
       - name: Start documentation server
         shell: bash
         run: |
