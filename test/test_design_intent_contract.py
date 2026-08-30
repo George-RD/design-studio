@@ -12,7 +12,6 @@ SKILL_ROOT = ROOT / "skills" / "design-studio"
 CONTRACT_PATH = SKILL_ROOT / "design-intent-contract.json"
 REFERENCE_PATH = SKILL_ROOT / "references" / "design-intent.md"
 RUNTIME_PATH = SKILL_ROOT / "runtime" / "design-intent" / "index.mjs"
-AUTHORITY_MAP_PATH = ROOT / "docs" / "method-authority-map.json"
 
 
 class DesignIntentContractTests(unittest.TestCase):
@@ -143,6 +142,12 @@ class DesignIntentContractTests(unittest.TestCase):
                     example["result"]["precedenceRule"],
                     {rule["id"] for rule in precedence},
                 )
+                required = contract["modeRules"][example["result"]["designMode"]][
+                    "requiredCapabilities"
+                ]
+                self.assertTrue(
+                    set(required).issubset(example["result"]["requiredCapabilities"])
+                )
 
     def test_runtime_validates_representative_design_intents(self) -> None:
         contract = self.load(CONTRACT_PATH)
@@ -183,6 +188,18 @@ class DesignIntentContractTests(unittest.TestCase):
                 "precedenceRule must be one of",
             ),
             (
+                "missing capability",
+                {
+                    **baseline,
+                    "requiredCapabilities": [
+                        item
+                        for item in baseline["requiredCapabilities"]
+                        if item != "browser_automation"
+                    ],
+                },
+                "requiredCapabilities must include browser_automation",
+            ),
+            (
                 "missing lane procedure",
                 {**baseline, "selectedProcedures": ["references/rationale.md"]},
                 "selectedProcedures must include workflow.yaml",
@@ -217,9 +234,11 @@ class DesignIntentContractTests(unittest.TestCase):
         )
         self.assertIn("design-intent-contract.json", router["coreAuthorities"])
         self.assertIn("references/design-intent.md", router["coreAuthorities"])
-        leaf = next(item for item in router["leaves"] if item["path"] == "references/design-intent.md")
-        self.assertEqual("canonical", leaf["authorityRole"])
-        self.assertEqual(["design-intent"], leaf["conceptIds"])
+        self.assertNotIn(
+            "references/design-intent.md",
+            {item["path"] for item in router["leaves"]},
+            "Design Intent is a core front-door authority, not a conditionally disclosed method leaf",
+        )
 
     def test_invocation_and_runtime_share_one_adapter_taxonomy(self) -> None:
         invocation = self.read(SKILL_ROOT / "invocation.md")
@@ -239,25 +258,22 @@ class DesignIntentContractTests(unittest.TestCase):
         self.assertIn("design-intent/index.mjs", runtime_readme)
         self.assertIn("does not infer", runtime_readme)
 
-    def test_governance_records_design_intent_once_and_splits_release_gate(self) -> None:
-        authority_map = self.load(AUTHORITY_MAP_PATH)
-        concept = next(item for item in authority_map["concepts"] if item["conceptId"] == "design-intent")
-        self.assertEqual("orchestration-runtime", concept["domain"])
-        self.assertEqual("canonical-local", concept["authority"]["kind"])
-        self.assertEqual(
-            "skills/design-studio/references/design-intent.md",
-            concept["authority"]["canonicalPath"],
-        )
-        self.assertEqual("always", concept["routing"]["mode"])
-        self.assertIs(concept["upstreamRuntimeRequired"], False)
-        self.assertEqual([], concept["externalOverlaps"])
+        for command in (ROOT / "commands" / "create.md", ROOT / "commands" / "review.md"):
+            with self.subTest(command=command.name):
+                text = self.read(command)
+                self.assertIn("design-intent-contract.json", text)
+                self.assertIn("references/design-intent.md", text)
+                self.assertIn("validated Design Intent", text)
 
+    def test_governance_records_design_intent_once_and_splits_release_gate(self) -> None:
         domain = self.read(ROOT / "docs" / "agents" / "domain.md")
-        authority_markdown = self.read(ROOT / "docs" / "method-authority-map.md")
         adr = self.read(ROOT / "docs" / "decisions" / "0005-intent-router-and-website-composition.md")
         roadmap = self.read(ROOT / "ROADMAP.md")
+        reference = self.read(REFERENCE_PATH)
+
         self.assertIn("**Design Intent**", domain)
-        self.assertIn("| Design Intent |", authority_markdown)
+        self.assertIn("**Design Intent** decision is the highest stable interface", adr)
+        self.assertIn("This reference owns request classification vocabulary and precedence", reference)
         self.assertIn("release/v1.7.0", adr)
         self.assertIn("#98", adr)
         self.assertNotIn("#78 must close before product behaviour changes", adr)
