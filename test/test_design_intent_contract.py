@@ -41,6 +41,14 @@ class DesignIntentContractTests(unittest.TestCase):
             ["task", "surface", "interaction", "evidence"],
             contract["routerSignalDimensions"],
         )
+        self.assertEqual(
+            [
+                "workflow.yaml",
+                "references/review/polish.md",
+                "references/document/document.md",
+            ],
+            contract["laneProcedures"],
+        )
 
         self.assertEqual(["Studio", "Review", "Document"], contract["enums"]["lane"])
         self.assertEqual(
@@ -110,8 +118,10 @@ class DesignIntentContractTests(unittest.TestCase):
         self.assertIn("ranked precedence", reference.lower())
         self.assertIn("page or print", reference.lower())
         self.assertIn("audit or polish", reference.lower())
+        self.assertIn("Issue #90 owns lane-first procedure loading", reference)
+        self.assertNotIn("Load only the selected procedure", reference)
 
-    def test_contract_examples_cover_modes_authority_and_prompt_order(self) -> None:
+    def test_contract_examples_cover_modes_authority_prompt_order_and_extraction(self) -> None:
         contract = self.load(CONTRACT_PATH)
         examples = contract["classificationExamples"]
         self.assertEqual(
@@ -128,6 +138,15 @@ class DesignIntentContractTests(unittest.TestCase):
             {example["result"]["surface"] for example in examples},
         )
         self.assertTrue(any(len(example["promptVariants"]) > 1 for example in examples))
+
+        extraction = next(
+            example for example in examples if example["id"] == "existing-codebase-extraction"
+        )["result"]
+        self.assertEqual("Review", extraction["lane"])
+        self.assertEqual("polish", extraction["designMode"])
+        self.assertEqual("none", extraction["visualAuthority"])
+        self.assertEqual("extract", extraction["systemEffect"])
+        self.assertIn("extract", contract["modeRules"]["polish"]["systemEffects"])
 
         precedence = contract["precedence"]
         self.assertEqual(
@@ -170,6 +189,11 @@ class DesignIntentContractTests(unittest.TestCase):
     def test_runtime_rejects_inconsistent_or_parallel_taxonomy(self) -> None:
         contract = self.load(CONTRACT_PATH)
         baseline = contract["classificationExamples"][0]["result"]
+        review = next(
+            example["result"]
+            for example in contract["classificationExamples"]
+            if example["result"]["designMode"] == "polish"
+        )
         invalid_cases = [
             ("wrong lane", {**baseline, "lane": "Document"}, "requires lane Studio"),
             (
@@ -181,6 +205,11 @@ class DesignIntentContractTests(unittest.TestCase):
                 "unknown mode",
                 {**baseline, "designMode": "redesign"},
                 "designMode must be one of",
+            ),
+            (
+                "parallel taxonomy",
+                {**baseline, "mode": "create"},
+                "design intent has unexpected fields: mode",
             ),
             (
                 "unknown precedence",
@@ -203,6 +232,17 @@ class DesignIntentContractTests(unittest.TestCase):
                 "missing lane procedure",
                 {**baseline, "selectedProcedures": ["references/rationale.md"]},
                 "selectedProcedures must include workflow.yaml",
+            ),
+            (
+                "cross-lane procedure",
+                {
+                    **review,
+                    "selectedProcedures": [
+                        "references/review/polish.md",
+                        "workflow.yaml",
+                    ],
+                },
+                "selectedProcedures cannot include lane procedure workflow.yaml for polish",
             ),
         ]
 
