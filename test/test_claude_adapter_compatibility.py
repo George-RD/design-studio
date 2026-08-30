@@ -36,6 +36,9 @@ class ClaudeAdapterCompatibilityTests(unittest.TestCase):
                 )
                 self.assertIn("Claude Code adapter", body)
                 self.assertIn("skills/design-studio/SKILL.md", body)
+                self.assertIn("skills/design-studio/design-intent-contract.json", body)
+                self.assertIn("skills/design-studio/references/design-intent.md", body)
+                self.assertIn("validated Design Intent", body)
                 self.assertIn(entrypoint, body)
                 self.assertIn("invocation metadata only", body)
                 self.assertNotRegex(body, r"\b(?:REFINE|PIVOT|SHIP|HALT)\b")
@@ -78,8 +81,11 @@ class ClaudeAdapterCompatibilityTests(unittest.TestCase):
         required = [
             "SKILL.md",
             "invocation.md",
+            "design-intent-contract.json",
+            "references/design-intent.md",
             "workflow.yaml",
             "runtime-contract.md",
+            "runtime/design-intent/index.mjs",
             "method-router.json",
             "references/runtime-integrity.md",
             "agents/design-agent.md",
