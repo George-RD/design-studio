@@ -1,0 +1,436 @@
+{
+  "schemaVersion": 1,
+  "status": "authoritative-design-intent-contract",
+  "governingDecision": "docs/decisions/0005-intent-router-and-website-composition.md",
+  "hostNeutral": true,
+  "classificationField": "designMode",
+  "compositionAuthority": "composition-contract.json",
+  "runtimeOperation": "validate_design_intent",
+  "routerSignalDimensions": [
+    "task",
+    "surface",
+    "interaction",
+    "evidence"
+  ],
+  "requiredFields": [
+    "schemaVersion",
+    "lane",
+    "designMode",
+    "surface",
+    "visualAuthority",
+    "compositionState",
+    "systemEffect",
+    "requiredCapabilities",
+    "selectedProcedures",
+    "assumptions",
+    "unresolved",
+    "precedenceRule"
+  ],
+  "enums": {
+    "lane": [
+      "Studio",
+      "Review",
+      "Document"
+    ],
+    "designMode": [
+      "create",
+      "extend",
+      "polish",
+      "overhaul",
+      "document-create",
+      "document-review"
+    ],
+    "surface": [
+      "persuade",
+      "operate",
+      "read",
+      "experience",
+      "paginated-artifact"
+    ],
+    "visualAuthority": [
+      "none",
+      "accepted-design-system",
+      "selected-direction",
+      "document-visual-contract"
+    ],
+    "compositionState": [
+      "ready",
+      "missing",
+      "stale",
+      "not-applicable"
+    ],
+    "systemEffect": [
+      "establish",
+      "preserve",
+      "extend",
+      "replace",
+      "extract",
+      "none"
+    ],
+    "requiredCapability": [
+      "file_io",
+      "shell",
+      "isolated_subagents",
+      "browser_automation",
+      "page_artifact_rendering"
+    ]
+  },
+  "modeRules": {
+    "create": {
+      "lane": "Studio",
+      "surfaces": [
+        "persuade",
+        "operate",
+        "read",
+        "experience"
+      ],
+      "visualAuthorities": [
+        "none"
+      ],
+      "systemEffects": [
+        "establish"
+      ],
+      "requiredProcedure": "workflow.yaml",
+      "requiredCapabilities": [
+        "file_io",
+        "shell",
+        "isolated_subagents",
+        "browser_automation"
+      ]
+    },
+    "extend": {
+      "lane": "Studio",
+      "surfaces": [
+        "persuade",
+        "operate",
+        "read",
+        "experience"
+      ],
+      "visualAuthorities": [
+        "accepted-design-system"
+      ],
+      "systemEffects": [
+        "preserve",
+        "extend"
+      ],
+      "requiredProcedure": "workflow.yaml",
+      "requiredCapabilities": [
+        "file_io",
+        "shell",
+        "isolated_subagents",
+        "browser_automation"
+      ]
+    },
+    "polish": {
+      "lane": "Review",
+      "surfaces": [
+        "persuade",
+        "operate",
+        "read",
+        "experience"
+      ],
+      "visualAuthorities": [
+        "none",
+        "accepted-design-system",
+        "selected-direction"
+      ],
+      "systemEffects": [
+        "preserve",
+        "none"
+      ],
+      "requiredProcedure": "references/review/polish.md",
+      "requiredCapabilities": [
+        "file_io",
+        "shell",
+        "isolated_subagents",
+        "browser_automation"
+      ]
+    },
+    "overhaul": {
+      "lane": "Studio",
+      "surfaces": [
+        "persuade",
+        "operate",
+        "read",
+        "experience"
+      ],
+      "visualAuthorities": [
+        "none",
+        "accepted-design-system",
+        "selected-direction"
+      ],
+      "systemEffects": [
+        "replace"
+      ],
+      "requiredProcedure": "workflow.yaml",
+      "requiredCapabilities": [
+        "file_io",
+        "shell",
+        "isolated_subagents",
+        "browser_automation"
+      ]
+    },
+    "document-create": {
+      "lane": "Document",
+      "surfaces": [
+        "paginated-artifact"
+      ],
+      "visualAuthorities": [
+        "none",
+        "document-visual-contract"
+      ],
+      "systemEffects": [
+        "establish",
+        "extend"
+      ],
+      "requiredProcedure": "references/document/document.md",
+      "requiredCapabilities": [
+        "file_io",
+        "shell",
+        "isolated_subagents",
+        "page_artifact_rendering"
+      ]
+    },
+    "document-review": {
+      "lane": "Document",
+      "surfaces": [
+        "paginated-artifact"
+      ],
+      "visualAuthorities": [
+        "none",
+        "document-visual-contract"
+      ],
+      "systemEffects": [
+        "preserve",
+        "none"
+      ],
+      "requiredProcedure": "references/document/document.md",
+      "requiredCapabilities": [
+        "file_io",
+        "shell",
+        "isolated_subagents",
+        "page_artifact_rendering"
+      ]
+    }
+  },
+  "precedence": [
+    {
+      "rank": 1,
+      "id": "document-page-or-print",
+      "signal": "The requested primary output is a paginated page, print or PDF artifact rather than an interactive surface with incidental export.",
+      "allowedModes": [
+        "document-create",
+        "document-review"
+      ]
+    },
+    {
+      "rank": 2,
+      "id": "explicit-overhaul",
+      "signal": "The user explicitly asks to replace or materially reinvent the current interactive visual world.",
+      "allowedModes": [
+        "overhaul"
+      ]
+    },
+    {
+      "rank": 3,
+      "id": "accepted-world-extension",
+      "signal": "The request adds a surface, feature or reusable pattern inside accepted visual authority.",
+      "allowedModes": [
+        "extend"
+      ]
+    },
+    {
+      "rank": 4,
+      "id": "audit-or-polish-only",
+      "signal": "The request asks only to audit, review, fix or polish an interactive surface while preserving its visual world.",
+      "allowedModes": [
+        "polish"
+      ]
+    },
+    {
+      "rank": 5,
+      "id": "new-interactive-surface",
+      "signal": "The request creates a new interactive visual world and no higher-ranked rule applies.",
+      "allowedModes": [
+        "create"
+      ]
+    }
+  ],
+  "classificationExamples": [
+    {
+      "id": "greenfield-marketing-site",
+      "promptVariants": [
+        "Create a new marketing site for the product."
+      ],
+      "result": {
+        "schemaVersion": 1,
+        "lane": "Studio",
+        "designMode": "create",
+        "surface": "persuade",
+        "visualAuthority": "none",
+        "compositionState": "missing",
+        "systemEffect": "establish",
+        "requiredCapabilities": [
+          "file_io",
+          "shell",
+          "isolated_subagents",
+          "browser_automation"
+        ],
+        "selectedProcedures": [
+          "workflow.yaml"
+        ],
+        "assumptions": [],
+        "unresolved": [
+          "Commercial composition inputs require confirmation before visual direction."
+        ],
+        "precedenceRule": "new-interactive-surface"
+      }
+    },
+    {
+      "id": "accepted-world-new-route",
+      "promptVariants": [
+        "Add an account settings route using the accepted design system."
+      ],
+      "result": {
+        "schemaVersion": 1,
+        "lane": "Studio",
+        "designMode": "extend",
+        "surface": "operate",
+        "visualAuthority": "accepted-design-system",
+        "compositionState": "ready",
+        "systemEffect": "preserve",
+        "requiredCapabilities": [
+          "file_io",
+          "shell",
+          "isolated_subagents",
+          "browser_automation"
+        ],
+        "selectedProcedures": [
+          "workflow.yaml"
+        ],
+        "assumptions": [
+          "The accepted design system is current for this project scope."
+        ],
+        "unresolved": [],
+        "precedenceRule": "accepted-world-extension"
+      }
+    },
+    {
+      "id": "interactive-polish",
+      "promptVariants": [
+        "Audit this dashboard and polish the existing hierarchy without redesigning it."
+      ],
+      "result": {
+        "schemaVersion": 1,
+        "lane": "Review",
+        "designMode": "polish",
+        "surface": "read",
+        "visualAuthority": "accepted-design-system",
+        "compositionState": "not-applicable",
+        "systemEffect": "preserve",
+        "requiredCapabilities": [
+          "file_io",
+          "shell",
+          "isolated_subagents",
+          "browser_automation"
+        ],
+        "selectedProcedures": [
+          "references/review/polish.md"
+        ],
+        "assumptions": [
+          "The request preserves the current interactive visual world."
+        ],
+        "unresolved": [],
+        "precedenceRule": "audit-or-polish-only"
+      }
+    },
+    {
+      "id": "explicit-interactive-overhaul",
+      "promptVariants": [
+        "Completely overhaul the product experience and replace the current visual direction."
+      ],
+      "result": {
+        "schemaVersion": 1,
+        "lane": "Studio",
+        "designMode": "overhaul",
+        "surface": "experience",
+        "visualAuthority": "accepted-design-system",
+        "compositionState": "ready",
+        "systemEffect": "replace",
+        "requiredCapabilities": [
+          "file_io",
+          "shell",
+          "isolated_subagents",
+          "browser_automation"
+        ],
+        "selectedProcedures": [
+          "workflow.yaml"
+        ],
+        "assumptions": [
+          "Confirmed product truth and approved copy remain authoritative unless explicitly reopened."
+        ],
+        "unresolved": [],
+        "precedenceRule": "explicit-overhaul"
+      }
+    },
+    {
+      "id": "new-paginated-proposal",
+      "promptVariants": [
+        "Create a new printable proposal as an A4 PDF."
+      ],
+      "result": {
+        "schemaVersion": 1,
+        "lane": "Document",
+        "designMode": "document-create",
+        "surface": "paginated-artifact",
+        "visualAuthority": "none",
+        "compositionState": "not-applicable",
+        "systemEffect": "establish",
+        "requiredCapabilities": [
+          "file_io",
+          "shell",
+          "isolated_subagents",
+          "page_artifact_rendering"
+        ],
+        "selectedProcedures": [
+          "references/document/document.md"
+        ],
+        "assumptions": [
+          "The supplied structured content is authoritative for document production."
+        ],
+        "unresolved": [],
+        "precedenceRule": "document-page-or-print"
+      }
+    },
+    {
+      "id": "existing-pdf-review",
+      "promptVariants": [
+        "Review this existing PDF and polish its layout without changing the page world.",
+        "Polish the layout without changing its page world; this target is an existing PDF for review."
+      ],
+      "result": {
+        "schemaVersion": 1,
+        "lane": "Document",
+        "designMode": "document-review",
+        "surface": "paginated-artifact",
+        "visualAuthority": "document-visual-contract",
+        "compositionState": "not-applicable",
+        "systemEffect": "preserve",
+        "requiredCapabilities": [
+          "file_io",
+          "shell",
+          "isolated_subagents",
+          "page_artifact_rendering"
+        ],
+        "selectedProcedures": [
+          "references/document/document.md"
+        ],
+        "assumptions": [
+          "The existing page system is the visual authority to preserve."
+        ],
+        "unresolved": [],
+        "precedenceRule": "document-page-or-print"
+      }
+    }
+  ]
+}
