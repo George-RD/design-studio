@@ -76,6 +76,7 @@
       "file_io",
       "shell",
       "isolated_subagents",
+      "runnable_target",
       "browser_automation",
       "page_artifact_rendering"
     ]
@@ -100,6 +101,7 @@
         "file_io",
         "shell",
         "isolated_subagents",
+        "runnable_target",
         "browser_automation"
       ]
     },
@@ -123,6 +125,7 @@
         "file_io",
         "shell",
         "isolated_subagents",
+        "runnable_target",
         "browser_automation"
       ]
     },
@@ -149,6 +152,7 @@
         "file_io",
         "shell",
         "isolated_subagents",
+        "runnable_target",
         "browser_automation"
       ]
     },
@@ -173,6 +177,7 @@
         "file_io",
         "shell",
         "isolated_subagents",
+        "runnable_target",
         "browser_automation"
       ]
     },
@@ -280,6 +285,7 @@
           "file_io",
           "shell",
           "isolated_subagents",
+          "runnable_target",
           "browser_automation"
         ],
         "selectedProcedures": [
@@ -309,6 +315,7 @@
           "file_io",
           "shell",
           "isolated_subagents",
+          "runnable_target",
           "browser_automation"
         ],
         "selectedProcedures": [
@@ -338,6 +345,7 @@
           "file_io",
           "shell",
           "isolated_subagents",
+          "runnable_target",
           "browser_automation"
         ],
         "selectedProcedures": [
@@ -367,6 +375,7 @@
           "file_io",
           "shell",
           "isolated_subagents",
+          "runnable_target",
           "browser_automation"
         ],
         "selectedProcedures": [
@@ -398,6 +407,7 @@
           "file_io",
           "shell",
           "isolated_subagents",
+          "runnable_target",
           "browser_automation"
         ],
         "selectedProcedures": [
