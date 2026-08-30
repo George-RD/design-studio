@@ -49,6 +49,7 @@ class DesignIntentContractTests(unittest.TestCase):
             ],
             contract["laneProcedures"],
         )
+        self.assertIn("runnable_target", contract["enums"]["requiredCapability"])
 
         self.assertEqual(["Studio", "Review", "Document"], contract["enums"]["lane"])
         self.assertEqual(
@@ -167,6 +168,11 @@ class DesignIntentContractTests(unittest.TestCase):
                 self.assertTrue(
                     set(required).issubset(example["result"]["requiredCapabilities"])
                 )
+                if example["result"]["surface"] != "paginated-artifact":
+                    self.assertIn(
+                        "runnable_target",
+                        example["result"]["requiredCapabilities"],
+                    )
 
     def test_runtime_validates_representative_design_intents(self) -> None:
         contract = self.load(CONTRACT_PATH)
@@ -217,7 +223,19 @@ class DesignIntentContractTests(unittest.TestCase):
                 "precedenceRule must be one of",
             ),
             (
-                "missing capability",
+                "missing runnable target",
+                {
+                    **baseline,
+                    "requiredCapabilities": [
+                        item
+                        for item in baseline["requiredCapabilities"]
+                        if item != "runnable_target"
+                    ],
+                },
+                "requiredCapabilities must include runnable_target",
+            ),
+            (
+                "missing browser capability",
                 {
                     **baseline,
                     "requiredCapabilities": [
