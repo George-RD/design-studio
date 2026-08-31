@@ -1,0 +1,46 @@
+name: Temporary document runtime export
+
+on:
+  push:
+    branches:
+      - agent/tmp-document-runtime-0.15.1
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    name: Package Typst 0.15.1 and IBM Plex
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Install deterministic document fonts
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fonts-ibm-plex xz-utils
+      - name: Package pinned runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p runtime/bin runtime/fonts
+          curl -fsSL \
+            https://github.com/typst/typst/releases/download/v0.15.1/typst-x86_64-unknown-linux-musl.tar.xz \
+            -o /tmp/typst.tar.xz
+          echo "a6d077d0a95eed5a2eba715b2dae06be954f624ccbf85758a03f389ded33118c  /tmp/typst.tar.xz" | sha256sum -c -
+          tar -xJf /tmp/typst.tar.xz -C /tmp
+          install -m 0755 /tmp/typst-x86_64-unknown-linux-musl/typst runtime/bin/typst
+          test "$(runtime/bin/typst --version | awk '{print $2}')" = "0.15.1"
+          find /usr/share/fonts -type f \
+            \( -iname 'IBMPlexSans*.ttf' -o -iname 'IBMPlexSans*.otf' -o -iname 'IBMPlexMono*.ttf' -o -iname 'IBMPlexMono*.otf' \) \
+            -exec cp '{}' runtime/fonts/ \;
+          test "$(find runtime/fonts -type f | wc -l)" -gt 0
+          runtime/bin/typst fonts --ignore-system-fonts --font-path runtime/fonts | grep -Fx 'IBM Plex Sans'
+          runtime/bin/typst fonts --ignore-system-fonts --font-path runtime/fonts | grep -Fx 'IBM Plex Sans Condensed'
+          runtime/bin/typst fonts --ignore-system-fonts --font-path runtime/fonts | grep -Fx 'IBM Plex Mono'
+          sha256sum runtime/bin/typst runtime/fonts/* > runtime/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: horaxon-document-runtime-typst-0.15.1
+          path: runtime
+          if-no-files-found: error
+          retention-days: 1
