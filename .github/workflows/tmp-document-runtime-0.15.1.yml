@@ -32,18 +32,18 @@ jobs:
           test "$(runtime/bin/typst --version | awk '{print $2}')" = "0.15.1"
 
           curl -fsSL \
-            https://github.com/IBM/plex/releases/download/v6.1.1/TrueType.zip \
-            -o /tmp/ibm-plex-6.1.1-TrueType.zip
-          unzip -q /tmp/ibm-plex-6.1.1-TrueType.zip -d /tmp/plex
+            https://github.com/IBM/plex/releases/download/v6.1.1/OpenType.zip \
+            -o /tmp/ibm-plex-6.1.1-OpenType.zip
+          unzip -q /tmp/ibm-plex-6.1.1-OpenType.zip -d /tmp/plex
           find /tmp/plex -type f \
-            \( -iname 'IBMPlexSans-*.ttf' -o -iname 'IBMPlexSansCondensed-*.ttf' -o -iname 'IBMPlexMono-*.ttf' \) \
+            \( -iname 'IBMPlexSans-*.otf' -o -iname 'IBMPlexSansCondensed-*.otf' -o -iname 'IBMPlexMono-*.otf' \) \
             -print -exec cp '{}' runtime/fonts/ \;
           test "$(find runtime/fonts -type f | wc -l)" -gt 0
           runtime/bin/typst fonts --ignore-system-fonts --font-path runtime/fonts | tee runtime/FONT-FAMILIES.txt
           grep -Fx 'IBM Plex Sans' runtime/FONT-FAMILIES.txt
           grep -Fx 'IBM Plex Sans Condensed' runtime/FONT-FAMILIES.txt
           grep -Fx 'IBM Plex Mono' runtime/FONT-FAMILIES.txt
-          sha256sum /tmp/ibm-plex-6.1.1-TrueType.zip > runtime/FONT-ARCHIVE-SHA256
+          sha256sum /tmp/ibm-plex-6.1.1-OpenType.zip > runtime/FONT-ARCHIVE-SHA256
           sha256sum runtime/bin/typst runtime/fonts/* > runtime/SHA256SUMS
       - uses: actions/upload-artifact@v4
         with:
