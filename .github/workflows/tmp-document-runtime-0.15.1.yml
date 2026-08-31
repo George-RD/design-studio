@@ -35,9 +35,9 @@ jobs:
             https://github.com/IBM/plex/releases/download/v6.1.1/TrueType.zip \
             -o /tmp/ibm-plex-6.1.1-TrueType.zip
           unzip -q /tmp/ibm-plex-6.1.1-TrueType.zip -d /tmp/plex
-          find /tmp/plex -type f -path '*/hinted/ttf/*' \
+          find /tmp/plex -type f \
             \( -iname 'IBMPlexSans-*.ttf' -o -iname 'IBMPlexSansCondensed-*.ttf' -o -iname 'IBMPlexMono-*.ttf' \) \
-            -exec cp '{}' runtime/fonts/ \;
+            -print -exec cp '{}' runtime/fonts/ \;
           test "$(find runtime/fonts -type f | wc -l)" -gt 0
           runtime/bin/typst fonts --ignore-system-fonts --font-path runtime/fonts | tee runtime/FONT-FAMILIES.txt
           grep -Fx 'IBM Plex Sans' runtime/FONT-FAMILIES.txt
