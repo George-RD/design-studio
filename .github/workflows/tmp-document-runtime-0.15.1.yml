@@ -14,15 +14,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Install deterministic document fonts
+      - name: Install archive tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y fonts-ibm-plex xz-utils
+          sudo apt-get install -y unzip xz-utils
       - name: Package pinned runtime
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p runtime/bin runtime/fonts
+          mkdir -p runtime/bin runtime/fonts /tmp/plex
           curl -fsSL \
             https://github.com/typst/typst/releases/download/v0.15.1/typst-x86_64-unknown-linux-musl.tar.xz \
             -o /tmp/typst.tar.xz
@@ -30,13 +30,20 @@ jobs:
           tar -xJf /tmp/typst.tar.xz -C /tmp
           install -m 0755 /tmp/typst-x86_64-unknown-linux-musl/typst runtime/bin/typst
           test "$(runtime/bin/typst --version | awk '{print $2}')" = "0.15.1"
-          find /usr/share/fonts -type f \
-            \( -iname 'IBMPlexSans*.ttf' -o -iname 'IBMPlexSans*.otf' -o -iname 'IBMPlexMono*.ttf' -o -iname 'IBMPlexMono*.otf' \) \
+
+          curl -fsSL \
+            https://github.com/IBM/plex/releases/download/v6.1.1/TrueType.zip \
+            -o /tmp/ibm-plex-6.1.1-TrueType.zip
+          unzip -q /tmp/ibm-plex-6.1.1-TrueType.zip -d /tmp/plex
+          find /tmp/plex -type f -path '*/hinted/ttf/*' \
+            \( -iname 'IBMPlexSans-*.ttf' -o -iname 'IBMPlexSansCondensed-*.ttf' -o -iname 'IBMPlexMono-*.ttf' \) \
             -exec cp '{}' runtime/fonts/ \;
           test "$(find runtime/fonts -type f | wc -l)" -gt 0
-          runtime/bin/typst fonts --ignore-system-fonts --font-path runtime/fonts | grep -Fx 'IBM Plex Sans'
-          runtime/bin/typst fonts --ignore-system-fonts --font-path runtime/fonts | grep -Fx 'IBM Plex Sans Condensed'
-          runtime/bin/typst fonts --ignore-system-fonts --font-path runtime/fonts | grep -Fx 'IBM Plex Mono'
+          runtime/bin/typst fonts --ignore-system-fonts --font-path runtime/fonts | tee runtime/FONT-FAMILIES.txt
+          grep -Fx 'IBM Plex Sans' runtime/FONT-FAMILIES.txt
+          grep -Fx 'IBM Plex Sans Condensed' runtime/FONT-FAMILIES.txt
+          grep -Fx 'IBM Plex Mono' runtime/FONT-FAMILIES.txt
+          sha256sum /tmp/ibm-plex-6.1.1-TrueType.zip > runtime/FONT-ARCHIVE-SHA256
           sha256sum runtime/bin/typst runtime/fonts/* > runtime/SHA256SUMS
       - uses: actions/upload-artifact@v4
         with:
