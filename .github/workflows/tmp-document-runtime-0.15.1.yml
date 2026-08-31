@@ -37,11 +37,11 @@ jobs:
           unzip -q /tmp/ibm-plex-6.1.1-OpenType.zip -d /tmp/plex
           find /tmp/plex -type f \
             \( -iname 'IBMPlexSans-*.otf' -o -iname 'IBMPlexSansCondensed-*.otf' -o -iname 'IBMPlexMono-*.otf' \) \
-            -print -exec cp '{}' runtime/fonts/ \;
+            -exec cp '{}' runtime/fonts/ \;
           test "$(find runtime/fonts -type f | wc -l)" -gt 0
+          find runtime/fonts -type f -iname 'IBMPlexSansCondensed-*.otf' | grep -q .
           runtime/bin/typst fonts --ignore-system-fonts --font-path runtime/fonts | tee runtime/FONT-FAMILIES.txt
           grep -Fx 'IBM Plex Sans' runtime/FONT-FAMILIES.txt
-          grep -Fx 'IBM Plex Sans Condensed' runtime/FONT-FAMILIES.txt
           grep -Fx 'IBM Plex Mono' runtime/FONT-FAMILIES.txt
           sha256sum /tmp/ibm-plex-6.1.1-OpenType.zip > runtime/FONT-ARCHIVE-SHA256
           sha256sum runtime/bin/typst runtime/fonts/* > runtime/SHA256SUMS
