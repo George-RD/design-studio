@@ -148,7 +148,12 @@ export function validateDesignIntent(input) {
     );
   }
   for (const procedure of selectedProcedures) {
-    if (LANE_PROCEDURES.has(procedure) && procedure !== modeRule.requiredProcedure) {
+    if (!LANE_PROCEDURES.has(procedure)) {
+      throw new DesignIntentInputError(
+        `selectedProcedures contains undeclared procedure ${procedure}`,
+      );
+    }
+    if (procedure !== modeRule.requiredProcedure) {
       throw new DesignIntentInputError(
         `selectedProcedures cannot include lane procedure ${procedure} for ${designMode}`,
       );
