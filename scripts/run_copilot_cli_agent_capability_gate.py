@@ -36,6 +36,10 @@ for _name in _PROXIED_BASE_GLOBALS:
     globals()[_name] = getattr(base, _name)
 
 core = base.core
+# The base moved under benchmarks; executable wrappers remain beside this entrypoint.
+core.BROWSER_SCRIPT = Path(__file__).resolve().with_name(
+    "run_browser_capability_completion.mjs"
+)
 
 _ORIGINAL_BUILDER_PROMPT_MARKER = "_design_studio_hardening_original_builder_prompt"
 if not hasattr(base, _ORIGINAL_BUILDER_PROMPT_MARKER):
