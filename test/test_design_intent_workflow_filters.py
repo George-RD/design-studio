@@ -13,6 +13,7 @@ WORKFLOW = ROOT / ".github/workflows/runtime-portability.yml"
 PORTABILITY_INPUTS = (
     "ROADMAP.md",
     "docs/agents/domain.md",
+    "docs/decisions/README.md",
     "docs/decisions/0005-intent-router-and-website-composition.md",
     "commands/create.md",
     "commands/review.md",
@@ -39,6 +40,13 @@ PORTABILITY_INPUTS = (
 
 
 class DesignIntentWorkflowFilterTests(unittest.TestCase):
+    def test_architecture_index_keeps_publication_separate_from_implementation(self) -> None:
+        index = (ROOT / "docs/decisions/README.md").read_text(encoding="utf-8")
+        row = next(line for line in index.splitlines() if "[0005:" in line)
+        for marker in ("release/v1.7.0", "#78", "#98", "parked"):
+            self.assertIn(marker, row)
+        self.assertNotIn("Product implementation begins only after v1.7 release closure", row)
+
     def test_each_runtime_input_triggers_both_portability_events(self) -> None:
         text = WORKFLOW.read_text(encoding="utf-8")
         # This workflow uses block-style events and quoted positive path lists.

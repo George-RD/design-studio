@@ -9,8 +9,8 @@ on:
       - 'commands/**'
       - 'test/**'
       - 'ROADMAP.md'
-      - 'docs/agents/domain.md'
-      - 'docs/decisions/0005-intent-router-and-website-composition.md'
+      - 'docs/agents/**'
+      - 'docs/decisions/**'
       - '.github/workflows/runtime-portability.yml'
   push:
     branches: [main]
@@ -19,8 +19,8 @@ on:
       - 'commands/**'
       - 'test/**'
       - 'ROADMAP.md'
-      - 'docs/agents/domain.md'
-      - 'docs/decisions/0005-intent-router-and-website-composition.md'
+      - 'docs/agents/**'
+      - 'docs/decisions/**'
       - '.github/workflows/runtime-portability.yml'
 
 permissions:
