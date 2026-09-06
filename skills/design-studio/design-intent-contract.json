@@ -192,8 +192,14 @@
       ],
       "systemEffects": [
         "establish",
-        "extend"
+        "preserve",
+        "extend",
+        "replace"
       ],
+      "systemEffectsByAuthority": {
+        "none": ["establish"],
+        "document-visual-contract": ["preserve", "extend", "replace"]
+      },
       "requiredProcedure": "references/document/document.md",
       "requiredCapabilities": [
         "file_io",

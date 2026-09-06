@@ -135,6 +135,14 @@ export function validateDesignIntent(input) {
       `${designMode} does not allow systemEffect ${systemEffect}`,
     );
   }
+  if (
+    modeRule.systemEffectsByAuthority &&
+    !modeRule.systemEffectsByAuthority[visualAuthority]?.includes(systemEffect)
+  ) {
+    throw new DesignIntentInputError(
+      `${designMode} does not allow systemEffect ${systemEffect} with visualAuthority ${visualAuthority}`,
+    );
+  }
   for (const capability of modeRule.requiredCapabilities) {
     if (!requiredCapabilities.includes(capability)) {
       throw new DesignIntentInputError(
@@ -158,6 +166,11 @@ export function validateDesignIntent(input) {
         `selectedProcedures cannot include lane procedure ${procedure} for ${designMode}`,
       );
     }
+  }
+  if (selectedProcedures.length !== 1) {
+    throw new DesignIntentInputError(
+      'selectedProcedures must contain exactly one canonical lane procedure',
+    );
   }
 
   const precedence = PRECEDENCE_RULES.get(precedenceRule);

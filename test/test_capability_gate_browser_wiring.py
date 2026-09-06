@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class CapabilityGateBrowserWiringTests(unittest.TestCase):
     def test_public_gate_preserves_browser_failure_evidence(self) -> None:
-        """Reach the real browser runner through the public Python gate without AI calls."""
+        """Use the CI-required Node runtime; an empty site fails before browser launch."""
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             site = root / "empty-site"
@@ -37,8 +37,8 @@ except (gate.ContractError, gate.CapabilityBlocked):
             report_path = evidence / "browser/browser-report.json"
             self.assertTrue(report_path.is_file(), "browser entrypoint must emit its failure report")
             report = json.loads(report_path.read_text(encoding="utf-8"))
-            self.assertEqual("failed", report["status"])
-            self.assertEqual("contract", report["phase"], report)
+            self.assertEqual("failed", report.get("status"), report)
+            self.assertEqual("contract", report.get("phase"), report)
             self.assertNotIn("MODULE_NOT_FOUND", (evidence / "browser/stderr.log").read_text())
 
 
