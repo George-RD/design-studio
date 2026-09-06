@@ -22,6 +22,7 @@ RETIRED_POST_BASELINE_REFERENCES = {
 }
 ADDED_POST_BASELINE_REFERENCES = {
     "skills/design-studio/references/composition-contract.md",
+    "skills/design-studio/references/design-intent.md",
     "skills/design-studio/references/document/document.md",
     "skills/design-studio/references/document/furniture.md",
     "skills/design-studio/references/document/pagination.md",

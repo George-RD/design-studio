@@ -4,9 +4,13 @@
   "governingDecision": "docs/decisions/0002-owned-method-kernel.md",
   "authorityMap": "docs/method-authority-map.json",
   "repositoryMetadataOnly": true,
+  "designIntentContract": "design-intent-contract.json",
+  "classificationRule": "Produce and validate one Design Intent before a lane procedure executes, then map it to the existing task, surface, interaction and evidence dimensions.",
   "selectionRule": "For each route, every signal dimension with a non-empty list is required: the current run must contain at least one matching value from each populated dimension. Empty dimensions are unconstrained. Load the union of leaves from all matching routes; when a route declares procedure, execute that progressively disclosed lane procedure after its leaves. Never load the full specialist catalog by default.",
   "coreAuthorities": [
     "invocation.md",
+    "design-intent-contract.json",
+    "references/design-intent.md",
     "workflow.yaml",
     "runtime-contract.md",
     "references/context.md",

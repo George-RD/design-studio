@@ -20,11 +20,7 @@ class ClaudeAdapterCompatibilityTests(unittest.TestCase):
         return parts[2]
 
     def test_commands_only_translate_claude_invocation_to_canonical_entries(self):
-        expected = {
-            "commands/create.md": "skills/design-studio/workflow.yaml",
-            "commands/review.md": "skills/design-studio/references/review/polish.md",
-        }
-        for path, entrypoint in expected.items():
+        for path in ("commands/create.md", "commands/review.md"):
             with self.subTest(path=path):
                 text = self.read(path)
                 frontmatter = text.split("---", 2)[1]
@@ -36,7 +32,14 @@ class ClaudeAdapterCompatibilityTests(unittest.TestCase):
                 )
                 self.assertIn("Claude Code adapter", body)
                 self.assertIn("skills/design-studio/SKILL.md", body)
-                self.assertIn(entrypoint, body)
+                self.assertIn("skills/design-studio/design-intent-contract.json", body)
+                self.assertIn("skills/design-studio/references/design-intent.md", body)
+                self.assertIn("validated Design Intent", body)
+                self.assertIn("selectedProcedures", body)
+                self.assertIn("relative to `skills/design-studio/`", body)
+                self.assertIn("command name does not select the lane", body)
+                self.assertNotRegex(body, r"before loading (?:Studio|Review) execution authority")
+                self.assertNotRegex(body, r"delegate (?:`polish`|the selected create, extend or overhaul mode) to")
                 self.assertIn("invocation metadata only", body)
                 self.assertNotRegex(body, r"\b(?:REFINE|PIVOT|SHIP|HALT)\b")
 
@@ -78,8 +81,11 @@ class ClaudeAdapterCompatibilityTests(unittest.TestCase):
         required = [
             "SKILL.md",
             "invocation.md",
+            "design-intent-contract.json",
+            "references/design-intent.md",
             "workflow.yaml",
             "runtime-contract.md",
+            "runtime/design-intent/index.mjs",
             "method-router.json",
             "references/runtime-integrity.md",
             "agents/design-agent.md",

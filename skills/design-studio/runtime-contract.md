@@ -4,11 +4,12 @@ This file defines the **host-neutral deterministic seam** used by the Design Stu
 
 ## Authority boundaries
 
+- `references/design-intent.md` owns request-classification vocabulary and precedence; `design-intent-contract.json` owns its machine-readable result shape.
 - `workflow.yaml` owns the step graph and artifact schemas for interactive Studio.
 - `references/document/document.md` owns the progressively disclosed paginated-artifact procedure without creating a second copy of the Studio graph.
 - `references/runtime-integrity.md` owns the integrity invariants for roots, capability evidence, resume, append-only events, unattended assignment and final acceptance.
 - This contract owns deterministic operation names, inputs/outputs and failure semantics used by supported lanes.
-- This contract does not restate those schemas. Callers obey the lane authority plus `references/runtime-integrity.md`.
+- This contract does not restate those schemas. Callers obey the intent/lane authority plus `references/runtime-integrity.md`.
 - Source-blind Visual Director/Evaluator boundaries and immutable completed iterations are preconditions. No adapter or renderer may weaken them.
 
 The seam describes **what must happen**, not which language or renderer performs it. Repository benchmark/capability scripts remain research/support tooling. A shipped helper is introduced only for bounded deterministic behavior a supported operation actually needs.
@@ -17,6 +18,7 @@ The seam describes **what must happen**, not which language or renderer performs
 
 | Operation | Inputs | Result / durable evidence |
 |---|---|---|
+| `validate_design_intent` | supplied Design Intent result after host input mapping and authority resolution | validated lane/mode/surface/authority/capability/procedure result, or explicit invalid input; this is the highest behavioural test seam before lane execution |
 | `initialise` | prompt identity, mode, requested budget, optional run ID | create/reopen run contract; write `run.json`, initialise scores/evidence and record completion through `append_event` |
 | `resume_validate` | run identity plus recorded manifests/events/immutable iteration evidence | first incomplete valid step/procedure action or explicit invalid/blocked result; never overwrite completed evidence |
 | `resolve_roots` | explicit target plus repository/application/document evidence | `roots.json` containing proven roots/target status |
@@ -33,6 +35,12 @@ The seam describes **what must happen**, not which language or renderer performs
 | `append_event` | step/action, status, sequence, iteration, artifact paths and exact message/failure contract | append one new line to `events.jsonl`; earlier events are never edited |
 
 A host may implement operations directly or use shipped helpers, but adapters preserve observable artifacts and failure semantics.
+
+## Design Intent validation
+
+`runtime/design-intent/index.mjs` implements `validate_design_intent`. It validates a supplied result against `design-intent-contract.json`: required fields, enumerations, lane/mode/surface compatibility, selected lane authority and the declared ranked precedence rule. It returns the same validated result and does not infer a classification from prompt text, inspect another skill's internal workspace or execute a lane.
+
+Validation failure blocks lane execution with explicit invalid-input evidence. The host or orchestrator resolves the request and authority context first; the deterministic helper prevents adapters from maintaining a second taxonomy or silently changing the selected lane/mode.
 
 ## Capability and failure semantics
 
@@ -78,9 +86,9 @@ Interactive Review uses the same capability/evidence semantics without the Studi
 
 ## Adapter contract
 
-A host adapter may translate input from `invocation.md`; provide isolated-agent/file/shell/browser/page-rendering capabilities; invoke stable operations in lane order; and translate final results back to the host.
+A host adapter may translate input from `invocation.md`; provide isolated-agent/file/shell/browser/page-rendering capabilities; validate one Design Intent; invoke stable operations in lane order; and translate final results back to the host.
 
-An adapter may not own workflow decisions, artifact schemas, design methods, capability downgrade policy or acceptance rules. Claude compatibility commands remain adapters over this contract, not alternative runtimes.
+An adapter may not own workflow decisions, artifact schemas, intent classification rules, design methods, capability downgrade policy or acceptance rules. Adapters map to `design-intent-contract.json` and keep no second intent taxonomy. Claude compatibility commands remain adapters over this contract, not alternative runtimes.
 
 ## Research boundary
 

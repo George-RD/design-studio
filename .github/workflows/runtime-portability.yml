@@ -5,28 +5,22 @@ on:
     branches: [main]
     types: [opened, reopened, synchronize]
     paths:
-      - 'skills/design-studio/SKILL.md'
-      - 'skills/design-studio/workflow.yaml'
-      - 'skills/design-studio/runtime-contract.md'
-      - 'skills/design-studio/runtime/**'
-      - 'skills/design-studio/references/quality-gates.md'
-      - 'skills/design-studio/references/document/**'
-      - 'test/test_runtime_contract.py'
-      - 'test/test_mechanical_runtime.mjs'
-      - 'test/test_document_artifact_lane.py'
+      - 'skills/design-studio/**'
+      - 'commands/**'
+      - 'test/**'
+      - 'ROADMAP.md'
+      - 'docs/agents/**'
+      - 'docs/decisions/**'
       - '.github/workflows/runtime-portability.yml'
   push:
     branches: [main]
     paths:
-      - 'skills/design-studio/SKILL.md'
-      - 'skills/design-studio/workflow.yaml'
-      - 'skills/design-studio/runtime-contract.md'
-      - 'skills/design-studio/runtime/**'
-      - 'skills/design-studio/references/quality-gates.md'
-      - 'skills/design-studio/references/document/**'
-      - 'test/test_runtime_contract.py'
-      - 'test/test_mechanical_runtime.mjs'
-      - 'test/test_document_artifact_lane.py'
+      - 'skills/design-studio/**'
+      - 'commands/**'
+      - 'test/**'
+      - 'ROADMAP.md'
+      - 'docs/agents/**'
+      - 'docs/decisions/**'
       - '.github/workflows/runtime-portability.yml'
 
 permissions:
@@ -56,6 +50,9 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.13'
+
+      - name: Validate Design Intent runtime behavior
+        run: python -m unittest discover -s test -p 'test_design_intent*.py' -v
 
       - name: Validate runtime seam contract
         run: python -m unittest discover -s test -p test_runtime_contract.py -v

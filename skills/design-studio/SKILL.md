@@ -27,10 +27,10 @@ Design Studio is a portable design-engineering kernel. Lifecycle, source boundar
 
 ## Load and route
 
-1. Load `invocation.md` for host input mapping and isolated-role rules.
-2. Load `workflow.yaml` for the interactive Studio lifecycle and shared schemas/budgets/decisions.
-3. Load `runtime-contract.md`, `references/context.md` and `references/runtime-integrity.md` for deterministic operations and run truth.
-4. Read `method-router.json`. Every populated signal dimension on a route is required; load the union of matching `leaves`. If the route declares `procedure`, run that progressively disclosed procedure after its leaves.
+1. For Studio, Review or Document requests, load `invocation.md`, `design-intent-contract.json` and `references/design-intent.md`; map host input and validate one Design Intent before the selected lane procedure executes.
+2. Load `workflow.yaml`, `runtime-contract.md`, `references/context.md` and `references/runtime-integrity.md` for shared lifecycle, deterministic operations and run truth.
+3. Map Design Intent to the existing `task`, `surface`, `interaction` and `evidence` signals, then read `method-router.json`.
+4. Every populated signal dimension on a route is required. Load the union of matching `leaves`; when a route declares `procedure`, execute it after classification and its leaves.
 5. Never load the full specialist catalog by default.
 
 `method-router.json` is routing data, not method authority. Repository ADR/authority-map paths are provenance metadata only; installed runs do not depend on repository docs.
@@ -38,6 +38,8 @@ Design Studio is a portable design-engineering kernel. Lifecycle, source boundar
 ## Required references
 
 - `invocation.md`
+- `design-intent-contract.json`
+- `references/design-intent.md`
 - `workflow.yaml`
 - `runtime-contract.md`
 - `method-router.json`
@@ -45,11 +47,11 @@ Design Studio is a portable design-engineering kernel. Lifecycle, source boundar
 - `references/runtime-integrity.md`
 - Conditional Document procedure: `references/document/document.md`
 
-The first six entries are the installed kernel. Document and specialist methods are conditional.
+The first eight entries are the installed kernel. Document and specialist methods are conditional.
 
 ## Lanes
 
-| Lane | Trigger | Authority |
+| Lane / action | Trigger | Authority |
 |---|---|---|
 | **Studio** | new interactive surface or material redesign | `workflow.yaml` |
 | **Review** | audit/polish while preserving an interactive visual world | routed `references/review/polish.md` |
@@ -57,7 +59,7 @@ The first six entries are the installed kernel. Document and specialist methods 
 | **Design system** | codify an accepted system | Studio codify or accepted Document contract |
 | **Meta** | improve Design Studio | routed `references/meta.md` |
 
-An interactive report remains Studio/Review even if it can export PDF. Page/print intent and pagination route to Document. A narrow component/CSS correction does not require Studio.
+Design Intent owns Studio/Review/Document disambiguation. Meta maintenance uses the existing `meta`/`method-intake` routes directly; codification consumes an accepted lane result, not a new intent. An interactive report remains Studio/Review even if it can export PDF. A narrow component/CSS correction does not require Studio.
 
 ## Studio
 
