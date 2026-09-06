@@ -26,5 +26,5 @@ jobs:
         with:
           node-version: 24
 
-      - name: Validate Design Intent contract
-        run: python3 -m unittest discover -s test -p 'test_design_intent_contract.py' -v
+      - name: Validate Design Intent contract and workflow coverage
+        run: python3 -m unittest discover -s test -p 'test_design_intent*.py' -v
