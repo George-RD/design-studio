@@ -25,6 +25,8 @@ Produce one validated `design-intent-contract.json` result with these modes:
 | Document | `document-create` | Create or materially redesign a paginated artifact. | `references/document/document.md` |
 | Document | `document-review` | Review or locally improve a paginated artifact while preserving its current page world. | `references/document/document.md` |
 
+`selectedProcedures` contains the mode's canonical initial procedure from the contract's `laneProcedures` list. Specialist leaves are resolved separately by `method-router.json`; external paths, path aliases and undeclared procedures are invalid handoffs.
+
 The full execution of `extend` is delivered by issue #91. Until then this contract records the mode and routes to the existing Studio authority without implying that the later lifecycle semantics already exist.
 
 A Review result may request `systemEffect: extract` when the current implementation is evidence rather than accepted authority. The extracted conventions remain candidate and unresolved until issue #93 supplies verification, acceptance and promotion semantics.
@@ -49,7 +51,7 @@ Design Intent records requested `systemEffect`; it does not apply durable design
 
 ## Failure behavior
 
-Do not execute a lane procedure when required fields are missing, unexpected fields introduce a parallel taxonomy, enum values conflict, a mode disagrees with its lane/surface, selected procedures include another lane, or the selected precedence rule cannot justify the mode. Preserve explicit assumptions and unresolved state. Ask for authority resolution only when the ambiguity materially changes the lane, mode or durable system effect; otherwise continue with the recorded bounded assumption.
+Do not execute a lane procedure when required fields are missing, unexpected fields introduce a parallel taxonomy, enum values conflict, a mode disagrees with its lane/surface, selected procedures are undeclared or include another lane, or the selected precedence rule cannot justify the mode. Preserve explicit assumptions and unresolved state. Ask for authority resolution only when the ambiguity materially changes the lane, mode or durable system effect; otherwise continue with the recorded bounded assumption.
 
 ## Evaluation hooks
 
