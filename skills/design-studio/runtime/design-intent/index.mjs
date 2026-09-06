@@ -150,6 +150,14 @@ export function validateDesignIntent(input) {
       );
     }
   }
+  if (
+    new Set(requiredCapabilities).size !== requiredCapabilities.length ||
+    requiredCapabilities.length !== modeRule.requiredCapabilities.length
+  ) {
+    throw new DesignIntentInputError(
+      `requiredCapabilities must be the mode's unique set for ${designMode}`,
+    );
+  }
   if (!selectedProcedures.includes(modeRule.requiredProcedure)) {
     throw new DesignIntentInputError(
       `selectedProcedures must include ${modeRule.requiredProcedure} for ${designMode}`,
