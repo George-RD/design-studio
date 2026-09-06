@@ -2,11 +2,11 @@
 
 ## Purpose
 
-Classify every supported request once before a lane procedure executes. The Design Intent result is the host-neutral front door for lane, mode, surface, current authority, composition state, requested design-system effect, required capabilities, selected procedures, assumptions and unresolved state.
+Classify each Studio, Review or Document design request once before its lane procedure executes. The Design Intent result is the host-neutral front door for lane, mode, surface, current authority, composition state, requested design-system effect, required capabilities, selected procedures, assumptions and unresolved state.
 
 ## Triggers
 
-Load for every Design Studio invocation before Studio, Review or Document execution. Host commands, buttons and free-form prompts all map to this contract; adapters do not keep a second intent taxonomy.
+Load for Studio, Review and Document invocation. Host commands, buttons and free-form prompts map to the same contract; adapters do not keep a second intent taxonomy. Meta maintenance follows the existing `meta`/`method-intake` router signals, and post-acceptance codification consumes the accepted lane result. Neither is an additional design mode.
 
 ## Required context
 
@@ -28,6 +28,8 @@ Produce one validated `design-intent-contract.json` result with these modes:
 `selectedProcedures` contains the mode's canonical initial procedure from the contract's `laneProcedures` list. Specialist leaves are resolved separately by `method-router.json`; external paths, path aliases and undeclared procedures are invalid handoffs.
 
 The full execution of `extend` is delivered by issue #91. Until then this contract records the mode and routes to the existing Studio authority without implying that the later lifecycle semantics already exist.
+
+For `extend`, request `systemEffect: preserve` when a local addition uses existing system rules; request `systemEffect: extend` when the user explicitly asks for a reusable addition to those rules. For example, a new page using accepted controls preserves the system, while a proposed reusable control pattern extends it. Neither requested effect promotes authority before acceptance under #93.
 
 A Review result may request `systemEffect: extract` when the current implementation is evidence rather than accepted authority. The extracted conventions remain candidate and unresolved until issue #93 supplies verification, acceptance and promotion semantics.
 

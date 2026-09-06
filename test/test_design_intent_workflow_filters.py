@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from fnmatch import fnmatchcase
 from pathlib import Path
 import re
 import unittest
@@ -39,7 +38,41 @@ PORTABILITY_INPUTS = (
 )
 
 
+def matches_path_filter(path: str, pattern: str) -> bool:
+    """Match the workflow's exact paths, segment stars and trailing directory globstars.
+
+    Other GitHub filter syntax needs an explicit extension rather than a false pass.
+    """
+    if not re.fullmatch(r"[A-Za-z0-9_./*-]+", pattern):
+        raise ValueError(f"unsupported path filter syntax: {pattern}")
+    if "**" in pattern and (not pattern.endswith("/**") or "**" in pattern[:-3]):
+        raise ValueError(f"only trailing directory globstars are supported: {pattern}")
+    expression = re.escape(pattern).replace(r"\*\*", ".*").replace(r"\*", "[^/]*")
+    return re.fullmatch(expression, path) is not None
+
+
 class DesignIntentWorkflowFilterTests(unittest.TestCase):
+    def test_single_star_cannot_match_nested_paths(self) -> None:
+        nested = "skills/design-studio/runtime/design-intent/index.mjs"
+        cases = (
+            (nested, "skills/*", False),
+            (nested, "skills/design-studio/*", False),
+            (nested, "skills/**", True),
+            (nested, "skills/design-studio/**", True),
+            ("skills/SKILL.md", "skills/*", True),
+            ("other/SKILL.md", "skills/**", False),
+            ("ROADMAP.md", "ROADMAP.md", True),
+            ("docs/ROADMAP.md", "ROADMAP.md", False),
+        )
+        for path, pattern, expected in cases:
+            with self.subTest(path=path, pattern=pattern):
+                self.assertEqual(expected, matches_path_filter(path, pattern))
+
+    def test_unsupported_filter_syntax_fails_closed(self) -> None:
+        for pattern in ("!skills/**", "skills/[ab].md", "skills/a?.md", "**/SKILL.md"):
+            with self.subTest(pattern=pattern), self.assertRaises(ValueError):
+                matches_path_filter("skills/a.md", pattern)
+
     def test_architecture_index_keeps_publication_separate_from_implementation(self) -> None:
         index = (ROOT / "docs/decisions/README.md").read_text(encoding="utf-8")
         row = next(line for line in index.splitlines() if "[0005:" in line)
@@ -60,7 +93,7 @@ class DesignIntentWorkflowFilterTests(unittest.TestCase):
                 self.assertFalse(any(path.startswith("!") for path in paths))
                 missing = [
                     path for path in PORTABILITY_INPUTS
-                    if not any(fnmatchcase(path, pattern) for pattern in paths)
+                    if not any(matches_path_filter(path, pattern) for pattern in paths)
                 ]
                 self.assertEqual([], missing, f"{event} skips runtime inputs: {missing}")
 

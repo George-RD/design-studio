@@ -283,7 +283,8 @@ class DesignIntentContractTests(unittest.TestCase):
         load_and_route = skill.split("## Load and route", 1)[1].split("## Required references", 1)[0]
         self.assertLess(load_and_route.index("design-intent-contract.json"), load_and_route.index("workflow.yaml"))
         self.assertLess(load_and_route.index("references/design-intent.md"), load_and_route.index("method-router.json"))
-        self.assertIn("task`, `surface`, `interaction` and `evidence", load_and_route)
+        for signal in ("task", "surface", "interaction", "evidence"):
+            self.assertIn(f"`{signal}`", load_and_route)
 
         router = self.load(SKILL_ROOT / "method-router.json")
         self.assertEqual(

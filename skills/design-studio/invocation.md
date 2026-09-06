@@ -10,15 +10,18 @@ Use the host's isolated-agent mechanism for Planner, VisualDirector, Builder, Ev
 
 ## Design Intent input mapping
 
-Before lane-specific input mapping, translate the user request and current authority evidence into one result defined by `design-intent-contract.json` and `references/design-intent.md`:
+For Studio, Review and Document requests, translate the user request and current authority evidence into one result defined by `design-intent-contract.json` and `references/design-intent.md` before lane-specific input mapping:
 
 - `lane` and `designMode`: one of the contract's Studio, Review or Document mode pairs.
 - `surface`: interactive surface kind or `paginated-artifact`.
 - `visualAuthority`: current accepted visual authority, or `none` when no compatible authority exists.
 - `compositionState`: current state resolved through `composition-contract.json`, not prompt order or filename.
 - `systemEffect`: the requested durable effect; execution records the actual accepted effect later.
-- `requiredCapabilities` and `selectedProcedures`: existing host capability names and installed procedure paths.
+- `requiredCapabilities`: the needs declared by `modeRules[designMode].requiredCapabilities` in the Design Intent contract.
+- `selectedProcedures`: the canonical installed procedure selected by that mode.
 - `assumptions`, `unresolved`, and `precedenceRule`: explicit classification evidence.
+
+Capability declarations are needs, not successful probes. Interactive modes declare `runnable_target` and `browser_automation` as well as the generic capabilities; Document modes declare `page_artifact_rendering`. Record actual availability through `probe_capabilities` and `capabilities.json`. Missing visual capability retains the `build-once-unselected` or `mechanical-review` path owned by `runtime-contract.md`; it does not turn into a missing generic prerequisite or a false success.
 
 Apply the ranked precedence in `references/design-intent.md` before loading a lane procedure. The validated result maps to the existing `task`, `surface`, `interaction` and `evidence` router signals. Host adapters preserve this result and do not add another intent taxonomy.
 

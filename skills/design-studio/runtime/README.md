@@ -17,7 +17,7 @@ This directory contains deterministic helpers that ship with the Design Studio A
 node runtime/design-intent/index.mjs input.json validated-intent.json
 ```
 
-With no paths it reads JSON from standard input and writes JSON to standard output. Exit `0` means valid intent, exit `2` invalid supplied intent/JSON, exit `1` unexpected runtime error.
+With no paths it reads JSON from standard input and writes JSON to standard output. Exit `0` means valid intent, exit `2` invalid supplied intent/JSON or invocation arguments, exit `1` unexpected runtime error.
 
 The helper does not infer intent from a prompt, resolve artifact authority, invoke another skill, select a procedure, or execute a lane. The host/orchestrator supplies the classification after following `references/design-intent.md`; this validator protects one shared adapter seam.
 
