@@ -31,6 +31,7 @@ DOCUMENT_LENSES = {
 
 
 def section(text: str, heading: str) -> str:
+    """Read one required level-two section, failing if its heading is missing."""
     return text.split(heading, 1)[1].split("\n## ", 1)[0]
 
 
@@ -39,6 +40,7 @@ class DesignIntentLoadingTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
+        """Load shipped contracts and the separately documented maintenance budget."""
         cls.contract = json.loads(
             (SKILL_ROOT / "design-intent-contract.json").read_text(encoding="utf-8")
         )
@@ -52,6 +54,7 @@ class DesignIntentLoadingTests(unittest.TestCase):
         cls.budget = json.loads(budget_text.split("```json\n", 1)[1].split("```", 1)[0])
 
     def validated_intent(self, example_id: str) -> dict:
+        """Pass an example through the shipped CLI before inspecting its handoff."""
         completed = subprocess.run(
             ["node", str(INTENT_RUNTIME)],
             input=json.dumps(self.examples[example_id]),
@@ -64,6 +67,7 @@ class DesignIntentLoadingTests(unittest.TestCase):
         return json.loads(completed.stdout)
 
     def document_evaluation_lenses(self) -> set[str]:
+        """Resolve the page procedure's actual lens references against expected paths."""
         text = (SKILL_ROOT / DOCUMENT).read_text(encoding="utf-8")
         evaluation = text.split("### 5. Evaluate complete pages", 1)[1].split("\n### ", 1)[0]
         # The Document procedure owns these explicit local lens references.
@@ -73,6 +77,7 @@ class DesignIntentLoadingTests(unittest.TestCase):
         return paths
 
     def test_review_and_document_activation_exclude_studio_lifecycle(self) -> None:
+        """Prevent the original eager Studio dependency in both non-Studio lanes."""
         for example_id in ("interactive-polish", "new-paginated-proposal", "existing-pdf-review"):
             with self.subTest(example=example_id):
                 intent = self.validated_intent(example_id)
@@ -80,6 +85,7 @@ class DesignIntentLoadingTests(unittest.TestCase):
                 self.assertNotIn(STUDIO, activated)
 
     def test_front_door_prerequisites_do_not_load_studio(self) -> None:
+        """Keep classification and host requirements independent of Studio execution."""
         prerequisites = (
             ("invocation.md", "## Host requirements"),
             ("references/design-intent.md", "## Required context"),
@@ -92,6 +98,7 @@ class DesignIntentLoadingTests(unittest.TestCase):
                 self.assertIn("`runtime-contract.md`", required)
 
     def test_universal_path_is_bounded_and_excludes_branch_authorities(self) -> None:
+        """Reconcile entry-point declarations with the shared, branch-free hot path."""
         core = set(self.router["coreAuthorities"])
         self.assertEqual(6, len(core))
         self.assertEqual(len(core), len(self.router["coreAuthorities"]))
@@ -113,6 +120,7 @@ class DesignIntentLoadingTests(unittest.TestCase):
             self.assertTrue((SKILL_ROOT / path).is_file(), path)
 
     def test_representative_handoffs_load_only_selected_authorities_within_budget(self) -> None:
+        """Check all six modes against independent selected and excluded method sets."""
         document_methods = {
             DOCUMENT, "references/review/slop.md", "references/review/hierarchy.md", QUALITY,
         } | DOCUMENT_LENSES
@@ -190,6 +198,7 @@ class DesignIntentLoadingTests(unittest.TestCase):
         self.assertEqual(set(self.contract["enums"]["designMode"]), covered_modes)
 
     def test_claude_adapters_load_the_same_universal_entry_not_a_lane(self) -> None:
+        """Require command adapters to share the canonical pre-classification entry."""
         hot_path = set(self.budget["universalPath"])
         for name in ("create.md", "review.md"):
             with self.subTest(adapter=name):
