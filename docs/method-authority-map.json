@@ -135,7 +135,7 @@
           "upstreamPathAtRevision": "skills/improve-animations/SKILL.md",
           "disposition": "adapt-local",
           "implementationStatus": "adopted",
-          "modificationProvenance": "Adapt only the read-only audit to executable-plan handoff while preserving local evidence and decision ownership.",
+          "modificationProvenance": "Adapt only the read-only audit to bounded executable-plan handoff while preserving local evidence and decision ownership.",
           "evidenceBasis": ["issue #51 review-leaf contract", "exact pinned improve-animations review"]
         },
         {

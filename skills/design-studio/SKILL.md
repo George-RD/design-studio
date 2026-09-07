@@ -20,17 +20,19 @@ Design Studio is a portable design-engineering kernel. Source boundaries, routin
 | Evaluator | no | no | rendered observations and scores |
 | Orchestrator | as needed | yes | SELECT / REFINE / PIVOT / SHIP / HALT |
 
-- Visual Director never receives HTML, CSS, JSX, selectors, implementation diffs or the unattended assignment index.
+- Visual Director never receives HTML, CSS, JSX, selectors, implementation diffs, document source/renderer metadata or the unattended assignment index.
 - Evaluator never receives source, implementation effort, full design description or prior scores. Document evaluation also excludes renderer identity/build metadata.
 - Builder implements the selected direction; it may not quietly replace it with a safer one.
 - Orchestrator is the sole decision owner. Evaluators/reviewers provide evidence, not workflow decisions.
 
 ## Load and route
 
+For Studio, Review and Document requests:
+
 1. Load `invocation.md`, `design-intent-contract.json`, `references/design-intent.md`, `runtime-contract.md`, `references/context.md` and `references/runtime-integrity.md`. These are the universal input, authority, source/evidence, recovery, degradation and acceptance guards, not lane procedures.
 2. Map host input and current authority evidence to one Design Intent and validate it before loading `workflow.yaml`, a Review/Document procedure or any specialist leaf. Invalid classification blocks lane loading as well as execution.
 3. Map the validated result to the existing `task`, `surface`, `interaction` and `evidence` signals, then read `method-router.json`. Keep task signals within the selected lane and current stage; supplementary copy or evidence signals do not change that lane.
-4. Load the canonical `selectedProcedures` even when no specialist route matches. Every populated signal dimension on a route is required. Load the union of matching `leaves`, deduplicating paths. A matched route's `procedure` must agree with Design Intent; correct conflicting signals before loading rather than adding another lane.
+4. Resolve the canonical `selectedProcedures` even when no specialist route matches. Every populated signal dimension on a route is required. Before loading, check that every matched route's `procedure` agrees with Design Intent; conflicting signals block until corrected. Then load the selected procedure and the union of matching `leaves`, deduplicating paths.
 5. Execute the selected procedure after its required context is loaded. It discloses stage-specific role instructions and references when needed. Never load the full specialist catalog by default.
 
 `method-router.json` is routing data, not method authority. Its `coreAuthorities` is the universal set shared by every lane. Repository ADR/authority-map paths are provenance metadata only; installed runs do not depend on repository docs. Host adapters use this loading contract, not a second loading graph.
