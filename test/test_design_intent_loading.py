@@ -33,6 +33,18 @@ class DesignIntentLoadingTests(unittest.TestCase):
                 activated = set(router["coreAuthorities"]) | set(intent["selectedProcedures"])
                 self.assertNotIn("workflow.yaml", activated)
 
+    def test_front_door_prerequisites_do_not_load_studio(self) -> None:
+        prerequisites = (
+            ("invocation.md", "## Host requirements"),
+            ("references/design-intent.md", "## Required context"),
+        )
+        for path, heading in prerequisites:
+            with self.subTest(path=path):
+                text = (SKILL_ROOT / path).read_text(encoding="utf-8")
+                section = text.split(heading, 1)[1].split("\n## ", 1)[0]
+                self.assertNotIn("`workflow.yaml`", section)
+                self.assertIn("`runtime-contract.md`", section)
+
 
 if __name__ == "__main__":
     unittest.main()
