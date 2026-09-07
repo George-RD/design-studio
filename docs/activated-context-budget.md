@@ -23,7 +23,7 @@ The following budget is checked by `test/test_design_intent_loading.py`:
   "maxBranchAuthorities": {
     "create-direction": 2,
     "selected-build": 3,
-    "accepted-world-extension": 1,
+    "accepted-world-extension": 2,
     "overhaul-preflight": 4,
     "static-review": 4,
     "interactive-review": 6,
@@ -45,7 +45,7 @@ A **branch authority** here means a unique selected procedure or method/lens fil
 | --- | --- | ---: |
 | Create direction | Studio workflow and rationale | 2 |
 | Selected build with mechanical preflight | Studio workflow, generation and quality gates | 3 |
-| Accepted-world extension at entry | Studio workflow; no speculative create-direction leaves | 1 |
+| Accepted-world extension at entry | Studio workflow and extend preservation procedure; no replacement-direction leaves | 2 |
 | Overhaul with mechanical preflight | Studio workflow, overhaul, rationale and quality gates | 4 |
 | Static Review | Review procedure, specificity, hierarchy and accessibility | 4 |
 | Interactive/motion Review with confirmation | Static Review plus interaction and quality gates | 6 |
@@ -54,7 +54,7 @@ A **branch authority** here means a unique selected procedure or method/lens fil
 
 Document page evaluation loads pagination, tables, furniture and print. It does not load Studio's workflow, generation/overhaul methods or interactive Review's orchestration/accessibility/interaction procedures. It reuses the explicitly medium-agnostic specificity and hierarchy leaves. Studio and Review do not load the Document page lenses.
 
-The extension row protects only the current entry contract. Issue #91 still owns the full extend lifecycle; this budget does not claim that lifecycle is implemented.
+Issue #91 raises only the extension branch from one to two authorities because accepted-world preflight and bounded completion now have a canonical extend method. Its selected/excluded loading test includes that leaf while excluding rationale/overhaul and all Document lenses. The universal hot path is unchanged.
 
 ## Stage-specific context
 

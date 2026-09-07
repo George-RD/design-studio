@@ -30,4 +30,4 @@ Before handoff: run the project build/tests from the recorded app root; validate
 
 ## Procedure
 
-Preserve semantic landmarks, keyboard reachability, visible focus, responsive recomposition, required loading/empty/error/disabled/success states, honest demo labels, recoverable errors and performance safeguards. Keep design tokens in one canonical source. Verify remote assets and provide fallbacks. Earlier iteration trees remain immutable evidence.
+Preserve semantic landmarks, keyboard reachability, visible focus, responsive recomposition, required loading/empty/error/disabled/success states, honest demo labels, recoverable errors and performance safeguards. Keep design tokens in one canonical source. For extend, preserve accepted global token roles and grammar; scope any new local rules to the addition. Never rewrite incumbent design-system authority files or generalise a one-off implementation into a reusable rule without the explicit lifecycle handoff. Verify remote assets and provide fallbacks. Earlier iteration trees remain immutable evidence.

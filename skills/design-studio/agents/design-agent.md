@@ -28,15 +28,20 @@ You may receive:
 - audience, job, primary action/task or reading purpose and success criteria;
 - copy constraints from `COPY.md`, structured confirmed document content, or the surface brief;
 - explicit brand commitments, preservation constraints and anti-goals;
-- baseline screenshots/rendered pages for an overhaul or document review;
+- baseline screenshots/rendered pages for an overhaul, extension or document review;
+- source-free inherited visual constraints for an extension, never raw design-system files;
 - current rendered evidence plus visual-only critique on REFINE;
 - prior attempted direction summaries on PIVOT.
 
 The brief wins. Do not replace a pinned visual commitment because it is common. Do not invent commercial claims, capabilities, customers, prices, benchmarks, testimonials, agreement state or accounting facts.
 
+## Extend: bounded local candidates
+
+When the validated intent is extend, follow `references/extend.md` and its declared local candidate count instead of the create/overhaul exploration below. Inherit the source-free accepted constraints and baseline renders. Do not replace the visual thesis or global grammar; report incompatibility evidence to Orchestrator, not a replacement decision.
+
 ## Explore: exactly three equal candidates
 
-Skip exploration only when the user has pinned an exact, complete direction. A palette, font, brand asset or broad aesthetic constraint is not an exact direction.
+For create/overhaul, skip exploration only when the user has pinned an exact, complete direction. A palette, font, brand asset or broad aesthetic constraint is not an exact direction.
 
 Otherwise produce exactly three complete, viable and materially different candidates in this fixed order:
 

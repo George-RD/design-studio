@@ -26,11 +26,13 @@ Write `capabilities.json` before planning and repeat only when the runtime chang
 
 A resumed run validates, in order: prompt hash/explicit run ID; roots/capabilities; event sequence; schemas/files named by completed events; immutability of completed iteration trees; first step without a valid completion receipt. Continue from that step. Preserve later files as untrusted evidence until the missing dependency completes.
 
+An extend resume also rechecks the persisted Design Intent and completed incumbent-authority manifest before reusing evidence. A changed or missing authority blocks the run; never restore a stale snapshot over concurrent changes.
+
 A completed build is never rerun inside the same iteration. Corrupt completed artifacts require a new iteration or invalid run; do not overwrite prior evidence.
 
 ## 5. Commit unattended selection before generation
 
-When the selected procedure generates directions, before `directions.md` exists:
+For create/overhaul direction generation, before `directions.md` exists:
 
 1. fix IDs `direction-1`, `direction-2`, `direction-3`;
 2. derive a stable seed from run ID, prompt hash and iteration;
@@ -40,10 +42,14 @@ When the selected procedure generates directions, before `directions.md` exists:
 
 Visual Director then writes equally specified candidates. Orchestrator selects the committed index. Interactive user choice records `user-choice` without seed/index. A fully pinned direction records one candidate/index 1. This invariant does not add direction generation to a Review request.
 
+For Studio extend, `workflow.yaml` instead uses `extend-bounded`: one candidate by default, at most three for a recorded local question. Fix that count and neutral IDs before generation; choose index 1 for a sole candidate or a user answer/precommitted in-range index for a local set. Keep seed/index hidden. This selection never authorizes replacement directions.
+
 ## 6. Final acceptance receipt
 
 `finish/acceptance.json` proves which tree became authoritative. Before codifying verify: `final-tree.json` names the same selected tree; the tree came from the recorded source iteration; the named current mechanical snapshot has no unacknowledged primary finding; open finish items match `finalStatus`; a deterministic tree manifest exists; source iterations remain unchanged.
 
 For interactive acceptance also verify: the rewritten serve contract starts from it; claimed viewports match measured widths. For Document acceptance verify the complete ordered artifact, page images and physical sizes from that same immutable candidate under the selected Document procedure. These are medium-specific postconditions, not reasons to load another lane.
+
+For extend, acceptance also requires unchanged incumbent authority (including absent outputs and directory membership) and no material violation of inherited visual constraints. The selected extend completion writes a surface result and, when requested, a proposed reusable delta; it bypasses global codification.
 
 Directory existence is not acceptance. If a postcondition fails, halt and preserve evidence rather than publishing/codifying the tree.

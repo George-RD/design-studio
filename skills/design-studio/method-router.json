@@ -17,6 +17,14 @@
   ],
   "routes": [
     {
+      "id": "extend",
+      "signals": {"task": ["studio-extend"], "surface": ["persuade", "operate", "read", "experience"], "interaction": [], "evidence": []},
+      "leaves": ["references/extend.md"],
+      "agents": ["agents/design-agent.md"],
+      "procedure": "workflow.yaml",
+      "handoff": "Inherit current accepted visual authority, explore only the local addition, then use shared build/evaluation and authority-preserving extension completion."
+    },
+    {
       "id": "studio-direction",
       "signals": {"task": ["studio-direction", "studio-pivot"], "surface": ["persuade", "operate", "read", "experience"], "interaction": [], "evidence": []},
       "leaves": ["references/rationale.md"],
@@ -92,6 +100,7 @@
     }
   ],
   "leaves": [
+    {"path": "references/extend.md", "authorityRole": "canonical", "conceptIds": ["accepted-world-extension"]},
     {"path": "references/rationale.md", "authorityRole": "canonical", "conceptIds": ["source-blind-direction-and-evaluation"]},
     {"path": "references/generation.md", "authorityRole": "canonical", "conceptIds": ["implementation-fidelity"]},
     {"path": "references/quality-gates.md", "authorityRole": "canonical", "conceptIds": ["mechanical-source-and-browser-evidence"]},

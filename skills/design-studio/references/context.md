@@ -147,10 +147,12 @@ Every run starts with:
 3. The authoritative approved offer/copy artifact resolved through the composition contract when composition evidence exists; otherwise durable `COPY.md` language rules when present.
 4. Current surface brief.
 
-For an **extension, polish or preserve-world refinement**:
+For an **extension (`designMode: extend`), polish or preserve-world refinement**:
 
 5. Existing project-scoped accepted `DESIGN.md`.
 6. `selected-direction.md`, constrained to evolve the requested surface without replacing the proven system.
+
+An accepted extension does not itself rewrite this authority. The extend procedure records preservation or an unapplied reusable proposal; global replacement requires a new validated Design Intent and later accepted work.
 
 For a **greenfield surface or explicit redesign**:
 

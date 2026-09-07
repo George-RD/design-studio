@@ -46,6 +46,7 @@ For `adapt-local`/`vendor-slice`, `implementationStatus: candidate` means select
 | generated specificity/subtraction | `references/review/slop.md` | Review core |
 | design-system codification | `assets/design-system-skill/SKILL.md.template` | accepted system |
 | offer/copy authority | **Growth Arsenal**; local boundary `references/copy.md` | composition |
+| accepted-world extension | `references/extend.md` | extend preflight/local direction/completion |
 | overhaul scope | `references/overhaul.md` | redesign/reopen |
 | visual evaluation | `agents/evaluator.md` | rendered decisions |
 

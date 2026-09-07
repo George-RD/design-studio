@@ -1,0 +1,72 @@
+{
+  "id": "new-page",
+  "evidenceKind": "synthetic-contract-fixture",
+  "request": "Add an account settings page within the accepted Atlas design system. Reuse the existing form and navigation patterns.",
+  "acceptedAuthority": "../DESIGN.md",
+  "authorityRevision": "atlas-fixture-1",
+  "designIntent": {
+    "schemaVersion": 1,
+    "lane": "Studio",
+    "designMode": "extend",
+    "surface": "operate",
+    "visualAuthority": "accepted-design-system",
+    "compositionState": "ready",
+    "systemEffect": "preserve",
+    "requiredCapabilities": [
+      "file_io",
+      "shell",
+      "isolated_subagents",
+      "runnable_target",
+      "browser_automation"
+    ],
+    "selectedProcedures": [
+      "workflow.yaml"
+    ],
+    "assumptions": [
+      "Synthetic fixture models a current project-scoped accepted Atlas authority; real runs verify its provenance."
+    ],
+    "unresolved": [],
+    "precedenceRule": "accepted-world-extension"
+  },
+  "inheritedConstraints": {
+    "thesis": "Compact operations workspace; hierarchy through alignment, spacing and text.",
+    "tokenRoles": "Neutral surfaces, high-contrast text, muted supporting text, blue actions and semantic warnings; retain sans-serif roles.",
+    "controlGrammar": "Labelled controls, focus, inline validation, compact rows and explicit task states.",
+    "responsiveLogic": "Collapse navigation, single-column forms and reachable primary actions without horizontal scroll; preserve existing routes.",
+    "antiGoals": "No glass, decorative gradients, serif type or replacement action-accent colour."
+  },
+  "expected": {
+    "status": "accepted",
+    "systemEffect": "preserve",
+    "publicationState": "unchanged",
+    "outputs": [
+      "compatibilitySite",
+      "extensionResult"
+    ],
+    "stepPath": [
+      "initialise",
+      "resume_validate",
+      "resolve_roots",
+      "probe_capabilities",
+      "plan",
+      "extension_preflight",
+      "baseline",
+      "prepare_direction_assignment",
+      "explore_extension",
+      "check_extension_direction",
+      "select_direction",
+      "direct",
+      "build",
+      "mechanical_preflight",
+      "evaluate",
+      "decide",
+      "finish_select",
+      "finish_review",
+      "finish_correct_or_finalise",
+      "finalise",
+      "accept",
+      "complete_extension",
+      "report"
+    ]
+  }
+}

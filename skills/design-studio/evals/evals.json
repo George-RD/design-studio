@@ -352,6 +352,69 @@
         "workflow halts before codify",
         "harness-output/site and DESIGN.md are not replaced from unaccepted corrected-site"
       ]
+    },
+    {
+      "id": 30,
+      "prompt": "Add an account settings page within the accepted Atlas design system. Reuse the existing form and navigation patterns.",
+      "expected_output": "Studio inherits accepted authority, explores a bounded local addition and completes with unchanged global design-system files.",
+      "assertions": [
+        "Design Intent records extend with current accepted-design-system authority before Studio execution",
+        "extensionScope and the frozen authority manifest identify the incumbent accepted revision and inherited constraints",
+        "No replacement-world exploration or automatic PIVOT runs",
+        "Director and Evaluator receive only source-free inherited constraints, never raw design-system files or implementation effort",
+        "Completed iterations and original Design Intent remain immutable",
+        "Final acceptance includes current mechanical evidence, measured desktop/mobile renders and no material inherited-constraint violation",
+        "DESIGN.md, design DNA, canonical tokens and the generated project skill remain byte-for-byte unchanged, including absent outputs",
+        "extensionResult names the accepted final-tree receipt and actual system effect",
+        "No proposed-system-delta.json or global codification is emitted for this local addition"
+      ]
+    },
+    {
+      "id": 31,
+      "prompt": "Add a reusable dismissible status-message pattern for the overview and account pages. Preserve the accepted Atlas world and propose the shared rule after surface acceptance.",
+      "expected_output": "Studio inherits accepted authority, explores a bounded local addition and completes with a proposed-only reusable delta.",
+      "assertions": [
+        "Design Intent records extend with current accepted-design-system authority before Studio execution",
+        "extensionScope and the frozen authority manifest identify the incumbent accepted revision and inherited constraints",
+        "No replacement-world exploration or automatic PIVOT runs",
+        "Director and Evaluator receive only source-free inherited constraints, never raw design-system files or implementation effort",
+        "Completed iterations and original Design Intent remain immutable",
+        "Final acceptance includes current mechanical evidence, measured desktop/mobile renders and no material inherited-constraint violation",
+        "DESIGN.md, design DNA, canonical tokens and the generated project skill remain byte-for-byte unchanged, including absent outputs",
+        "extensionResult names the accepted final-tree receipt and actual system effect",
+        "Reusable changes are proposed-only and tied to the accepted surface and incumbent revision"
+      ]
+    },
+    {
+      "id": 32,
+      "prompt": "Add a one-off import summary on the upload page using accepted rows and controls. Do not change project-wide tokens or turn the layout into a shared rule.",
+      "expected_output": "Studio inherits accepted authority, explores a bounded local addition and completes with unchanged global design-system files.",
+      "assertions": [
+        "Design Intent records extend with current accepted-design-system authority before Studio execution",
+        "extensionScope and the frozen authority manifest identify the incumbent accepted revision and inherited constraints",
+        "No replacement-world exploration or automatic PIVOT runs",
+        "Director and Evaluator receive only source-free inherited constraints, never raw design-system files or implementation effort",
+        "Completed iterations and original Design Intent remain immutable",
+        "Final acceptance includes current mechanical evidence, measured desktop/mobile renders and no material inherited-constraint violation",
+        "DESIGN.md, design DNA, canonical tokens and the generated project skill remain byte-for-byte unchanged, including absent outputs",
+        "extensionResult names the accepted final-tree receipt and actual system effect",
+        "No proposed-system-delta.json or global codification is emitted for this local addition"
+      ]
+    },
+    {
+      "id": 33,
+      "prompt": "Add the partner portal inside the existing app. The required partner brand uses serif headings and an orange primary-action colour, while the accepted system prohibits both.",
+      "expected_output": "An explicit incompatibility receipt links the unchanged original extension intent to a separately validated overhaul intent; the original run halts without publication.",
+      "assertions": [
+        "Design Intent records extend with current accepted-design-system authority before Studio execution",
+        "extensionScope and the frozen authority manifest identify the incumbent accepted revision and inherited constraints",
+        "No replacement-world exploration or automatic PIVOT runs",
+        "Director and Evaluator receive only source-free inherited constraints, never raw design-system files or implementation effort",
+        "Completed iterations and original Design Intent remain immutable",
+        "Escalation identifies both the required partner constraint and conflicting accepted rule",
+        "extensionResult records escalated and systemEffect none with no accepted surface or proposed delta",
+        "Global authority and compatibility site are not published by the halted extension"
+      ]
     }
   ]
 }

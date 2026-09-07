@@ -316,6 +316,25 @@
       "routing": {"mode": "routed", "triggers": ["During evaluation of a rendered direction or implementation", "During final acceptance and evidence review"]},
       "upstreamRuntimeRequired": false,
       "externalOverlaps": []
+    },
+    {
+      "conceptId": "accepted-world-extension",
+      "domain": "orchestration-runtime",
+      "authority": {
+        "owner": "design-studio",
+        "kind": "canonical-local",
+        "canonicalPath": "skills/design-studio/references/extend.md"
+      },
+      "supportingReferences": [],
+      "routing": {
+        "mode": "routed",
+        "triggers": [
+          "Add a surface or reusable pattern within accepted project visual authority",
+          "Complete an accepted extension without implicitly replacing the system"
+        ]
+      },
+      "upstreamRuntimeRequired": false,
+      "externalOverlaps": []
     }
   ]
 }

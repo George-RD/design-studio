@@ -19,9 +19,11 @@ You must not receive or inspect:
 
 You may receive purpose, audience, surface mode, user task/reading purpose, success criteria, explicit constraints and a summary of unresolved mechanical findings. Mechanical evidence informs Craft and Functionality caps; it does not tell you whether the work is distinctive.
 
+For extend, inherited visual constraints may describe the accepted thesis, token roles, control grammar, responsive logic and anti-goals. They must be source-free and omit the proposed solution; never receive raw design-system files or authority manifests. Judge the addition in its existing surroundings and report material violations as acceptance blockers, not as permission to redesign.
+
 During bounded finish review, you may also receive the source-free selected-direction summary. It must not contain implementation instructions.
 
-Do not write REFINE, PIVOT, SHIP, HALT, a recommendation, a trend arrow or a best-iteration choice. Orchestrator owns the next action.
+Do not write REFINE, PIVOT, SHIP, ESCALATE, HALT, a recommendation, a trend arrow or a best-iteration choice. Orchestrator owns the next action.
 
 ## Browser contract
 

@@ -27,9 +27,9 @@ Produce one validated `design-intent-contract.json` result with these modes:
 
 `selectedProcedures` contains the mode's canonical initial procedure from the contract's `laneProcedures` list. Specialist leaves are resolved separately by `method-router.json`; external paths, path aliases and undeclared procedures are invalid handoffs.
 
-The full execution of `extend` is delivered by issue #91. Until then this contract records the mode and routes to the existing Studio authority without implying that the later lifecycle semantics already exist.
+The full execution of `extend` follows the accepted-world branch of `workflow.yaml` with the routed `references/extend.md`. It reuses Studio build/evaluation while bypassing replacement-world exploration and global codification.
 
-For `extend`, request `systemEffect: preserve` when a local addition uses existing system rules; request `systemEffect: extend` when the user explicitly asks for a reusable addition to those rules. For example, a new page using accepted controls preserves the system, while a proposed reusable control pattern extends it. Neither requested effect promotes authority before acceptance under #93.
+For `extend`, request `systemEffect: preserve` when a local addition uses existing system rules; request `systemEffect: extend` when the user explicitly asks for a reusable addition to those rules. For example, a new page using accepted controls preserves the system, while a proposed reusable control pattern extends it. After surface acceptance, preserve leaves global authority unchanged and extend emits a proposed reusable delta. Applying that delta remains the lifecycle boundary under #93.
 
 A Review result may request `systemEffect: extract` when the current implementation is evidence rather than accepted authority. The extracted conventions remain candidate and unresolved until issue #93 supplies verification, acceptance and promotion semantics.
 
@@ -38,7 +38,7 @@ Map the validated result to the existing `task`, `surface`, `interaction` and `e
 Apply this ranked precedence when wording is ambiguous:
 
 1. **Paginated output:** when the primary requested artifact is a page or print/PDF deliverable, select Document. Within Document, preserve/review language selects `document-review`; otherwise select `document-create`. An interactive report with incidental PDF export remains interactive.
-2. **Explicit replacement:** explicit overhaul, reinvention or replacement of an interactive visual world selects `overhaul`.
+2. **Explicit replacement:** explicit overhaul, reinvention or replacement of an interactive visual world selects `overhaul`. A recorded extension incompatibility may also justify a new overhaul intent under this rule; it must identify the unmet requirement and conflicting accepted constraint, not merely a low score.
 3. **Accepted-world addition:** an additive page, route, feature, component family or pattern inside accepted visual authority selects `extend`.
 4. **Audit or polish only:** audit, review, fix, polish or candidate extraction language selects `polish` when the user is preserving an interactive visual world.
 5. **New interactive world:** a new interactive surface with no higher-ranked rule selects `create`.
@@ -49,7 +49,7 @@ Prompt order, filename and file modification time do not break ties. Record equa
 
 This reference owns request classification vocabulary and precedence. `composition-contract.json` owns product, offer/copy and visual artifact authority. `runtime-contract.md` owns deterministic operations, capability downgrade and failure semantics. Lane procedures own execution after classification. `method-router.json` consumes mapped signals; it is routing data rather than another classification authority.
 
-Design Intent records requested `systemEffect`; it does not apply durable design-system state transitions. Those lifecycle effects remain later work under #91 through #93.
+Design Intent records requested `systemEffect`; it does not apply durable design-system state transitions. Extension completion records accepted surface effects and proposed reusable deltas; applying durable changes remains lifecycle work under #93.
 
 ## Failure behavior
 

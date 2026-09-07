@@ -137,7 +137,7 @@ class DesignIntentLoadingTests(unittest.TestCase):
             ),
             (
                 "accepted-world-extension", "accepted-world-new-route", STUDIO,
-                {}, {STUDIO},
+                {"task": {"studio-extend"}}, {STUDIO, "references/extend.md"},
             ),
             (
                 "overhaul-preflight", "explicit-interactive-overhaul", STUDIO,
