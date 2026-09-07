@@ -56,6 +56,7 @@
       "id": "review-core",
       "signals": {"task": ["review", "polish"], "surface": ["persuade", "operate", "read", "experience"], "interaction": [], "evidence": []},
       "leaves": ["references/review/polish.md", "references/review/slop.md", "references/review/hierarchy.md", "references/review/a11y.md"],
+      "agents": ["agents/evaluator.md"],
       "procedure": "references/review/polish.md",
       "handoff": "Read-only lenses return evidence; Review aggregates a bounded fix plan and confirms once after implementation."
     },
