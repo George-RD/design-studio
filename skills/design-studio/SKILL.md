@@ -8,7 +8,7 @@ version: 1.7.0
 
 # Design Studio
 
-Design Studio is a portable design-engineering kernel. Source boundaries, routing, evidence and acceptance stay small here; lane procedures and specialist methods load only after Design Intent selects the work.
+Design Studio is a portable design-engineering kernel with shared guards and progressively disclosed lane procedures and methods.
 
 ## Role boundaries
 
@@ -50,11 +50,9 @@ For Studio, Review and Document requests:
 - Conditional Review procedure: `references/review/polish.md`
 - Conditional Document procedure: `references/document/document.md`
 
-The first seven entries plus this index form the universal hot path. The three lane procedures and specialist methods are conditional. A path mentioned here identifies authority; it is not an instruction to load every linked file.
+The first seven entries plus this index form the universal hot path. Lane procedures and methods are conditional; naming their paths does not load them.
 
 ## Lanes
-
-Each lane requires the shared `coreAuthorities` above, then only its selected procedure and signal-matched methods.
 
 | Lane / action | Trigger | Branch authority |
 |---|---|---|
