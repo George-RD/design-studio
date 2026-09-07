@@ -5,6 +5,9 @@ from pathlib import Path
 import subprocess
 import unittest
 
+from jsonschema import Draft202012Validator
+import yaml
+
 from test_method_kernel_routing import matching_route_ids
 
 
@@ -13,13 +16,7 @@ SKILL = ROOT / "skills/design-studio"
 
 
 def workflow_contract():
-    result = subprocess.run(
-        ["ruby", "-ryaml", "-rjson", "-e",
-         "puts JSON.generate(YAML.load_file(ARGV.fetch(0)))",
-         str(SKILL / "workflow.yaml")],
-        text=True, capture_output=True, check=True,
-    )
-    return json.loads(result.stdout)["workflow"]
+    return yaml.safe_load((SKILL / "workflow.yaml").read_text(encoding="utf-8"))["workflow"]
 
 
 class ExtendWorkflowTests(unittest.TestCase):
@@ -79,11 +76,19 @@ class ExtendWorkflowTests(unittest.TestCase):
             steps["accept"]["branches"],
         )
         preserved = {"design", "designDna", "tokens", "designSystemSkill", "DESIGN.md"}
-        self.assertTrue(preserved.isdisjoint(steps["complete_extension"]["outputs"]))
+        self.assertNotIn("outputs", steps["complete_extension"], "Completion must not require a delta for preserve")
+        self.assertEqual(
+            "modePolicies.extend.completion[finishAcceptance.systemEffect].outputs",
+            steps["complete_extension"].get("outputsFrom"),
+        )
+        for policy in workflow["modePolicies"]["extend"]["completion"].values():
+            self.assertTrue(preserved.isdisjoint(policy["outputs"]))
         self.assertEqual("report", steps["complete_extension"]["next"])
         self.assertEqual("halt", steps["reject_extension"]["next"])
         self.assertEqual(["extensionResult"], steps["reject_extension"]["outputs"])
-        self.assertIn("proposedSystemDelta", steps["complete_extension"]["outputs"])
+        effects = workflow["modePolicies"]["extend"]["completion"]
+        self.assertNotIn("proposedSystemDelta", effects["preserve"]["outputs"])
+        self.assertIn("proposedSystemDelta", effects["extend"]["outputs"])
         result = workflow["schemas"]["extensionResult"]
         self.assertTrue({"status", "systemEffect", "requestedSystemEffect", "authorityUnchanged",
                          "acceptancePath", "proposedSystemDelta", "escalationPath"}.issubset(result["required"]))
@@ -169,6 +174,7 @@ class ExtendWorkflowTests(unittest.TestCase):
                     self.assertEqual(expected["outputs"], policy["outputs"])
                     self.assertTrue(protected.isdisjoint(policy["outputs"]))
                 else:
+                    self.assertEqual(expected["outputs"], steps["escalate_extension"]["outputs"])
                     self.assertEqual("escalate_extension", route[-1])
                     self.assertNotIn("build", route)
                     self.assertTrue(case["incompatibilityEvidence"])
@@ -192,8 +198,64 @@ class ExtendWorkflowTests(unittest.TestCase):
                             if row["terminationReason"] == "quality-floor-met")
         self.assertIn("accepted-world constraints pass", quality_ship["when"])
         self.assertIn("extensionConstraintEvidence", steps["evaluate"]["outputs"])
+        self.assertIn("extensionConstraintEvidence when extend", steps["decide"]["inputs"])
         self.assertIn("extensionConstraintEvidence when extend", steps["finish_select"]["inputs"])
-        self.assertIn("extensionConstraintEvidence when extend", steps["accept"]["inputs"])
+        self.assertIn("finishSelectedConstraintEvidence when extend", steps["accept"]["inputs"])
+        self.assertIn("finishCorrectedConstraintEvidence when extend and corrected tree exists", steps["accept"]["inputs"])
+
+    def test_finish_constraints_are_fresh_and_bound_to_the_selected_or_corrected_tree(self):
+        workflow = workflow_contract()
+        steps = {step["id"]: step for step in workflow["steps"]}
+        evidence = workflow["schemas"]["extensionConstraintEvidence"]
+        self.assertTrue({"treePath", "treeManifest"}.issubset(evidence["required"]))
+        self.assertIn("finishSelectedConstraintEvidence", steps["finish_review"]["outputs"])
+        self.assertIn("finishCorrectedConstraintEvidence", steps["finish_fix"]["outputs"])
+        self.assertIn("finishCorrectedConstraintEvidence when extend", steps["finish_correction_decide"]["inputs"])
+        correction_guard = steps["finish_correction_decide"]["branches"][0]["when"]
+        self.assertIn("finishCorrectedConstraintEvidence.status == pass", correction_guard)
+        self.assertIn("receipt matches the corrected tree", correction_guard)
+        self.assertNotIn("extensionConstraintEvidence when extend", steps["accept"]["inputs"])
+        for name in ("finishSelectedConstraintEvidence", "finishCorrectedConstraintEvidence"):
+            self.assertIn("/finish/", workflow["paths"][name])
+            self.assertNotIn("{N}", workflow["paths"][name])
+
+    def test_multiple_local_candidates_require_a_nonblank_recorded_question(self):
+        schema = workflow_contract()["schemas"]["extensionScope"]
+        Draft202012Validator.check_schema(schema)
+        validator = Draft202012Validator(schema)
+        base = {key: "fixture" for key in schema["required"]}
+        base["requestedSystemEffect"] = "preserve"
+        for count in (1, 2, 3):
+            for question in (None, "", "   ", "Compare tab placement"):
+                with self.subTest(candidateCount=count, localQuestion=question):
+                    scope = dict(base, candidateCount=count, localQuestion=question)
+                    expected = count == 1 or bool(question and question.strip())
+                    self.assertEqual(expected, validator.is_valid(scope))
+
+    def test_no_eligible_extension_has_a_rejection_edge_before_finish_review(self):
+        steps = {step["id"]: step for step in workflow_contract()["steps"]}
+        select = steps["finish_select"]
+        self.assertNotIn("next", select, "Selection failure must not fall through to review")
+        self.assertEqual(
+            [{"when": "mode == extend and no eligible iteration remains", "next": "reject_extension"},
+             {"when": "eligible iteration selected and finish artifacts valid", "next": "finish_review"},
+             {"when": "default", "next": "halt"}],
+            select["branches"],
+        )
+        self.assertEqual("halt", steps["reject_extension"]["next"])
+        self.assertEqual(["extensionResult"], steps["reject_extension"]["outputs"])
+
+    def test_changed_authority_rejects_before_any_publication_action(self):
+        steps = {step["id"]: step for step in workflow_contract()["steps"]}
+        publication = steps["complete_extension"]
+        self.assertEqual(
+            "accepted final-tree proof and immediate authority recheck pass",
+            publication.get("when"),
+            "Publication needs a current entry guard, not only an earlier accepted receipt",
+        )
+        self.assertEqual("reject_extension", publication["otherwise"])
+        self.assertEqual("report", publication["next"])
+        self.assertEqual(["extensionResult"], steps[publication["otherwise"]]["outputs"])
 
     def test_extension_authority_is_checked_before_resuming_or_publishing(self):
         workflow = workflow_contract()

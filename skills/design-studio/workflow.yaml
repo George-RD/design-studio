@@ -92,6 +92,8 @@ workflow:
     finishCorrectedServeConfig: harness-output/runs/{runId}/finish/corrected-serve.json
     finishFinalTree: harness-output/runs/{runId}/finish/final-tree.json
     finishAcceptance: harness-output/runs/{runId}/finish/acceptance.json
+    finishSelectedConstraintEvidence: harness-output/runs/{runId}/finish/selected-extension-constraints.json
+    finishCorrectedConstraintEvidence: harness-output/runs/{runId}/finish/corrected-extension-constraints.json
     compatibilitySite: harness-output/site/
     designDna: harness-output/design-system/design-dna.md
     tokens: harness-output/design-system/tokens.css
@@ -172,6 +174,13 @@ workflow:
         requestedSystemEffect: { enum: [preserve, extend] }
         candidateCount: { type: integer, minimum: 1, maximum: 3 }
         localQuestion: { type: [string, 'null'] }
+      allOf:
+        - if:
+            properties:
+              candidateCount: { minimum: 2 }
+          then:
+            properties:
+              localQuestion: { type: string, minLength: 1, pattern: '\S' }
 
     extensionAuthorityManifest:
       type: object
@@ -191,8 +200,10 @@ workflow:
 
     extensionConstraintEvidence:
       type: object
-      required: [status, evidence, violations]
+      required: [status, evidence, violations, treePath, treeManifest]
       properties:
+        treePath: { type: string, minLength: 1 }
+        treeManifest: { type: object }
         status: { enum: [pass, fail, unverified] }
         evidence: { type: array, minItems: 1 }
         violations: { type: array }
@@ -440,13 +451,13 @@ workflow:
       actions:
         - Verify actual 1440x900 and 390x844 viewport widths, test meaningful controls and states, and capture browser evidence.
         - Write evaluated observation and critique, or an unevaluated observation with null scores and exact limitation.
-        - For extend, test the addition and surrounding existing surfaces against inherited constraints; write extensionConstraintEvidence with pass, fail or unverified and current rendered evidence or exact limitations. Material violations are acceptance blockers, not originality-driven redesign requests.
+        - For extend, test the addition and surrounding existing surfaces against inherited constraints; write extensionConstraintEvidence with pass, fail or unverified and current rendered evidence or exact limitations. Orchestrator binds the receipt to the evaluated treePath and deterministic treeManifest without exposing source or manifest metadata to Evaluator. Material violations are acceptance blockers, not originality-driven redesign requests.
       outputs: [screenshots, observation, critique, extensionConstraintEvidence]
       next: decide
 
     - id: decide
       agent: Orchestrator
-      inputs: [observation, mechanicalFindings, scoreHistory, runManifest, directionSelection, extensionScope and escalation evidence when extend]
+      inputs: [observation, mechanicalFindings, scoreHistory, runManifest, directionSelection, extensionConstraintEvidence when extend, extensionScope and escalation evidence when extend]
       orderedDecisionTable:
         - { when: browser evaluation incomplete or either required viewport missing, decision: HALT, terminationReason: browser-unavailable }
         - { when: server or iteration artifacts invalid, decision: HALT, terminationReason: invalid-artifact }
@@ -497,9 +508,12 @@ workflow:
         - Tier 1 contains evaluated, mechanically clean iterations meeting every ship floor.
         - Tier 2 contains evaluated, mechanically clean iterations. Otherwise use all evaluated immutable iterations and label best_available.
         - Within the active tier rank by weighted average, minimum criterion, functionality, then latest iteration.
-        - Copy the selected site, rewritten serve contract and its own selected-direction.md into finish; recapture both viewports.
+        - Only when an eligible iteration is selected, copy its site, rewritten serve contract and its own selected-direction.md into finish; recapture both viewports. With no eligible iteration, emit no finish selection or tree.
       outputs: [finishSelection, finishSelectedSite, finishSelectedServeConfig, finishSelectedDirection]
-      next: finish_review
+      branches:
+        - { when: mode == extend and no eligible iteration remains, next: reject_extension }
+        - { when: eligible iteration selected and finish artifacts valid, next: finish_review }
+        - { when: default, next: halt }
 
     - id: finish_review
       agent: Evaluator
@@ -508,7 +522,8 @@ workflow:
       explicitlyExcluded: [source, raw design-system files, extensionAuthorityManifest, full designDescription, prior scores, prior critiques, implementation history]
       actions:
         - Return pass or hold with only material defects in comprehension, usability, responsive integrity, accessibility, coherence or direction fidelity.
-      outputs: [finish/verdict.json, finish/critique.md]
+        - For extend, freshly verify inherited token roles and grammar on the selected finish tree; write finishSelectedConstraintEvidence using the extensionConstraintEvidence schema. Orchestrator binds its treePath and deterministic treeManifest to that exact selected tree; never copy the iteration receipt as finish proof or expose source/manifest metadata to Evaluator.
+      outputs: [finish/verdict.json, finish/critique.md, finishSelectedConstraintEvidence]
       next: finish_correct_or_finalise
 
     - id: finish_correct_or_finalise
@@ -525,14 +540,15 @@ workflow:
         - Apply one grouped correction batch without changing direction.
         - Validate the corrected server, rerun a full current mechanical snapshot and recapture both viewports.
         - Ask a fresh Evaluator to classify each original finding, rescore all criteria and state material regression; null all comparison fields when either viewport is missing.
-        - For extend, carry the same source-free inherited constraints into correction review; corrections cannot change global authority or reopen direction.
-      outputs: [finishCorrectedSite, finishCorrectedServeConfig, finish/corrected-mechanical-findings.json, finish/correction-verdict.json]
+        - For extend, carry the same source-free inherited constraints into correction review and freshly test inherited token roles and grammar. Write finishCorrectedConstraintEvidence using the extensionConstraintEvidence schema; Orchestrator binds its treePath and deterministic treeManifest to the exact corrected tree. Never reuse selected or iteration receipts, expose source/manifest metadata to Evaluator, change global authority or reopen direction.
+      outputs: [finishCorrectedSite, finishCorrectedServeConfig, finish/corrected-mechanical-findings.json, finish/correction-verdict.json, finishCorrectedConstraintEvidence]
       next: finish_correction_decide
 
     - id: finish_correction_decide
       agent: Orchestrator
+      inputs: [correction verdict, corrected mechanical snapshot, finishCorrectedConstraintEvidence when extend]
       branches:
-        - when: all original findings resolved, corrected snapshot clean, both viewports verified, no material regression and required floors preserved
+        - when: all original findings resolved, corrected snapshot clean, both viewports verified, no material regression and required floors preserved and (mode != extend or finishCorrectedConstraintEvidence.status == pass and receipt matches the corrected tree)
           next: finalise
         - when: default
           next: finalise_with_open_items
@@ -555,11 +571,11 @@ workflow:
 
     - id: accept
       agent: Orchestrator
-      inputs: [final tree and finish evidence, extensionConstraintEvidence when extend, extensionAuthorityManifest when extend]
+      inputs: [final tree and finish evidence, finishSelectedConstraintEvidence when extend, finishCorrectedConstraintEvidence when extend and corrected tree exists, extensionAuthorityManifest when extend]
       procedure: references/runtime-integrity.md
       actions:
         - Verify final-tree agreement, source iteration, rewritten serve contract, measured viewports, current mechanical snapshot, open-item status, deterministic tree manifest and iteration immutability.
-        - For extend, also verify authority manifests including absent outputs and directory membership are unchanged, fresh finish evidence for the final selected or corrected tree confirms inherited constraints pass, and the accepted surface does not mutate shared token roles or grammar.
+        - For extend, verify authority manifests including absent outputs and directory membership are unchanged. Select finishSelectedConstraintEvidence for selected-site or finishCorrectedConstraintEvidence for corrected-site; require status pass and treePath/treeManifest matching the actual final tree. Missing, stale or wrong-tree receipts reject acceptance. The accepted surface must not mutate shared token roles or grammar.
         - Record the actual accepted systemEffect for extend in finishAcceptance; preserve or extend must agree with the validated intent and accepted scope, never broaden an unapproved local request.
         - Write finish/acceptance.json as accepted only when every postcondition passes; a high score or exhausted budget never waives extension authority integrity.
       outputs: [finishAcceptance]
@@ -572,14 +588,16 @@ workflow:
     - id: complete_extension
       agent: Orchestrator
       procedure: references/extend.md
+      when: accepted final-tree proof and immediate authority recheck pass
+      otherwise: reject_extension
       inputs: [designIntent, extensionScope, extensionAuthorityManifest, finishAcceptance, accepted final tree]
       actions:
-        - Require accepted final-tree proof and unchanged authority immediately before publication; failure routes to reject_extension without overwriting concurrent authority changes.
+        - The entry guard revalidates the accepted final tree and current authority before any action below; failed or unavailable proof takes otherwise to reject_extension with no publication writes. Never overwrite concurrent authority changes.
         - Replace harness-output/site only from that accepted final tree; leave DESIGN.md, design DNA, canonical tokens and generated design-system skill unchanged.
         - Follow modePolicies.extend.completion for the accepted effect. For systemEffect preserve, write extensionResult with publicationState unchanged and null proposedSystemDelta.
         - For systemEffect extend, write a proposed reusable delta tied to the accepted surface and incumbent authority revision, then extensionResult with publicationState proposed-only; never apply the delta here.
         - Record requested effect, accepted surface effect, before/after authority manifests and acceptance provenance; applying reusable deltas is the separately acceptance-controlled lifecycle boundary.
-      outputs: [compatibilitySite, extensionResult, proposedSystemDelta]
+      outputsFrom: modePolicies.extend.completion[finishAcceptance.systemEffect].outputs
       next: report
 
     - id: reject_extension

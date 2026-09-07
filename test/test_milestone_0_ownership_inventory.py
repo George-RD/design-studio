@@ -20,6 +20,9 @@ RETIRED_POST_BASELINE_REFERENCES = {
     "skills/design-studio/references/evaluation.md",
     "skills/design-studio/references/iteration.md",
 }
+# Milestone 0 is frozen evidence for BASELINE_REVISION, not the current inventory.
+# Extend additions are owned by the current method-authority map and workflow;
+# explicitly enumerate them here so unknown additions still fail coverage.
 ADDED_POST_BASELINE_STEPS = {
     "extension_preflight", "explore_extension", "check_extension_direction",
     "escalate_extension", "complete_extension", "reject_extension",
@@ -91,7 +94,7 @@ class MilestoneZeroOwnershipInventoryTests(unittest.TestCase):
         )
         self.assertEqual(LABEL_ACTIONS, self.inventory["labels"])
 
-    def test_every_workflow_step_is_inventoried_exactly_once(self) -> None:
+    def test_every_baseline_workflow_step_is_inventoried_exactly_once(self) -> None:
         workflow = (ROOT / "skills/design-studio/workflow.yaml").read_text(
             encoding="utf-8"
         )
@@ -106,7 +109,7 @@ class MilestoneZeroOwnershipInventoryTests(unittest.TestCase):
         self.assertEqual({"core"}, set(grouped))
         self.assertEqual(28, len(actual))
 
-    def test_every_workflow_schema_is_inventoried_exactly_once(self) -> None:
+    def test_every_baseline_workflow_schema_is_inventoried_exactly_once(self) -> None:
         workflow = (ROOT / "skills/design-studio/workflow.yaml").read_text(
             encoding="utf-8"
         )
