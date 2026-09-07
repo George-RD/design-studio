@@ -1,0 +1,29 @@
+name: Temporary extend implementation snapshot
+on:
+  push:
+    branches: [agent/extend-workflow-91]
+permissions:
+  contents: read
+concurrency:
+  group: temporary-extend-snapshot
+  cancel-in-progress: true
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Run initial extend tracer test
+        run: python3 -m unittest discover -s test -p test_extend_workflow.py -v
+      - name: Archive tracked source only
+        if: always()
+        run: git archive --format=tar.gz HEAD -o "$RUNNER_TEMP/design-studio-source.tar.gz"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: design-studio-source
+          path: ${{ runner.temp }}/design-studio-source.tar.gz
+          retention-days: 1
+          if-no-files-found: error
