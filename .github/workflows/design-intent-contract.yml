@@ -26,5 +26,15 @@ jobs:
         with:
           node-version: 24
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install test-only contract validators
+        run: python3 -m pip install -r test/requirements.txt
+
       - name: Validate Design Intent contract and workflow coverage
-        run: python3 -m unittest discover -s test -p 'test_design_intent*.py' -v
+        run: |
+          python3 -m unittest discover -s test -p 'test_design_intent*.py' -v
+          python3 -m unittest discover -s test -p 'test_extend_workflow.py' -v

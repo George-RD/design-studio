@@ -14,7 +14,7 @@ Use confirmed product truth, surface mode, success criteria, real assets/content
 
 ## Outputs and handoff
 
-Visual Director produces exactly three equally specified viable directions unless the user pinned one complete direction. Each direction names a distinct thesis and differs materially across composition, typography, material/colour, interaction/motion, or density/rhythm. Compare directions at realistic surface scale, not as abstract style swatches. Orchestrator or the user selects; the Director does not rank its own work.
+For create/overhaul, Visual Director produces exactly three equally specified viable directions unless the user pinned one complete direction. Extend follows `references/extend.md` instead: a bounded local set inside accepted authority, not materially different replacement worlds. In create/overhaul exploration, each direction names a distinct thesis and differs materially across composition, typography, material/colour, interaction/motion, or density/rhythm. Compare directions at realistic surface scale, not as abstract style swatches. Orchestrator or the user selects; the Director does not rank its own work.
 
 ## Authority boundary
 

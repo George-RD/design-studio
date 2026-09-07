@@ -18,7 +18,7 @@ Design Studio is a portable design-engineering kernel with shared guards and pro
 | Visual Director | no | no | visual directions and selected visual contract |
 | Builder | yes | no | implementation fidelity |
 | Evaluator | no | no | rendered observations and scores |
-| Orchestrator | as needed | yes | SELECT / REFINE / PIVOT / SHIP / HALT |
+| Orchestrator | as needed | yes | SELECT / REFINE / PIVOT / SHIP / ESCALATE / HALT |
 
 - Visual Director never receives HTML, CSS, JSX, selectors, implementation diffs, document source/renderer metadata or the unattended assignment index.
 - Evaluator never receives source, implementation effort, full design description or prior scores. Document evaluation also excludes renderer identity/build metadata.
@@ -56,7 +56,7 @@ The first seven entries plus this index form the universal hot path. Lane proced
 
 | Lane / action | Trigger | Branch authority |
 |---|---|---|
-| **Studio** | create, extend or overhaul an interactive surface | selected `workflow.yaml`; stage-matched direction/build/overhaul leaves |
+| **Studio** | create, extend or overhaul an interactive surface | selected `workflow.yaml`; stage-matched direction/extend/build/overhaul leaves |
 | **Review** | audit/polish while preserving an interactive visual world | selected `references/review/polish.md`; matched read-only review lenses |
 | **Document** | quote, invoice, SOW, proposal, report, brief, print/PDF or other paginated artifact | selected `references/document/document.md`; hierarchy/specificity and its page-evaluation lenses |
 | **Design system** | codify an accepted system | accepted lane's codification authority |
@@ -66,7 +66,7 @@ Design Intent owns Studio/Review/Document disambiguation. Meta maintenance uses 
 
 ## Studio
 
-For a validated Studio intent, execute `workflow.yaml` end to end. It owns planning, precommitted unattended assignment, source-blind direction, source-aware building, mechanical evidence, blind evaluation, immutable iteration and final-tree acceptance before codification. Its specialist leaves load by current stage, not all at activation. The staged `extend` limitation is recorded in `references/design-intent.md`.
+For a validated Studio intent, execute `workflow.yaml` end to end. It owns planning, precommitted unattended assignment, source-blind direction, source-aware building, mechanical evidence, blind evaluation, immutable iteration and final-tree acceptance before codification. Its specialist leaves load by current stage, not all at activation. For `extend`, use the routed `references/extend.md`: inherit accepted authority, explore only the local addition and finish without global codification. Create and overhaul retain divergent direction work.
 
 ## Document
 

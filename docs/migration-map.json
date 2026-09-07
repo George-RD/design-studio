@@ -395,6 +395,16 @@
       "dogfoodEvidence": ["whole-page-responsive-composition", "real-device-perceptibility"],
       "externalOverlaps": [],
       "reason": "Rendered evidence and source-blind judgement stay local; external mechanical methods cannot become visual authority."
+    },
+    {
+      "id": "accepted-world-extension",
+      "canonicalOwner": "design-studio",
+      "localAuthorities": [
+        "skills/design-studio/references/extend.md"
+      ],
+      "dogfoodEvidence": [],
+      "externalOverlaps": [],
+      "reason": "Issue #91 adds bounded accepted-world extension and proposed-only reusable deltas; contract fixtures are not live dogfood evidence."
     }
   ],
   "behaviorContracts": [

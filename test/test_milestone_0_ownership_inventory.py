@@ -20,7 +20,19 @@ RETIRED_POST_BASELINE_REFERENCES = {
     "skills/design-studio/references/evaluation.md",
     "skills/design-studio/references/iteration.md",
 }
+# Milestone 0 is frozen evidence for BASELINE_REVISION, not the current inventory.
+# Extend additions are owned by the current method-authority map and workflow;
+# explicitly enumerate them here so unknown additions still fail coverage.
+ADDED_POST_BASELINE_STEPS = {
+    "extension_preflight", "explore_extension", "check_extension_direction",
+    "escalate_extension", "complete_extension", "reject_extension",
+}
+ADDED_POST_BASELINE_SCHEMAS = {
+    "extensionScope", "extensionAuthorityManifest", "extensionConstraintEvidence",
+    "extensionResult", "proposedSystemDelta", "extensionEscalation",
+}
 ADDED_POST_BASELINE_REFERENCES = {
+    "skills/design-studio/references/extend.md",
     "skills/design-studio/references/composition-contract.md",
     "skills/design-studio/references/design-intent.md",
     "skills/design-studio/references/document/document.md",
@@ -82,7 +94,7 @@ class MilestoneZeroOwnershipInventoryTests(unittest.TestCase):
         )
         self.assertEqual(LABEL_ACTIONS, self.inventory["labels"])
 
-    def test_every_workflow_step_is_inventoried_exactly_once(self) -> None:
+    def test_every_baseline_workflow_step_is_inventoried_exactly_once(self) -> None:
         workflow = (ROOT / "skills/design-studio/workflow.yaml").read_text(
             encoding="utf-8"
         )
@@ -92,11 +104,12 @@ class MilestoneZeroOwnershipInventoryTests(unittest.TestCase):
         grouped = self.inventory["steps"]
         actual = [item for names in grouped.values() for item in names]
         self.assertEqual(len(actual), len(set(actual)))
-        self.assertEqual(expected, set(actual))
+        self.assertTrue(ADDED_POST_BASELINE_STEPS.issubset(expected))
+        self.assertEqual(expected - ADDED_POST_BASELINE_STEPS, set(actual))
         self.assertEqual({"core"}, set(grouped))
         self.assertEqual(28, len(actual))
 
-    def test_every_workflow_schema_is_inventoried_exactly_once(self) -> None:
+    def test_every_baseline_workflow_schema_is_inventoried_exactly_once(self) -> None:
         workflow = (ROOT / "skills/design-studio/workflow.yaml").read_text(
             encoding="utf-8"
         )
@@ -111,7 +124,8 @@ class MilestoneZeroOwnershipInventoryTests(unittest.TestCase):
         grouped = self.inventory["schemas"]
         actual = [item for names in grouped.values() for item in names]
         self.assertEqual(len(actual), len(set(actual)))
-        self.assertEqual(expected, set(actual))
+        self.assertTrue(ADDED_POST_BASELINE_SCHEMAS.issubset(expected))
+        self.assertEqual(expected - ADDED_POST_BASELINE_SCHEMAS, set(actual))
         self.assertEqual({"core"}, set(grouped))
         self.assertEqual(8, len(actual))
 

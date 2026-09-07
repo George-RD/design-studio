@@ -29,13 +29,14 @@ Apply the ranked precedence in `references/design-intent.md` before loading a la
 
 Only after Studio is selected, map host input to the workflow's named inputs before `initialise`:
 
-- `user_prompt`: remaining request after recognized control flags are removed.
-- `existing_target`: local path or URL supplied after `--overhaul`, when present.
+- `design_intent`: the already validated result, persisted by Studio; `create` maps to internal `greenfield`, while `extend` and `overhaul` keep their mode.
+- `user_prompt`: remaining request after recognized control flags are removed, including the requested extension scope.
+- `existing_target`: the current local path or URL for extension, or the target supplied after `--overhaul`, when present.
 - `overhaul_goals`: text supplied after `--goals`, when present.
 - `budget_override`: `quick`, `standard`, `ambitious`, or explicit integer supplied after `--budget`. `workflow.yaml` owns clamping and budget semantics.
 - `optional_run_id`: explicit run identifier only when resuming a known run.
 
-Supported adapter vocabulary is `--overhaul`, `--goals`, and `--budget`. Free-form hosts may populate the same named inputs directly.
+Supported adapter vocabulary is `--overhaul`, `--goals`, and `--budget`. Free-form hosts may populate the same named inputs directly. An additive request inside accepted authority selects `extend` through Design Intent; no new flag or second taxonomy is needed. Map its preflight/local-direction task to `studio-extend`, then use existing build/evidence stage signals. The selected procedure resolves accepted authority from the current target and surface brief, not from an adapter-invented visual system.
 
 ## Review input mapping
 

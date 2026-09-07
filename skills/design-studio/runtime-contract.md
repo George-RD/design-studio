@@ -76,6 +76,10 @@ Mechanical checks report computed facts and severity/waiver evidence. They do no
 
 `runtime/document-contract/index.mjs` implements `publish_document_visual_contract`. It accepts only an already accepted proposed visual contract, validates the required renderer-neutral v1 shape, creates output parent directories and writes JSON. It does not infer design values, read business source truth or select a renderer. Validation failure returns explicit error and must block downstream publication.
 
+## Extend completion
+
+Studio extend uses the same operations plus `extension_preflight`, `complete_extension`, `reject_extension` and `escalate_extension` in the selected workflow. These are host-executed operations, not a separate executable runtime. The routed extend procedure owns accepted-world constraints and proposed-only handoff; `workflow.yaml` owns their schemas and paths. Keep global authority unchanged and validate any escalation through `validate_design_intent` before a subsequent run.
+
 ## Review lane
 
 Interactive Review uses the same capability/evidence semantics without the Studio iteration graph. Host adapters run deterministic root/capability/mechanical operations needed by `references/review/polish.md` and use `mechanical-review` when visual verification is unavailable.

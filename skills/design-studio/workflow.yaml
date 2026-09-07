@@ -8,12 +8,13 @@ workflow:
   invariants:
     - Visual Director never receives source, selectors, implementation diffs, the unattended seed or assigned candidate index.
     - Evaluator never receives source, implementation effort, full design description, design flags or prior scores.
-    - Evaluator reports evidence and scores only; Orchestrator owns REFINE, PIVOT, SHIP and HALT.
+    - Evaluator reports evidence and scores only; Orchestrator owns REFINE, PIVOT, SHIP, ESCALATE and HALT.
     - Unattended assignment is committed before candidate generation and hidden from Visual Director.
     - Every completed iteration is immutable; events.jsonl is append-only.
     - Mechanical findings are complete current snapshots, not an accumulated open cache.
     - No visual winner is selected without a runnable target and both required browser viewports.
     - No accepted tree is codified until finish/acceptance.json proves its postconditions.
+    - Extend preserves incumbent global authority, never pivots, and emits reusable deltas only as proposals after accepted surface proof.
     - No agent self-commits; version-control actions belong to the calling harness or user.
 
   capabilities:
@@ -32,6 +33,20 @@ workflow:
     finishCorrectionRounds: 1
     directionCount: 3
 
+  modePolicies:
+    extend:
+      procedure: references/extend.md
+      pivotBudget: 0
+      candidateCount: { default: 1, maximum: 3 }
+      preservedAuthorities: [design, designDna, tokens, designSystemSkill]
+      completion:
+        preserve:
+          publicationState: unchanged
+          outputs: [compatibilitySite, extensionResult]
+        extend:
+          publicationState: proposed-only
+          outputs: [compatibilitySite, extensionResult, proposedSystemDelta]
+
   paths:
     runRoot: harness-output/runs/{runId}
     runManifest: harness-output/runs/{runId}/run.json
@@ -45,6 +60,15 @@ workflow:
     sprintContract: harness-output/runs/{runId}/sprint-contract.md
     surfaceBrief: harness-output/runs/{runId}/surface-brief.md
     baseline: harness-output/runs/{runId}/baseline/
+    designIntent: harness-output/runs/{runId}/design-intent.json
+    extensionScope: harness-output/runs/{runId}/extension/scope.json
+    extensionAuthorityManifest: harness-output/runs/{runId}/extension/authority-manifest.json
+    extensionVisualConstraints: harness-output/runs/{runId}/extension/visual-constraints.md
+    extensionConstraintEvidence: harness-output/runs/{runId}/iterations/{N}/extension-constraints.json
+    extensionResult: harness-output/runs/{runId}/finish/extension-result.json
+    proposedSystemDelta: harness-output/runs/{runId}/finish/proposed-system-delta.json
+    extensionEscalation: harness-output/runs/{runId}/extension/escalation.json
+    nextDesignIntent: harness-output/runs/{runId}/extension/next-design-intent.json
     scores: harness-output/runs/{runId}/scores.json
     iterationRoot: harness-output/runs/{runId}/iterations/{N}
     directionAssignment: harness-output/runs/{runId}/iterations/{N}/direction/direction-assignment.json
@@ -68,6 +92,8 @@ workflow:
     finishCorrectedServeConfig: harness-output/runs/{runId}/finish/corrected-serve.json
     finishFinalTree: harness-output/runs/{runId}/finish/final-tree.json
     finishAcceptance: harness-output/runs/{runId}/finish/acceptance.json
+    finishSelectedConstraintEvidence: harness-output/runs/{runId}/finish/selected-extension-constraints.json
+    finishCorrectedConstraintEvidence: harness-output/runs/{runId}/finish/corrected-extension-constraints.json
     compatibilitySite: harness-output/site/
     designDna: harness-output/design-system/design-dna.md
     tokens: harness-output/design-system/tokens.css
@@ -80,7 +106,8 @@ workflow:
       required: [runId, promptHash, status, mode, budgetClass, iterationBudget, pivotBudget, currentIteration, pivotsUsed, correctionRoundsUsed, currentStep]
       properties:
         status: { enum: [initialising, running, halted, complete] }
-        mode: { enum: [greenfield, overhaul] }
+        mode: { enum: [greenfield, overhaul, extend] }
+        designIntentPath: { type: string }
         budgetClass: { enum: [quick, standard, ambitious, explicit] }
         iterationBudget: { type: integer, minimum: 1, maximum: 8 }
         currentIteration: { type: integer, minimum: 1 }
@@ -104,7 +131,7 @@ workflow:
       type: object
       required: [mode, candidateIds, committedBeforeExplore]
       properties:
-        mode: { enum: [user-choice, deterministic-seed, pinned-brief] }
+        mode: { enum: [user-choice, deterministic-seed, pinned-brief, extend-bounded] }
         candidateIds: { type: array, minItems: 1, maxItems: 3 }
         seed: { type: [string, 'null'] }
         assignedIndex: { type: [integer, 'null'], minimum: 1, maximum: 3 }
@@ -114,7 +141,7 @@ workflow:
       type: object
       required: [selectedId, method, candidateIds, assignmentPath]
       properties:
-        method: { enum: [user, deterministic-seed, pinned-brief] }
+        method: { enum: [user, deterministic-seed, pinned-brief, extend-bounded] }
 
     mechanicalFindings:
       type: object
@@ -140,6 +167,74 @@ workflow:
         serveValidated: { type: boolean }
         iterationIntegrity: { type: boolean }
 
+    extensionScope:
+      type: object
+      required: [designIntentPath, acceptedAuthorityPath, authorityRevision, acceptanceProvenance, surfaceScope, requestedSystemEffect, candidateCount, localQuestion]
+      properties:
+        requestedSystemEffect: { enum: [preserve, extend] }
+        candidateCount: { type: integer, minimum: 1, maximum: 3 }
+        localQuestion: { type: [string, 'null'] }
+      allOf:
+        - if:
+            properties:
+              candidateCount: { minimum: 2 }
+          then:
+            properties:
+              localQuestion: { type: string, minLength: 1, pattern: '\S' }
+
+    extensionAuthorityManifest:
+      type: object
+      required: [authorityRevision, entries]
+      properties:
+        entries:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [path, kind, sha256, members]
+            properties:
+              path: { type: string }
+              kind: { enum: [file, directory, absent] }
+              sha256: { type: [string, 'null'] }
+              members: { type: array }
+
+    extensionConstraintEvidence:
+      type: object
+      required: [status, evidence, violations, treePath, treeManifest]
+      properties:
+        treePath: { type: string, minLength: 1 }
+        treeManifest: { type: object }
+        status: { enum: [pass, fail, unverified] }
+        evidence: { type: array, minItems: 1 }
+        violations: { type: array }
+
+    extensionResult:
+      type: object
+      required: [status, requestedSystemEffect, systemEffect, authorityBefore, authorityAfter, authorityUnchanged, publicationState, acceptancePath, proposedSystemDelta, escalationPath]
+      properties:
+        status: { enum: [accepted, rejected, escalated] }
+        requestedSystemEffect: { enum: [preserve, extend] }
+        systemEffect: { enum: [preserve, extend, none] }
+        authorityUnchanged: { type: [boolean, 'null'] }
+        publicationState: { enum: [unchanged, proposed-only] }
+        acceptancePath: { type: [string, 'null'] }
+        proposedSystemDelta: { type: [string, 'null'] }
+        escalationPath: { type: [string, 'null'] }
+
+    proposedSystemDelta:
+      type: object
+      required: [status, authorityRevision, reusableRule, rationale, acceptancePath, evidence]
+      properties:
+        status: { const: proposed }
+        evidence: { type: array, minItems: 1 }
+
+    extensionEscalation:
+      type: object
+      required: [reason, evidence, previousDesignIntentPath, nextDesignIntentPath, authorityManifestPath]
+      properties:
+        reason: { enum: [explicit-user-intent, incompatible-accepted-system] }
+        evidence: { type: array, minItems: 1 }
+
   agents:
     Planner:
       seesSource: true
@@ -148,7 +243,7 @@ workflow:
     VisualDirector:
       seesSource: false
       seesAssignment: false
-      owns: [three equal directions, selected source-free visual contract]
+      owns: [equally specified candidates within the selected mode, selected source-free visual contract]
       neverOwns: [candidate ranking, implementation, workflow decision]
     Builder:
       seesSource: true
@@ -166,20 +261,25 @@ workflow:
   steps:
     - id: initialise
       agent: Orchestrator
-      inputs: [user_prompt, existing_target, overhaul_goals, budget_override, optional_run_id]
+      inputs: [design_intent, user_prompt, existing_target, overhaul_goals, budget_override, optional_run_id]
       actions:
         - Generate runId from timestamp plus prompt hash unless an explicit run ID is supplied.
         - For a new run, create the run root, run.json, empty scores.json and append an initialise completed event.
+        - For a new run, persist the validated design_intent unchanged and record designIntentPath in run.json; map create to internal greenfield mode and retain overhaul or extend directly.
+        - On resume, load the persisted intent without overwriting it and compare the supplied intent before any mutation; a changed intent requires a new run.
         - Clamp explicit build budgets to 1 through 8 and record the matching pivot budget.
-      outputs: [runManifest, scores, events]
+        - In extend mode apply modePolicies.extend after all budget overrides; pivotBudget is always zero.
+      outputs: [designIntent, runManifest, scores, events]
       next: resume_validate
 
     - id: resume_validate
       agent: Orchestrator
+      inputs: [designIntent, runManifest, events, extensionAuthorityManifest when extend]
       procedure: references/runtime-integrity.md
       actions:
         - For a new run, append a no-op completion receipt and continue.
         - For a resumed run, validate prompt hash, roots, capabilities, event order, completed artifacts and iteration immutability.
+        - For extend, compare the persisted intent and any completed authority manifest to current files before reusing evidence; changed authority blocks resume without rollback or implicit recodification.
         - Continue from the first step without a valid completed receipt; never rerun a completed build in the same iteration.
       next: resolve_roots
 
@@ -211,7 +311,26 @@ workflow:
         - Classify the surface as persuade, operate, read or experience.
         - Write spec.md, sprint-contract.md and surface-brief.md with preservation constraints, proof and copy baseline when text changes.
       outputs: [product, spec, sprintContract, surfaceBrief]
-      next: baseline
+      next: extension_preflight
+
+    - id: extension_preflight
+      agent: Orchestrator
+      when: mode == extend
+      procedure: references/extend.md
+      inputs: [designIntent, roots, capabilities, surfaceBrief, accepted DESIGN.md, linked design-system authorities]
+      actions:
+        - Verify current project scope and acceptance provenance; missing or conflicting authority blocks extension rather than falling back to greenfield.
+        - Freeze every governed authority file and absent output in extensionAuthorityManifest before any build; keep raw source/token material with source-aware roles only.
+        - Record the requested local scope and systemEffect; create a source-free projection of the accepted thesis, token roles, component/control grammar, responsive logic and anti-goals.
+        - Capture baseline renders and interactions for the extension target; record unavailable evidence without fabricating it.
+        - Use one local candidate by default; allow two or three only with a recorded local design question, never replacement worlds.
+      outputs: [extensionScope, extensionAuthorityManifest, extensionVisualConstraints, baseline]
+      branches:
+        - { when: accepted authority is missing or stale or conflicting, next: halt }
+        - { when: explicit user intent or recorded incompatibility evidence requires a new Design Intent, next: escalate_extension }
+        - { when: authority scope and provenance verified and manifest and visual constraints complete, next: baseline }
+        - { when: default, next: halt }
+      otherwise: baseline
 
     - id: baseline
       agent: Orchestrator
@@ -228,12 +347,35 @@ workflow:
       agent: Orchestrator
       procedure: references/runtime-integrity.md
       actions:
-        - Fix candidate IDs before candidate generation.
+        - Fix candidate IDs before candidate generation using the selected mode's candidate count.
         - For unattended work, derive and record a stable seed and assignedIndex before directions.md exists.
         - For user choice, record null seed and index; for an exact pinned direction, record one candidate and index 1.
+        - For extend, record extend-bounded with one candidate by default or the justified local candidate count from extensionScope; a sole candidate uses index 1, multiple candidates use user choice or a precommitted index within that count.
         - Exclude assignment seed and index from Visual Director context.
       outputs: [directionAssignment]
-      next: explore_direction
+      branches:
+        - { when: mode == extend, next: explore_extension }
+        - { when: default, next: explore_direction }
+
+    - id: explore_extension
+      agent: VisualDirector
+      inputs: [product, copy constraints, sprintContract, surfaceBrief, extensionVisualConstraints, baseline screenshots, candidate IDs and local question]
+      explicitlyExcluded: [source, raw design-system files, extensionAuthorityManifest, assignment seed and index, implementation effort, prior scores]
+      procedure: references/extend.md
+      actions:
+        - Produce the declared candidates inside the accepted world, preserving all inherited visual constraints.
+        - Bound alternatives to the recorded local question; report incompatible constraints as evidence rather than selecting a replacement world.
+        - Keep candidates equally specified and unranked; Orchestrator owns selection.
+      outputs: [directions]
+      next: check_extension_direction
+
+    - id: check_extension_direction
+      agent: Orchestrator
+      inputs: [directions, extensionScope, extensionVisualConstraints, incompatibility evidence]
+      branches:
+        - { when: explicit user intent or recorded incompatibility evidence requires a new Design Intent, next: escalate_extension }
+        - { when: declared candidate set is complete and every candidate preserves accepted constraints, next: select_direction }
+        - { when: default, next: halt }
 
     - id: explore_direction
       agent: VisualDirector
@@ -249,16 +391,17 @@ workflow:
 
     - id: select_direction
       agent: Orchestrator
-      inputs: [directionAssignment, optional directions, optional user answer, exact pinned direction]
+      inputs: [directionAssignment, optional directions, optional user answer, exact pinned direction, extensionVisualConstraints when extend]
       actions:
         - User choice selects the explicit answer; deterministic selection uses the precommitted index; pinned brief selects its sole candidate.
+        - Extend-bounded selects its sole candidate without a tournament, or uses explicit user choice/precommitted index for the justified local set; selection cannot relax accepted constraints.
         - Write direction-selection.json and selected-direction.md with source-free thesis, viewport, path, grammar, responsive intent, signature moment, risk and anti-goals.
       outputs: [directionSelection, selectedDirection]
       next: direct
 
     - id: direct
       agent: VisualDirector
-      inputs: [selectedDirection, product, copy constraints, sprintContract, surfaceBrief, current screenshots and visual-only critique on REFINE]
+      inputs: [selectedDirection, product, copy constraints, sprintContract, surfaceBrief, extensionVisualConstraints when extend, current screenshots and visual-only critique on REFINE]
       actions:
         - Expand the selected candidate into design-description.md using visual and experiential language only.
         - On REFINE preserve the world; fix observed experience without replacing the thesis.
@@ -267,7 +410,7 @@ workflow:
 
     - id: build
       agent: Builder
-      inputs: [roots, designDescription, spec, sprintContract, surfaceBrief, source substrate or previous iteration on REFINE]
+      inputs: [roots, designDescription, spec, sprintContract, surfaceBrief, accepted design-system authorities when extend, source substrate or previous iteration on REFINE]
       procedure: references/generation.md
       actions:
         - Implement only in the current immutable iteration tree.
@@ -296,35 +439,51 @@ workflow:
       actions:
         - Preserve the single build and current mechanical snapshot.
         - Set finalStatus halted and terminationReason browser-unavailable.
+        - For extend, record a rejected extensionResult with systemEffect none and null acceptance/delta; retain available authority evidence without publishing global files.
         - Do not select a winner, fabricate scores or codify a visual system.
       termination: halted
 
     - id: evaluate
       agent: Evaluator
-      inputs: [live URL, product purpose, audience, surface success criteria, current mechanical summary]
-      explicitlyExcluded: [source, designDescription, designFlags, selectedDirection, assignment, prior observations, prior scores, implementation effort]
+      inputs: [live URL, product purpose, audience, surface success criteria, extensionVisualConstraints when extend, current mechanical summary]
+      explicitlyExcluded: [source, raw design-system files, extensionAuthorityManifest, designDescription, designFlags, selectedDirection, assignment, prior observations, prior scores, implementation effort]
       procedure: agents/evaluator.md
       actions:
         - Verify actual 1440x900 and 390x844 viewport widths, test meaningful controls and states, and capture browser evidence.
         - Write evaluated observation and critique, or an unevaluated observation with null scores and exact limitation.
-      outputs: [screenshots, observation, critique]
+        - For extend, test the addition and surrounding existing surfaces against inherited constraints; write extensionConstraintEvidence with pass, fail or unverified and current rendered evidence or exact limitations. Orchestrator binds the receipt to the evaluated treePath and deterministic treeManifest without exposing source or manifest metadata to Evaluator. Material violations are acceptance blockers, not originality-driven redesign requests.
+      outputs: [screenshots, observation, critique, extensionConstraintEvidence]
       next: decide
 
     - id: decide
       agent: Orchestrator
-      inputs: [observation, mechanicalFindings, scoreHistory, runManifest, directionSelection]
+      inputs: [observation, mechanicalFindings, scoreHistory, runManifest, directionSelection, extensionConstraintEvidence when extend, extensionScope and escalation evidence when extend]
       orderedDecisionTable:
         - { when: browser evaluation incomplete or either required viewport missing, decision: HALT, terminationReason: browser-unavailable }
         - { when: server or iteration artifacts invalid, decision: HALT, terminationReason: invalid-artifact }
-        - { when: no open primary finding and every score meets shipFloor, decision: SHIP, terminationReason: quality-floor-met }
+        - { when: mode == extend and (explicit user intent or recorded incompatibility evidence) requires a new Design Intent, decision: ESCALATE, terminationReason: accepted-world-incompatible }
+        - { when: mode == extend and accepted-world constraints do not pass and N < iterationBudget, decision: REFINE, terminationReason: restore-accepted-world }
+        - { when: no open primary finding and every score meets shipFloor and (mode != extend or accepted-world constraints pass), decision: SHIP, terminationReason: quality-floor-met }
         - { when: open primary findings and N < iterationBudget, decision: REFINE, terminationReason: continue-current-direction }
-        - { when: originality <= 4 and selection is not pinned and pivots remain and N < iterationBudget, decision: PIVOT, terminationReason: replace-direction }
-        - { when: originality stayed below 6 within 0.5 for two evaluated iterations and pivots remain and N < iterationBudget, decision: PIVOT, terminationReason: replace-direction }
+        - { when: mode != extend and originality <= 4 and selection is not pinned and pivots remain and N < iterationBudget, decision: PIVOT, terminationReason: replace-direction }
+        - { when: mode != extend and originality stayed below 6 within 0.5 for two evaluated iterations and pivots remain and N < iterationBudget, decision: PIVOT, terminationReason: replace-direction }
         - { when: N >= iterationBudget, decision: SHIP, terminationReason: budget-exhausted }
         - { when: default, decision: REFINE, terminationReason: continue-current-direction }
       actions:
         - Append observation summary and decision as separate evidence records; recompute best iteration by the final tier rules.
-      transitions: { REFINE: prepare_refine_iteration, PIVOT: prepare_pivot_iteration, SHIP: finish_select, HALT: halt }
+      transitions: { REFINE: prepare_refine_iteration, PIVOT: prepare_pivot_iteration, SHIP: finish_select, ESCALATE: escalate_extension, HALT: halt }
+
+    - id: escalate_extension
+      agent: Orchestrator
+      procedure: references/extend.md
+      actions:
+        - Require explicit user intent or recorded incompatibility evidence identifying the accepted constraint and unmet requirement; low scores or builder preference alone are insufficient.
+        - Write a new Design Intent through validate_design_intent; use overhaul while incumbent authority governs, or create only for a separately scoped new world with no governing visual authority.
+        - Keep the original Design Intent, run mode and incumbent authority unchanged; link both decisions and the evidence in extensionEscalation.
+        - Record extensionResult as escalated with systemEffect none, no accepted surface or proposed delta, and the observed authority manifests; append the halt event with the new intent handoff.
+        - A subsequent run starts from the new validated intent; this run never continues into global codification or publishes a compatibility site.
+      outputs: [extensionEscalation, nextDesignIntent, extensionResult, runManifest, events]
+      termination: halted
 
     - id: prepare_refine_iteration
       agent: Orchestrator
@@ -336,28 +495,35 @@ workflow:
     - id: prepare_pivot_iteration
       agent: Orchestrator
       actions:
+        - Reject this operation for extend; only explicit escalation may reopen its world.
         - Increment iteration and pivotsUsed; preserve rejected direction summary, scores and visual lessons.
         - Do not copy the rejected assignment or selection into the new iteration.
       next: prepare_direction_assignment
 
     - id: finish_select
       agent: Orchestrator
+      inputs: [evaluated immutable iterations, mechanical snapshots, extensionConstraintEvidence when extend]
       actions:
+        - For extend, first exclude every iteration whose inherited constraints did not pass from all selection tiers; if none remain, halt without winner or compatibility publication.
         - Tier 1 contains evaluated, mechanically clean iterations meeting every ship floor.
         - Tier 2 contains evaluated, mechanically clean iterations. Otherwise use all evaluated immutable iterations and label best_available.
         - Within the active tier rank by weighted average, minimum criterion, functionality, then latest iteration.
-        - Copy the selected site, rewritten serve contract and its own selected-direction.md into finish; recapture both viewports.
+        - Only when an eligible iteration is selected, copy its site, rewritten serve contract and its own selected-direction.md into finish; recapture both viewports. With no eligible iteration, emit no finish selection or tree.
       outputs: [finishSelection, finishSelectedSite, finishSelectedServeConfig, finishSelectedDirection]
-      next: finish_review
+      branches:
+        - { when: mode == extend and no eligible iteration remains, next: reject_extension }
+        - { when: eligible iteration selected and finish artifacts valid, next: finish_review }
+        - { when: default, next: halt }
 
     - id: finish_review
       agent: Evaluator
       freshContext: true
-      inputs: [original prompt, confirmed purpose and constraints, surface brief, finish selected direction, live selected build, fresh screenshots, current mechanical summary]
-      explicitlyExcluded: [source, full designDescription, prior scores, prior critiques, implementation history]
+      inputs: [original prompt, confirmed purpose and constraints, surface brief, finish selected direction, extensionVisualConstraints when extend, live selected build, fresh screenshots, current mechanical summary]
+      explicitlyExcluded: [source, raw design-system files, extensionAuthorityManifest, full designDescription, prior scores, prior critiques, implementation history]
       actions:
         - Return pass or hold with only material defects in comprehension, usability, responsive integrity, accessibility, coherence or direction fidelity.
-      outputs: [finish/verdict.json, finish/critique.md]
+        - For extend, freshly verify inherited token roles and grammar on the selected finish tree; write finishSelectedConstraintEvidence using the extensionConstraintEvidence schema. Orchestrator binds its treePath and deterministic treeManifest to that exact selected tree; never copy the iteration receipt as finish proof or expose source/manifest metadata to Evaluator.
+      outputs: [finish/verdict.json, finish/critique.md, finishSelectedConstraintEvidence]
       next: finish_correct_or_finalise
 
     - id: finish_correct_or_finalise
@@ -374,13 +540,15 @@ workflow:
         - Apply one grouped correction batch without changing direction.
         - Validate the corrected server, rerun a full current mechanical snapshot and recapture both viewports.
         - Ask a fresh Evaluator to classify each original finding, rescore all criteria and state material regression; null all comparison fields when either viewport is missing.
-      outputs: [finishCorrectedSite, finishCorrectedServeConfig, finish/corrected-mechanical-findings.json, finish/correction-verdict.json]
+        - For extend, carry the same source-free inherited constraints into correction review and freshly test inherited token roles and grammar. Write finishCorrectedConstraintEvidence using the extensionConstraintEvidence schema; Orchestrator binds its treePath and deterministic treeManifest to the exact corrected tree. Never reuse selected or iteration receipts, expose source/manifest metadata to Evaluator, change global authority or reopen direction.
+      outputs: [finishCorrectedSite, finishCorrectedServeConfig, finish/corrected-mechanical-findings.json, finish/correction-verdict.json, finishCorrectedConstraintEvidence]
       next: finish_correction_decide
 
     - id: finish_correction_decide
       agent: Orchestrator
+      inputs: [correction verdict, corrected mechanical snapshot, finishCorrectedConstraintEvidence when extend]
       branches:
-        - when: all original findings resolved, corrected snapshot clean, both viewports verified, no material regression and required floors preserved
+        - when: all original findings resolved, corrected snapshot clean, both viewports verified, no material regression and required floors preserved and (mode != extend or finishCorrectedConstraintEvidence.status == pass and receipt matches the corrected tree)
           next: finalise
         - when: default
           next: finalise_with_open_items
@@ -403,14 +571,43 @@ workflow:
 
     - id: accept
       agent: Orchestrator
+      inputs: [final tree and finish evidence, finishSelectedConstraintEvidence when extend, finishCorrectedConstraintEvidence when extend and corrected tree exists, extensionAuthorityManifest when extend]
       procedure: references/runtime-integrity.md
       actions:
         - Verify final-tree agreement, source iteration, rewritten serve contract, measured viewports, current mechanical snapshot, open-item status, deterministic tree manifest and iteration immutability.
-        - Write finish/acceptance.json as accepted only when every postcondition passes.
+        - For extend, verify authority manifests including absent outputs and directory membership are unchanged. Select finishSelectedConstraintEvidence for selected-site or finishCorrectedConstraintEvidence for corrected-site; require status pass and treePath/treeManifest matching the actual final tree. Missing, stale or wrong-tree receipts reject acceptance. The accepted surface must not mutate shared token roles or grammar.
+        - Record the actual accepted systemEffect for extend in finishAcceptance; preserve or extend must agree with the validated intent and accepted scope, never broaden an unapproved local request.
+        - Write finish/acceptance.json as accepted only when every postcondition passes; a high score or exhausted budget never waives extension authority integrity.
       outputs: [finishAcceptance]
       branches:
+        - { when: acceptance.status == accepted and mode == extend, next: complete_extension }
+        - { when: mode == extend, next: reject_extension }
         - { when: acceptance.status == accepted, next: codify }
         - { when: default, next: halt }
+
+    - id: complete_extension
+      agent: Orchestrator
+      procedure: references/extend.md
+      when: accepted final-tree proof and immediate authority recheck pass
+      otherwise: reject_extension
+      inputs: [designIntent, extensionScope, extensionAuthorityManifest, finishAcceptance, accepted final tree]
+      actions:
+        - The entry guard revalidates the accepted final tree and current authority before any action below; failed or unavailable proof takes otherwise to reject_extension with no publication writes. Never overwrite concurrent authority changes.
+        - Replace harness-output/site only from that accepted final tree; leave DESIGN.md, design DNA, canonical tokens and generated design-system skill unchanged.
+        - Follow modePolicies.extend.completion for the accepted effect. For systemEffect preserve, write extensionResult with publicationState unchanged and null proposedSystemDelta.
+        - For systemEffect extend, write a proposed reusable delta tied to the accepted surface and incumbent authority revision, then extensionResult with publicationState proposed-only; never apply the delta here.
+        - Record requested effect, accepted surface effect, before/after authority manifests and acceptance provenance; applying reusable deltas is the separately acceptance-controlled lifecycle boundary.
+      outputsFrom: modePolicies.extend.completion[finishAcceptance.systemEffect].outputs
+      next: report
+
+    - id: reject_extension
+      agent: Orchestrator
+      procedure: references/extend.md
+      actions:
+        - Record extensionResult as rejected with systemEffect none, unchanged publication state and no proposedSystemDelta; retain the failed acceptance evidence and observed before/after authority manifests.
+        - Publish no surface or system authority; preserve incumbent files and do not roll back concurrent changes.
+      outputs: [extensionResult]
+      next: halt
 
     - id: codify
       agent: Orchestrator
@@ -425,6 +622,7 @@ workflow:
       agent: Orchestrator
       actions:
         - Write report.md with roots, capabilities, assumptions, assignment, iteration history, decisions, selection, finish verdict, acceptance, open items and design-system outputs.
+        - For extend, report extensionResult and distinguish accepted local surface from unchanged global authority and any unapplied reusable proposal.
         - Set run status complete, append the final completion event and record final paths.
       outputs: [report, runManifest, events]
       termination: complete
@@ -433,5 +631,6 @@ workflow:
       agent: Orchestrator
       actions:
         - Preserve all completed artifacts, append the exact failed contract and set finalStatus halted.
+        - For extend, write a rejected extensionResult when no result exists, with systemEffect none, no accepted surface or proposed delta and the available authority observations; unknown authority integrity is null, never true.
         - Do not invent a visual score, winner or accepted tree.
       termination: halted
