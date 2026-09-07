@@ -21,7 +21,8 @@ During codification the orchestrator:
 3. Copies `harness-output/design-system/design-dna.md` into the skill directory.
 4. Copies `harness-output/design-system/tokens.css` into `assets/tokens.css`.
 5. If an accepted Document run produced `harness-output/design-system/document-visual-contract.json`, copies it into the skill root unchanged. Do not synthesize one for interactive-only systems.
-6. Writes the resulting skill to `harness-output/design-system/skill/<project-slug>-design/`.
+6. For profiled systems, copies accepted `DESIGN.md` into the skill root without independently editing its profile or guidance. Use `check_design_authority_parity` against the actual CSS and generated skill, including linked DNA and optional Document contract hashes. New codification follows `references/design-authority/profile.md`; historical unprofiled systems remain readable without synthesized provenance.
+7. Writes the resulting skill to `harness-output/design-system/skill/<project-slug>-design/`.
 
 For paginated work, `document-visual-contract.json` owns page geometry, furniture, pagination, document component recipes and print QA. `design-dna.md` and tokens still own the wider visual system. Renderer adapters are subordinate examples, never canonical design authority.
 

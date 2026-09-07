@@ -274,9 +274,22 @@
     {
       "conceptId": "design-system-codification",
       "domain": "design-engineering",
-      "authority": {"owner": "design-studio", "kind": "canonical-local", "canonicalPath": "skills/design-studio/assets/design-system-skill/SKILL.md.template"},
-      "supportingReferences": [],
-      "routing": {"mode": "routed", "triggers": ["Codifying an accepted visual direction into reusable guidance", "A project requests durable tokens, components or design-system skill output"]},
+      "authority": {
+        "owner": "design-studio",
+        "kind": "canonical-local",
+        "canonicalPath": "skills/design-studio/assets/design-system-skill/SKILL.md.template"
+      },
+      "supportingReferences": [
+        "skills/design-studio/references/design-authority/profile.md",
+        "skills/design-studio/references/design-authority/design-authority.schema.json"
+      ],
+      "routing": {
+        "mode": "routed",
+        "triggers": [
+          "Codifying an accepted visual direction into reusable guidance",
+          "A project requests durable tokens, components or design-system skill output"
+        ]
+      },
       "upstreamRuntimeRequired": false,
       "externalOverlaps": [
         {
@@ -286,10 +299,27 @@
           "disposition": "observe",
           "implementationStatus": "not-adopted",
           "modificationProvenance": "Comparison source only; the local codification template remains canonical.",
-          "evidenceBasis": ["local design-system template exists", "issue #47 disposition"]
+          "evidenceBasis": [
+            "local design-system template exists",
+            "issue #47 disposition"
+          ]
+        },
+        {
+          "sourceId": "google-labs-code/design.md",
+          "methodName": "portable token and application-guidance profile",
+          "upstreamPathAtRevision": "docs/spec.md",
+          "disposition": "adapt-local",
+          "implementationStatus": "adopted",
+          "modificationProvenance": "Issue #92 adopts the layered token/prose and brace-reference concepts as JSON front matter inside DESIGN.md. The locally owned profile adds role/provenance/link validation and deterministic consumer parity; it does not implement the general upstream schema, YAML parser, linter or exports. No upstream code or prose copied. Lifecycle migration remains #93.",
+          "evidenceBasis": [
+            "test/test_design_authority_profile.py",
+            "test/test_design_authority_contract.py",
+            "skills/design-studio/references/design-authority/profile.md"
+          ]
         }
       ]
     },
+
     {
       "conceptId": "offer-copy-authority",
       "domain": "copy-offer",

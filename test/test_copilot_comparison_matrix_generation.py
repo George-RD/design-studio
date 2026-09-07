@@ -186,6 +186,11 @@ class CopilotComparisonMatrixGenerationTests(unittest.TestCase):
     def test_build_lane_tools_binds_versions_and_actual_git_revisions(self) -> None:
         temporary, root, impeccable, _ = self.make_repo()
         self.addCleanup(temporary.cleanup)
+        # Pin this fixture independently of the evolving installed product version.
+        (root / "skills/design-studio/SKILL.md").write_text(
+            "---\nname: design-studio\nversion: 1.5.0\n---\nTest skill fixture.\n",
+            encoding="utf-8",
+        )
         tools = self.generation.build_lane_tools(
             repo_root=root,
             impeccable_root=impeccable,

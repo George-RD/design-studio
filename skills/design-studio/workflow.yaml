@@ -615,6 +615,9 @@ workflow:
         - Replace harness-output/site only from the accepted final tree.
         - Ask Visual Director for design DNA from final screenshots and the selected source-free contract.
         - Ask Builder for canonical tokens from final source; write or update DESIGN.md with accepted provenance.
+        - Load references/design-authority/profile.md only for accepted codification; add the portable profile inside DESIGN.md beside existing outputs without deleting legacy authority.
+        - Use validate_design_authority and derive_design_authority; materialize consumers only through this accepted codify step and retain the new derived receipt in run-local evidence.
+        - Use check_design_authority_parity against actual token and generated-skill files; any drift or missing evidence blocks codification completion without replacing the acceptance receipt.
       outputs: [compatibilitySite, designDna, tokens, designSystemSkill, DESIGN.md]
       next: report
 

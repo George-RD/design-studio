@@ -21,6 +21,8 @@ description: >-
 4. **Respect reduced motion** on interactive surfaces; every animation needs a static equivalent.
 5. **For paginated artifacts, follow `document-visual-contract.json` when present.** It overrides generic assumptions about page size, margins, furniture, pagination and document component recipes, but never invents business/content truth.
 
+For a profiled system, [DESIGN.md](DESIGN.md) records portable token roles, relationships and provenance. Its deterministic exports must agree with the accepted tokens above; resolve drift before changing either consumer. Legacy systems without a profile retain their existing authorities. DNA and page rules keep their separate concerns.
+
 ## Routing table
 
 | Task | Go to |
@@ -29,6 +31,7 @@ description: >-
 | Principles | `design-dna.md` `#Principles` |
 | Aesthetic & creative tension | `design-dna.md` `#Aesthetic-and-creative-tension` |
 | Colour / theming / semantic roles | `design-dna.md` `#Colour-language` |
+| Portable token roles / lineage (when profiled) | [DESIGN.md](DESIGN.md) |
 | Tokens / canonical values | `assets/tokens.css` |
 | Typography | `design-dna.md` `#Typography` plus `document-visual-contract.json` for page roles when present |
 | Spatial rhythm | `design-dna.md` `#Spatial-rhythm` |

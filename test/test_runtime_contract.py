@@ -101,6 +101,7 @@ class RuntimeContractTests(unittest.TestCase):
         helper_paths = (
             "runtime/mechanical/index.mjs",
             "runtime/document-contract/index.mjs",
+            "runtime/design-authority/index.mjs",
         )
 
         for path in (SKILL_ROOT / "references").rglob("*.md"):

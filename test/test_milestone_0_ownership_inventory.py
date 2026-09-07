@@ -32,6 +32,7 @@ ADDED_POST_BASELINE_SCHEMAS = {
     "extensionResult", "proposedSystemDelta", "extensionEscalation",
 }
 ADDED_POST_BASELINE_REFERENCES = {
+    "skills/design-studio/references/design-authority/profile.md",
     "skills/design-studio/references/extend.md",
     "skills/design-studio/references/composition-contract.md",
     "skills/design-studio/references/design-intent.md",
