@@ -4,7 +4,7 @@ Design Studio is a standard Agent Skill. A host may expose slash commands, butto
 
 ## Host requirements
 
-A host starting Design Studio must provide the generic capabilities declared in `workflow.yaml`: `file_io`, `shell`, and `isolated_subagents`.
+A host starting Design Studio must provide the generic capabilities declared in `runtime-contract.md`: `file_io`, `shell`, and `isolated_subagents`.
 
 Use the host's isolated-agent mechanism for Planner, VisualDirector, Builder, Evaluator and Orchestrator. Preserve the source-visibility and decision boundaries in `SKILL.md`; do not collapse roles into one shared context because a host uses a different agent API.
 
@@ -23,11 +23,11 @@ For Studio, Review and Document requests, translate the user request and current
 
 Capability declarations are needs, not successful probes. Interactive modes declare `runnable_target` and `browser_automation` as well as the generic capabilities; Document modes declare `page_artifact_rendering`. Record actual availability through `probe_capabilities` and `capabilities.json`. Missing visual capability retains the `build-once-unselected` or `mechanical-review` path owned by `runtime-contract.md`; it does not turn into a missing generic prerequisite or a false success.
 
-Apply the ranked precedence in `references/design-intent.md` before loading a lane procedure. The validated result maps to the existing `task`, `surface`, `interaction` and `evidence` router signals. Host adapters preserve this result and do not add another intent taxonomy.
+Apply the ranked precedence in `references/design-intent.md` before loading a lane procedure. The validated result maps to the existing `task`, `surface`, `interaction` and `evidence` router signals. Host adapters preserve this result and do not add another intent taxonomy. Use the selected lane and current stage for task signals; interaction and evidence signals add relevant methods, not another lane. Review and Document resolve without loading `workflow.yaml`. All lanes retain the shared `coreAuthorities` and loading order declared by `SKILL.md` and `method-router.json`.
 
 ## Studio input mapping
 
-For an interactive create, build, or redesign request, map host input to the workflow's named inputs before `initialise`:
+Only after Studio is selected, map host input to the workflow's named inputs before `initialise`:
 
 - `user_prompt`: remaining request after recognized control flags are removed.
 - `existing_target`: local path or URL supplied after `--overhaul`, when present.
@@ -39,7 +39,7 @@ Supported adapter vocabulary is `--overhaul`, `--goals`, and `--budget`. Free-fo
 
 ## Review input mapping
 
-Review does not execute `workflow.yaml`. Map host input to `references/review/polish.md` as:
+Review does not execute `workflow.yaml`. It also does not load that Studio procedure. Map host input to `references/review/polish.md` as:
 
 - `target`: local path, URL, or existing `serve.json` contract.
 - `constraints`: remaining review instructions.
@@ -59,7 +59,8 @@ A quote, invoice, statement of work/SOW, proposal, discovery or architecture rep
 - `page_size`: explicit physical page contract when supplied; otherwise A4. Letter is the next standard preset and custom sizes require physical dimensions.
 - `constraints`: brand/design-system truth, document purpose, audience, required furniture, print constraints and preservation rules.
 - `document_visual_contract`: optional existing `document-visual-contract.json` to preserve or extend.
-- `budget_override` and `optional_run_id`: same semantics as Studio when a create loop is required.
+- `budget_override`: requested `quick`, `standard`, `ambitious` or explicit integer, passed unchanged to `initialise` when creation is needed. The lane's evaluation plan may clamp builds through `runtime-contract.md`.
+- `optional_run_id`: explicit known run identifier to resume through `resume_validate`.
 
 A browser-based dashboard or interactive report remains Studio/Review even if it can later export PDF. Page/print intent is the differentiator under the Design Intent precedence rules.
 
