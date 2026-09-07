@@ -121,8 +121,8 @@ Before handoff, verify:
 
 - the surface/artifact could not be relabelled for a neighbouring product without redesign;
 - the opening demonstrates a specific visual system rather than only claiming one;
-- three candidates are equally viable and equally specified when exploration is required;
-- at least three diversity axes materially differ;
+- for create/overhaul or document exploration, three candidates are equally viable and equally specified, with at least three diversity axes materially different;
+- for extend, the declared local candidate count and accepted visual constraints are preserved; differences answer only the recorded local question;
 - no candidate depends on invented facts;
 - no source, renderer identity, code, assignment seed or assigned index entered the document;
 - interactive mobile composition is designed rather than stacked, or document pagination is designed rather than left to renderer defaults.
