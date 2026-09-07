@@ -2,6 +2,14 @@
 
 Issue #47 defined the concept-level ownership record. Issue #51 realizes that record as a progressively disclosed local kernel. The machine-readable authorities remain in [`docs/method-authority-map.json`](./method-authority-map.json); shipped signal routing lives in `skills/design-studio/method-router.json`.
 
+## Lane-first activation
+
+ADR 0005 and issue #90 refine activation without changing method ownership. `design-intent-contract.json` selects the single lane procedure before it is loaded. The universal `coreAuthorities` retain input mapping, classification, source/evidence, context, recovery, degradation and acceptance guards. Studio's full `workflow.yaml` is conditional on a Studio intent; Review and Document do not load it.
+
+Matched task/surface/interaction/evidence signals disclose specialist methods. Visual evaluation remains mandatory when making rendered decisions, but its role prompt is loaded at the relevant stage rather than at every activation. A matched route may name the same procedure as Design Intent; it may not choose a competing lane.
+
+The [activated-context budget](./activated-context-budget.md) names the universal hot path and representative branch bounds. It is repository validation metadata, not another installed loading graph. No specialist leaf or existing Studio lifecycle step was removed to meet that budget.
+
 ## Boundary
 
 - **Design Studio — design engineering:** generic visual-design methods and specialist review guidance.

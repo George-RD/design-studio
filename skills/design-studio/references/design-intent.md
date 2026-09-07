@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Classify each Studio, Review or Document design request once before its lane procedure executes. The Design Intent result is the host-neutral front door for lane, mode, surface, current authority, composition state, requested design-system effect, required capabilities, selected procedures, assumptions and unresolved state.
+Classify each Studio, Review or Document design request once before its lane procedure is loaded or executed. The Design Intent result is the host-neutral front door for lane, mode, surface, current authority, composition state, requested design-system effect, required capabilities, selected procedures, assumptions and unresolved state.
 
 ## Triggers
 
@@ -10,7 +10,7 @@ Load for Studio, Review and Document invocation. Host commands, buttons and free
 
 ## Required context
 
-Use the current user request, target kind, confirmed product/copy inputs, current accepted visual authority and available host capabilities. Resolve artifact authority through `composition-contract.json`; do not recreate its domains, artifact roles, provenance rules or conflict precedence here. Use capability names already declared by `workflow.yaml` and `runtime-contract.md`. Evaluation-plan downgrade policy remains owned by `runtime-contract.md`.
+Use the current user request, target kind, confirmed product/copy inputs, current accepted visual authority and available host capabilities. Resolve artifact authority through `composition-contract.json`; do not recreate its domains, artifact roles, provenance rules or conflict precedence here. Use the capability needs declared by `design-intent-contract.json` and the operation/failure semantics in `runtime-contract.md`. No lane procedure is a prerequisite for classification. Evaluation-plan downgrade policy remains owned by `runtime-contract.md`.
 
 ## Outputs and handoff
 
@@ -33,7 +33,7 @@ For `extend`, request `systemEffect: preserve` when a local addition uses existi
 
 A Review result may request `systemEffect: extract` when the current implementation is evidence rather than accepted authority. The extracted conventions remain candidate and unresolved until issue #93 supplies verification, acceptance and promotion semantics.
 
-Map the validated result to the existing `task`, `surface`, `interaction` and `evidence` signals in `method-router.json`. Return the selected procedure and matched specialist leaves without executing another lane's procedure. Issue #90 owns lane-first procedure loading; until it lands, the existing installed kernel may still load shared Studio authority, but no lane procedure executes before classification.
+Map the validated result to the existing `task`, `surface`, `interaction` and `evidence` signals in `method-router.json`. Issue #90 owns lane-first procedure loading: retain the universal `coreAuthorities`, then load the canonical `selectedProcedures` and the union of matched specialist leaves. The selected procedure is required even when no specialist route matches. A route's optional `procedure` must agree with the validated intent; conflicting signals block loading until corrected. Review and Document never load the Studio workflow to resolve their own lane. Stage-specific role prompts and additional references load through the selected procedure only when needed.
 
 Apply this ranked precedence when wording is ambiguous:
 
@@ -53,11 +53,11 @@ Design Intent records requested `systemEffect`; it does not apply durable design
 
 ## Failure behavior
 
-Do not execute a lane procedure when required fields are missing, unexpected fields introduce a parallel taxonomy, enum values conflict, a mode disagrees with its lane/surface, selected procedures are undeclared or include another lane, or the selected precedence rule cannot justify the mode. Preserve explicit assumptions and unresolved state. Ask for authority resolution only when the ambiguity materially changes the lane, mode or durable system effect; otherwise continue with the recorded bounded assumption.
+Do not load or execute a lane procedure when required fields are missing, unexpected fields introduce a parallel taxonomy, enum values conflict, a mode disagrees with its lane/surface, selected procedures are undeclared or include another lane, or the selected precedence rule cannot justify the mode. Preserve explicit assumptions and unresolved state. Ask for authority resolution only when the ambiguity materially changes the lane, mode or durable system effect; otherwise continue with the recorded bounded assumption.
 
 ## Evaluation hooks
 
-Use table-driven cases covering all six modes, interactive and paginated surfaces, present and absent visual authority, candidate extraction, and prompt-order variants. Validate supplied results through `validate_design_intent`. Existing Studio, Review, Document, source-blind, immutable-evidence and acceptance-owner contracts must remain green.
+Use table-driven cases covering all six modes, interactive and paginated surfaces, present and absent visual authority, candidate extraction, and prompt-order variants. Validate supplied results through `validate_design_intent`, then check selected and excluded procedure/method paths at activation. Existing Studio, Review, Document, source-blind, immutable-evidence and acceptance-owner contracts must remain green.
 
 ## Source provenance
 
