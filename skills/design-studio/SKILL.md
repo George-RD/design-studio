@@ -8,7 +8,7 @@ version: 1.7.0
 
 # Design Studio
 
-Design Studio is a portable design-engineering kernel. Lifecycle, source boundaries, routing, evidence and acceptance stay small here; specialist methods load only when signals match.
+Design Studio is a portable design-engineering kernel with shared guards and progressively disclosed lane procedures and methods.
 
 ## Role boundaries
 
@@ -20,76 +20,63 @@ Design Studio is a portable design-engineering kernel. Lifecycle, source boundar
 | Evaluator | no | no | rendered observations and scores |
 | Orchestrator | as needed | yes | SELECT / REFINE / PIVOT / SHIP / HALT |
 
-- Visual Director never receives HTML, CSS, JSX, selectors, implementation diffs or the unattended assignment index.
+- Visual Director never receives HTML, CSS, JSX, selectors, implementation diffs, document source/renderer metadata or the unattended assignment index.
 - Evaluator never receives source, implementation effort, full design description or prior scores. Document evaluation also excludes renderer identity/build metadata.
 - Builder implements the selected direction; it may not quietly replace it with a safer one.
 - Orchestrator is the sole decision owner. Evaluators/reviewers provide evidence, not workflow decisions.
 
 ## Load and route
 
-1. For Studio, Review or Document requests, load `invocation.md`, `design-intent-contract.json` and `references/design-intent.md`; map host input and validate one Design Intent before the selected lane procedure executes.
-2. Load `workflow.yaml`, `runtime-contract.md`, `references/context.md` and `references/runtime-integrity.md` for shared lifecycle, deterministic operations and run truth.
-3. Map Design Intent to the existing `task`, `surface`, `interaction` and `evidence` signals, then read `method-router.json`.
-4. Every populated signal dimension on a route is required. Load the union of matching `leaves`; when a route declares `procedure`, execute it after classification and its leaves.
-5. Never load the full specialist catalog by default.
+For Studio, Review and Document requests:
 
-`method-router.json` is routing data, not method authority. Repository ADR/authority-map paths are provenance metadata only; installed runs do not depend on repository docs.
+1. Load `invocation.md`, `design-intent-contract.json`, `references/design-intent.md`, `runtime-contract.md`, `references/context.md` and `references/runtime-integrity.md`. These are the universal input, authority, source/evidence, recovery, degradation and acceptance guards, not lane procedures.
+2. Map host input and current authority evidence to one Design Intent and validate it before loading `workflow.yaml`, a Review/Document procedure or any specialist leaf. Invalid classification blocks lane loading as well as execution.
+3. Map the validated result to the existing `task`, `surface`, `interaction` and `evidence` signals, then read `method-router.json`. Keep task signals within the selected lane and current stage; supplementary copy or evidence signals do not change that lane.
+4. Resolve the canonical `selectedProcedures` even when no specialist route matches. Every populated signal dimension on a route is required. Before loading, check that every matched route's `procedure` agrees with Design Intent; conflicting signals block until corrected. Then load the selected procedure and the union of matching `leaves`, deduplicating paths.
+5. Execute the selected procedure after its required context is loaded. It discloses stage-specific role instructions and references when needed. Never load the full specialist catalog by default.
+
+`method-router.json` is routing data, not method authority. Its `coreAuthorities` is the universal set shared by every lane. Repository ADR/authority-map paths are provenance metadata only; installed runs do not depend on repository docs. Host adapters use this loading contract, not a second loading graph.
 
 ## Required references
 
 - `invocation.md`
 - `design-intent-contract.json`
 - `references/design-intent.md`
-- `workflow.yaml`
 - `runtime-contract.md`
 - `method-router.json`
 - `references/context.md`
 - `references/runtime-integrity.md`
+- Conditional Studio procedure: `workflow.yaml`
+- Conditional Review procedure: `references/review/polish.md`
 - Conditional Document procedure: `references/document/document.md`
 
-The first eight entries are the installed kernel. Document and specialist methods are conditional.
+The first seven entries plus this index form the universal hot path. Lane procedures and methods are conditional; naming their paths does not load them.
 
 ## Lanes
 
-| Lane / action | Trigger | Authority |
+| Lane / action | Trigger | Branch authority |
 |---|---|---|
-| **Studio** | new interactive surface or material redesign | `workflow.yaml` |
-| **Review** | audit/polish while preserving an interactive visual world | routed `references/review/polish.md` |
-| **Document** | quote, invoice, SOW, proposal, report, brief, print/PDF or other paginated artifact | routed `references/document/document.md` |
-| **Design system** | codify an accepted system | Studio codify or accepted Document contract |
+| **Studio** | create, extend or overhaul an interactive surface | selected `workflow.yaml`; stage-matched direction/build/overhaul leaves |
+| **Review** | audit/polish while preserving an interactive visual world | selected `references/review/polish.md`; matched read-only review lenses |
+| **Document** | quote, invoice, SOW, proposal, report, brief, print/PDF or other paginated artifact | selected `references/document/document.md`; hierarchy/specificity and its page-evaluation lenses |
+| **Design system** | codify an accepted system | accepted lane's codification authority |
 | **Meta** | improve Design Studio | routed `references/meta.md` |
 
 Design Intent owns Studio/Review/Document disambiguation. Meta maintenance uses the existing `meta`/`method-intake` routes directly; codification consumes an accepted lane result, not a new intent. An interactive report remains Studio/Review even if it can export PDF. A narrow component/CSS correction does not require Studio.
 
 ## Studio
 
-Execute `workflow.yaml` end to end.
-
-- Prove repository/app/context roots and actual capabilities before planning.
-- Separate product truth, copy authority and proven visual authority.
-- Commit unattended candidate assignment before direction generation and hide it from Visual Director.
-- Generate materially different viable directions; user choice or precommitted assignment selects.
-- Builder implements the source-free direction. Local mechanical evidence runs before blind browser evaluation.
-- Evaluator uses required live viewports without source/prior scores. Orchestrator alone decides.
-- Preserve evaluated builds/evidence. Acceptance names the final tree before codification.
-
-The brief wins. Redesign replaces the visual world while preserving confirmed truth/behaviour; refinement preserves the established world.
+For a validated Studio intent, execute `workflow.yaml` end to end. It owns planning, precommitted unattended assignment, source-blind direction, source-aware building, mechanical evidence, blind evaluation, immutable iteration and final-tree acceptance before codification. Its specialist leaves load by current stage, not all at activation. The staged `extend` limitation is recorded in `references/design-intent.md`.
 
 ## Document
 
-Execute `references/document/document.md`; do not force pages through the browser viewport graph. Reuse the same root, capability, assignment, mechanical-snapshot, evidence, decision and acceptance primitives over complete ordered rendered pages.
-
-- A4 is default; Letter and explicit physical sizes are supported without binding the visual model to a renderer.
-- Visual Director/Evaluator may receive rendered page images, never document source, renderer identity or implementation rationale.
-- Reuse hierarchy and generated-specificity methods, then the Document pagination, table, furniture and print lenses. Interaction/motion review does not apply.
-- Rendering/export is optional host capability. Without complete page evidence, creation preserves one build and halts unselected; review returns visual status unverified.
-- Accepted Document work may emit `harness-output/design-system/document-visual-contract.json` for downstream document-generation skills.
+For a validated Document intent, execute `references/document/document.md` without loading the Studio workflow. It owns physical page-system direction, complete ordered rendered-page evaluation, pagination/table/furniture/print lenses and accepted `document-visual-contract.json` publication. Load those lenses at page evaluation, not for an interactive request.
 
 Design Studio owns visual page-system intent and rendered-page judgement. It does not own transcript interpretation, business voice, accounting truth, binding commercial/legal terms or the renderer/generator.
 
 ## Review
 
-Review does not run the Studio create loop. Route through `references/review/polish.md`, then add only matching lenses. Reviewers report evidence first; implementation receives one bounded fix plan. Missing rendered evidence is `unverified`, not a clean verdict.
+Review does not run the Studio create loop or load its workflow. Execute the selected `references/review/polish.md`, then add only matching lenses. Reviewers report evidence first; implementation receives one bounded fix plan. Missing rendered evidence is `unverified`, not a clean verdict.
 
 ## Evidence and degradation
 

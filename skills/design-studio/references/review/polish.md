@@ -10,13 +10,15 @@ Load for audit, polish, ship-readiness review, or evidence-driven refinement tha
 
 ## Required context
 
+Enter only after Design Intent selects this procedure. Retain the universal `coreAuthorities` from `method-router.json`; do not load the Studio workflow. This procedure consumes the validated lane/surface decision rather than classifying the request again.
+
 Resolve one target and its primary goal. Load roots/capabilities, `PRODUCT.md`, optional `COPY.md`, current `DESIGN.md`, relevant surface brief and the current local mechanical snapshot. With browser capability, verify desktop/mobile viewports and capture the states needed to support findings.
 
 ## Outputs and handoff
 
-1. Classify the surface and scope.
+1. Use the validated surface and settle the bounded review scope.
 2. Run the local mechanical gate in `../quality-gates.md` when mechanical evidence is routed.
-3. When browser-grounded, invoke only the read-only lens leaves already selected by `method-router.json`; this leaf aggregates their evidence and does not maintain a second lens-selection rule.
+3. When browser-grounded, load the routed `../../agents/evaluator.md` authority for its source/prior-score isolation, browser verification and unevaluated-evidence rules before invoking the selected read-only lenses. Keep this procedure's bounded fix plan and Review verdicts; the shared role contract does not add Studio scoring, direction generation or iteration. Invoke only the lens leaves already selected by `method-router.json`; this leaf aggregates their evidence and does not maintain a second lens-selection rule.
 4. Deduplicate findings by user-visible defect and retain supporting evidence.
 5. Produce one bounded fix plan mapping each accepted Blocker/Quality finding to the intended correction and verification evidence.
 6. When editing is requested, implementation executes that plan in one grouped batch, then Review reruns the complete mechanical snapshot and recaptures the same viewports once.

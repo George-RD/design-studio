@@ -313,7 +313,7 @@
       "domain": "orchestration-runtime",
       "authority": {"owner": "design-studio", "kind": "canonical-local", "canonicalPath": "skills/design-studio/agents/evaluator.md"},
       "supportingReferences": [],
-      "routing": {"mode": "always", "triggers": ["Every rendered direction or implementation decision", "Final acceptance and evidence review"]},
+      "routing": {"mode": "routed", "triggers": ["During evaluation of a rendered direction or implementation", "During final acceptance and evidence review"]},
       "upstreamRuntimeRequired": false,
       "externalOverlaps": []
     }

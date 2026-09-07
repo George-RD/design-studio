@@ -5,13 +5,12 @@
   "authorityMap": "docs/method-authority-map.json",
   "repositoryMetadataOnly": true,
   "designIntentContract": "design-intent-contract.json",
-  "classificationRule": "Produce and validate one Design Intent before a lane procedure executes, then map it to the existing task, surface, interaction and evidence dimensions.",
-  "selectionRule": "For each route, every signal dimension with a non-empty list is required: the current run must contain at least one matching value from each populated dimension. Empty dimensions are unconstrained. Load the union of leaves from all matching routes; when a route declares procedure, execute that progressively disclosed lane procedure after its leaves. Never load the full specialist catalog by default.",
+  "classificationRule": "Produce and validate one Design Intent before loading any lane procedure or specialist leaf, then map it to the existing task, surface, interaction and evidence dimensions. Load the canonical selectedProcedures even when no specialist route matches.",
+  "selectionRule": "For each route, every signal dimension with a non-empty list is required: the current run must contain at least one matching value from each populated dimension. Empty dimensions are unconstrained. A matched route's procedure must agree with the validated Design Intent; conflicting signals require correction before loading, never another lane. Load the selected lane procedure and the union of leaves from all matching routes, deduplicating paths. Execute the procedure after its required context is loaded. Never load the full specialist catalog by default.",
   "coreAuthorities": [
     "invocation.md",
     "design-intent-contract.json",
     "references/design-intent.md",
-    "workflow.yaml",
     "runtime-contract.md",
     "references/context.md",
     "references/runtime-integrity.md"
@@ -22,12 +21,14 @@
       "signals": {"task": ["studio-direction", "studio-pivot"], "surface": ["persuade", "operate", "read", "experience"], "interaction": [], "evidence": []},
       "leaves": ["references/rationale.md"],
       "agents": ["agents/design-agent.md"],
+      "procedure": "workflow.yaml",
       "handoff": "Visual Director produces source-free, materially divergent directions; Orchestrator selects without exposing source or assignment."
     },
     {
       "id": "studio-build",
       "signals": {"task": ["studio-build", "studio-refine"], "surface": [], "interaction": [], "evidence": ["selected-direction"]},
       "leaves": ["references/generation.md"],
+      "procedure": "workflow.yaml",
       "handoff": "Builder implements the selected visual contract and records fidelity evidence without changing direction."
     },
     {
@@ -48,12 +49,15 @@
       "id": "overhaul",
       "signals": {"task": ["studio-overhaul"], "surface": ["persuade", "operate", "read", "experience"], "interaction": [], "evidence": []},
       "leaves": ["references/overhaul.md", "references/rationale.md"],
+      "procedure": "workflow.yaml",
       "handoff": "Planner separates preserved truth/behaviour from replaceable styling before source-blind direction work."
     },
     {
       "id": "review-core",
       "signals": {"task": ["review", "polish"], "surface": ["persuade", "operate", "read", "experience"], "interaction": [], "evidence": []},
       "leaves": ["references/review/polish.md", "references/review/slop.md", "references/review/hierarchy.md", "references/review/a11y.md"],
+      "agents": ["agents/evaluator.md"],
+      "procedure": "references/review/polish.md",
       "handoff": "Read-only lenses return evidence; Review aggregates a bounded fix plan and confirms once after implementation."
     },
     {
