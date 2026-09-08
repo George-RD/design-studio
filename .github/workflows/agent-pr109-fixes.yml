@@ -1,0 +1,47 @@
+name: Temporary verified PR109 fixes
+on:
+  push:
+    branches: ['agent/92-portable-design-authority']
+    paths: ['.github/workflows/agent-pr109-fixes.yml']
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Apply and verify exact reviewed product tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = '36117c04b31b6f9f535f175aa84f6ec12063b78f'
+          git apply --check --unidiff-zero .github/agent-pr109-core.patch .github/agent-pr109-contract.patch
+          git apply --unidiff-zero .github/agent-pr109-core.patch .github/agent-pr109-contract.patch
+          git rm .github/agent-pr109-core.patch .github/agent-pr109-contract.patch .github/workflows/agent-pr109-fixes.yml
+          git add skills/design-studio/assets/design-system-skill/README.md skills/design-studio/references/design-authority/profile.md skills/design-studio/runtime/design-authority/index.mjs skills/design-studio/workflow.yaml test/test_design_authority_contract.py test/test_design_authority_profile.py
+          test "$(git write-tree)" = '8e98dfddee39f86004b5edff7f0496e54e11915a'
+          git diff --cached --check
+      - name: Verify public authority seam and workflow contracts
+        run: |
+          python -m pip install -r test/requirements.txt
+          node --check skills/design-studio/runtime/design-authority/index.mjs
+          python -B -m unittest discover -s test -p 'test_design_authority_*.py' -v
+          node --test test/test_mechanical_runtime.mjs
+      - name: Commit verified fixes without transfer files
+        run: |
+          set -euo pipefail
+          test "$(git write-tree)" = '8e98dfddee39f86004b5edff7f0496e54e11915a'
+          git config user.name 'George'
+          git config user.email '180932462+George-RD@users.noreply.github.com'
+          git commit -m 'fix: stage authority publication and reject hidden or remote token evidence'
+          git push origin HEAD:agent/92-portable-design-authority
