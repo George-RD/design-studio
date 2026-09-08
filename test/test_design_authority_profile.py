@@ -110,6 +110,48 @@ class DesignAuthorityProfileTests(unittest.TestCase):
                 self.assertEqual("parity-failed", report["status"])
                 self.assertIn(rule, [finding["ruleId"] for finding in report["findings"]])
 
+    def test_parity_requires_an_active_authority_link_not_an_example(self):
+        """Hidden examples and comments cannot stand in for the usable index pointer."""
+        tokens, skill = self.materialize_consumers()
+        pointer = "[Portable authority](DESIGN.md)"
+        invalid = [
+            f"```md\n{pointer}\n```\n",
+            f"~~~md\n{pointer}\n~~~\n",
+            f"```md\n```junk\n{pointer}\n",
+            f"<!-- {pointer} -->",
+            f"<!--\n{pointer}\n-->",
+            f"`{pointer}`",
+            f"`` {pointer} ``",
+            f"`example\n{pointer}\nend`",
+            f"    {pointer}",
+            f"\t{pointer}",
+            "![Portable authority](DESIGN.md)",
+            "![Example [Portable authority](DESIGN.md)](screenshot.png)",
+            "\\[Portable authority](DESIGN.md)",
+            "Portable authority](DESIGN.md)",
+            "[](DESIGN.md)",
+        ]
+        for index, text in enumerate(invalid):
+            with self.subTest(index=index):
+                (skill / "SKILL.md").write_text(text, encoding="utf-8")
+                result = self.invoke("check", self.design, tokens, skill)
+                self.assertEqual(2, result.returncode, result.stderr)
+                self.assertIn("authority-pointer-missing", [f["ruleId"] for f in json.loads(result.stdout)["findings"]])
+        for text in [
+            "Read [Portable authority](./DESIGN.md#overview).",
+            f"<!-- example\n```\n-->\nRead {pointer}.\n",
+            f"```md\n<!--\n```\nRead {pointer}.",
+            f"```md\n{pointer}\n```\nRead {pointer}.",
+            f"`unclosed literal\nRead {pointer}.",
+            f"```md <!--\nexample\n```\nRead {pointer}.",
+            f"A literal `<!--` marker. Read {pointer}.",
+            "Read [`DESIGN.md`](DESIGN.md).",
+        ]:
+            with self.subTest(valid=text):
+                (skill / "SKILL.md").write_text(text, encoding="utf-8")
+                result = self.invoke("check", self.design, tokens, skill)
+                self.assertEqual(0, result.returncode, result.stderr)
+
     def test_missing_consumers_are_incomplete_not_a_clean_result(self):
         tokens, skill = self.materialize_consumers()
         (skill / "DESIGN.md").unlink()
@@ -306,6 +348,47 @@ class DesignAuthorityProfileTests(unittest.TestCase):
                 self.assertFalse(output.exists())
                 self.assertFalse(output.parent.exists())
 
+    def test_literal_subset_rejects_resource_functions_before_writing_outputs(self):
+        """URL-capable and unknown functions are not portable local token literals."""
+        invalid = [
+            'image-set("https://example.com/a.png" 1x)',
+            '-webkit-image-set("https://example.com/a.png" 1x)',
+            'IMAGE-SET("local.png" 1x)',
+            'image("local.png", red)',
+            'cross-fade(image("local.png"), linear-gradient(red, blue))',
+            'src("https://example.com/a.png")',
+            'future-resource("local.png")',
+            'color(--external-profile 1 0 0)',
+        ]
+        original = self.design.read_bytes()
+        for index, value in enumerate(invalid):
+            for themed in [False, True]:
+                with self.subTest(value=value, themed=themed):
+                    self.design.write_bytes(original)
+                    if themed:
+                        self.mutate_profile(lambda p: p["themes"]["dark"].update({"color.ink": value}))
+                    else:
+                        self.mutate_profile(lambda p: p["tokens"]["color.ink"].update(value=value))
+                    output = self.root / f"rejected-{index}-{themed}" / "receipt.json"
+                    before = self.design.read_bytes()
+                    result = self.invoke("export", self.design, output)
+                    self.assertEqual(2, result.returncode, result.stderr)
+                    self.assertFalse(output.parent.exists())
+                    self.assertEqual(before, self.design.read_bytes())
+        for value in [
+            'rgb(20 30 40 / 0.5)', 'oklch(65% 0.15 230)',
+            'color(display-p3 1 0 0)', 'color-mix(in srgb, red 25%, blue)',
+            'linear-gradient(45deg, rgb(1 2 3), #fff)',
+            'clamp(1rem, calc(2vw + 1rem), 3rem)', 'calc(100% - (2 * 1rem))',
+            'cubic-bezier(0.2, 0, 0, 1)',
+            '"Image(set)", sans-serif',
+        ]:
+            with self.subTest(literal=value):
+                self.design.write_bytes(original)
+                self.mutate_profile(lambda p: p["tokens"]["color.ink"].update(value=value))
+                result = self.invoke("validate", self.design)
+                self.assertEqual(0, result.returncode, result.stderr)
+
     def test_required_human_guidance_is_not_satisfied_by_code_fences(self):
         self.design.write_text(self.design.read_text().replace(
             "## Application guidance", "```md\n## Application guidance\n```"
@@ -313,6 +396,48 @@ class DesignAuthorityProfileTests(unittest.TestCase):
         result = self.invoke("validate", self.design)
         self.assertEqual(2, result.returncode, result.stderr)
         self.assertIn("Application guidance", result.stderr)
+
+    def test_comments_do_not_supply_or_hide_required_guidance(self):
+        """Only rendered prose outside comments and fenced examples satisfies guidance."""
+        original = self.design.read_text(encoding="utf-8")
+        header, body = original.rsplit("\n---", 1)
+        headings = ["Overview", "Application guidance", "Anti-goals", "Ownership boundaries"]
+        hidden_bodies = [
+            "\n".join(f"## {heading}\n<!-- TODO -->\n" for heading in headings),
+            "\n".join(f"## {heading}\n<!--\nTODO\n-->\n" for heading in headings),
+            "<!--\n" + body + "\n-->",
+            "<!--\n```\n-->\n" + body + "\n<!--\n```\n-->",
+        ]
+        # The final case has real prose between comments and must remain valid;
+        # delimiters inside comments cannot change the surrounding fence state.
+        for index, candidate in enumerate(hidden_bodies):
+            with self.subTest(index=index):
+                self.design.write_text(header + "\n---\n" + candidate, encoding="utf-8")
+                result = self.invoke("validate", self.design)
+                self.assertEqual(0 if index == 3 else 2, result.returncode, result.stderr)
+        self.design.write_text(header + "\n---\n```md\n<!--\n```\n" + body, encoding="utf-8")
+        result = self.invoke("validate", self.design)
+        self.assertEqual(0, result.returncode, result.stderr)
+
+    def test_invalid_closing_fences_cannot_expose_hidden_guidance(self):
+        """Only a same-kind, long-enough fence followed by whitespace can close."""
+        original = self.design.read_text(encoding="utf-8")
+        header, body = original.rsplit("\n---", 1)
+        for opening, closing in [("```md", "```junk"), ("~~~md", "~~~junk"),
+                                 ("````md", "```"), ("```md", "~~~"),
+                                 ("```md", "```<!-- not whitespace -->")]:
+            with self.subTest(opening=opening, closing=closing):
+                self.design.write_text(header + "\n---\n" + opening + "\nexample\n" +
+                                       closing + "\n" + body, encoding="utf-8")
+                result = self.invoke("validate", self.design)
+                self.assertEqual(2, result.returncode, result.stderr)
+                self.assertIn("Overview", result.stderr)
+        for opening, closing in [("```md", "````  "), ("~~~md", "~~~\t")]:
+            with self.subTest(valid_closing=closing):
+                self.design.write_text(header + "\n---\n" + opening + "\nexample\n" +
+                                       closing + "\n" + body, encoding="utf-8")
+                result = self.invoke("validate", self.design)
+                self.assertEqual(0, result.returncode, result.stderr)
 
     def test_duplicate_json_keys_are_not_silently_resolved_by_order(self):
         self.design.write_text(self.design.read_text().replace(

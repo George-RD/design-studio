@@ -92,7 +92,9 @@ workflow:
     finishCorrectedServeConfig: harness-output/runs/{runId}/finish/corrected-serve.json
     finishFinalTree: harness-output/runs/{runId}/finish/final-tree.json
     finishAcceptance: harness-output/runs/{runId}/finish/acceptance.json
+    designAuthorityStage: harness-output/runs/{runId}/finish/design-authority-stage/
     designAuthorityParity: harness-output/runs/{runId}/finish/design-authority-parity.json
+    designAuthorityPublication: harness-output/runs/{runId}/finish/design-authority-publication.json
     finishSelectedConstraintEvidence: harness-output/runs/{runId}/finish/selected-extension-constraints.json
     finishCorrectedConstraintEvidence: harness-output/runs/{runId}/finish/corrected-extension-constraints.json
     compatibilitySite: harness-output/site/
@@ -613,16 +615,30 @@ workflow:
     - id: codify
       agent: Orchestrator
       actions:
-        - Replace harness-output/site only from the accepted final tree.
-        - Ask Visual Director for design DNA from final screenshots and the selected source-free contract.
-        - Ask Builder for canonical tokens from final source; write or update DESIGN.md with accepted provenance.
-        - Load references/design-authority/profile.md only for accepted codification; add the portable profile inside DESIGN.md beside existing outputs without deleting legacy authority.
-        - Use validate_design_authority and derive_design_authority; materialize consumers only through this accepted codify step and retain the new derived receipt in run-local evidence.
-        - Use check_design_authority_parity against actual token and generated-skill files; retain its current result as designAuthorityParity without replacing the acceptance receipt. Never reuse a prior parity result.
+        - Require the current accepted final-tree receipt; leave all accepted outputs untouched throughout this staging step, including harness-output/site, DESIGN.md, DNA, tokens and the generated skill.
+        - Load references/design-authority/profile.md only for accepted codification; create a fresh run-local designAuthorityStage and initialize designAuthorityParity as unverified. Never reuse a prior stage or parity result.
+        - Ask Visual Director for design DNA from final screenshots and the selected source-free contract; ask Builder for canonical tokens from the accepted final source.
+        - Assemble the proposed site, DESIGN.md profile, DNA, tokens and complete generated skill only inside designAuthorityStage; preserve the acceptance receipt and record the current incumbent output digests or absence without changing them.
+        - Use validate_design_authority and derive_design_authority on the staged DESIGN.md; retain the new derived receipt in run-local evidence and materialize staged consumers from it, with linked authorities copied unchanged.
+        - Use check_design_authority_parity against the actual staged token and generated-skill files; retain its current result as designAuthorityParity together with the complete staged output digests, without replacing the acceptance receipt.
         - On validation, derivation, materialization or parity failure, retain the concrete failure evidence and leave designAuthorityParity unverified; missing evidence must take the halt branch.
-      outputs: [compatibilitySite, designDna, tokens, designSystemSkill, DESIGN.md, designAuthorityParity]
+      outputs: [designAuthorityStage, designAuthorityParity]
       branches:
-        - { when: designAuthorityParity.status == verified-parity, next: report }
+        - { when: designAuthorityParity.status == verified-parity, next: publish_codification }
+        - { when: default, next: halt }
+
+    - id: publish_codification
+      agent: Orchestrator
+      actions:
+        - Initialize designAuthorityPublication as unpublished; require the current accepted receipt, verified staged parity and unchanged staged output digests before publication.
+        - Acquire exclusive access to the output set, verify incumbent digests or absence still match, and prepare complete run-local rollback copies plus a publication journal before replacing anything. If exclusive access or recoverable publication cannot be guaranteed, halt before writing any accepted output.
+        - Publish the verified staged output set, including the accepted final site, without mutating immutable acceptance evidence or deleting legacy authority. Keep rollback copies and the journal until every output has been checked.
+        - Use check_design_authority_parity against the actual published consumers and verify all published output digests match the staged set; mark designAuthorityPublication published only when both postconditions pass.
+        - On any write, digest or parity failure, restore all incumbent outputs from rollback copies, remove newly created outputs that were previously absent, retain the failure and recovery evidence, and keep publication unpublished. An incomplete rollback remains an explicit halted recovery obligation, never completion.
+        - Release exclusive access only after publication or recovery is recorded. A resumed interrupted publication must recover from its journal before a new attempt.
+      outputs: [compatibilitySite, designDna, tokens, designSystemSkill, DESIGN.md, designAuthorityPublication]
+      branches:
+        - { when: designAuthorityPublication.status == published, next: report }
         - { when: default, next: halt }
 
     - id: report

@@ -64,18 +64,87 @@ function rejectDuplicateKeys(json) {
   }
 }
 
+// The owned Markdown subset ignores examples and comments when looking for
+// guidance or authority links. Mask comments rather than joining text across
+// them; a hidden span must not manufacture a heading or link delimiter.
+function visibleMarkdown(markdown) {
+  let fence = null;
+  let comment = false;
+  let code = null;
+  const lines = normalise(markdown).split('\n');
+  return lines.map((raw, lineIndex) => {
+    if (fence) {
+      const closing = raw.match(/^ {0,3}(`{3,}|~{3,})([ \t]*)$/);
+      if (closing && closing[1][0] === fence[0] && closing[1].length >= fence.length) fence = null;
+      return '';
+    }
+    if (!comment && !code) {
+      const opening = raw.match(/^ {0,3}(`{3,}|~{3,})(.*)$/);
+      if (opening && (opening[1][0] !== '`' || !opening[2].includes('`'))) {
+        fence = opening[1];
+        return '';
+      }
+    }
+    let line = '';
+    for (let offset = 0; offset < raw.length;) {
+      if (comment) {
+        const end = raw.indexOf('-->', offset);
+        const next = end < 0 ? raw.length : end + 3;
+        line += ' '.repeat(next - offset);
+        offset = next;
+        if (end >= 0) comment = false;
+      } else if (code) {
+        const run = raw.slice(offset).match(/^`+/)?.[0];
+        if (run?.length === code) code = null;
+        const length = run?.length ?? 1;
+        // Code has visible content, but cannot manufacture Markdown structure.
+        line += 'x'.repeat(length);
+        offset += length;
+      } else if (raw[offset] === '\\') {
+        line += raw.slice(offset, offset + 2);
+        offset += 2;
+      } else if (raw.startsWith('<!--', offset)) {
+        comment = true;
+      } else if (raw[offset] === '`') {
+        const run = raw.slice(offset).match(/^`+/)[0];
+        const rest = lines.slice(lineIndex).join('\n').slice(offset + run.length).split(/\n[ \t]*\n/, 1)[0];
+        if ([...rest.matchAll(/`+/g)].some((closing) => closing[0].length === run.length)) {
+          code = run.length;
+          line += 'x'.repeat(run.length);
+        } else line += run; // Unmatched delimiters are rendered literally.
+        offset += run.length;
+      } else {
+        line += raw[offset];
+        offset += 1;
+      }
+    }
+    return line;
+  }).join('\n');
+}
+
+function hasAuthorityLink(markdown) {
+  // The generated index uses ordinary inline Markdown links. Bracket nesting
+  // distinguishes usable links from images (including links in image alt text).
+  const text = visibleMarkdown(markdown).split('\n')
+    .map((line) => /^(?: {4}| {0,3}\t)/.test(line) ? '' : line).join('\n');
+  const brackets = [];
+  for (let index = 0; index < text.length; index += 1) {
+    if (text[index] === '\\') { index += 1; continue; }
+    if (text[index] === '[') brackets.push({ index, image: text[index - 1] === '!' });
+    else if (text[index] === ']') {
+      const opening = brackets.pop();
+      if (!opening || opening.image || brackets.some((parent) => parent.image)) continue;
+      if (text.slice(opening.index + 1, index).trim() &&
+          /^\((?:\.\/)?DESIGN\.md(?:#[^)\s]*)?\)/.test(text.slice(index + 1))) return true;
+    }
+  }
+  return false;
+}
+
 function validateGuidance(body) {
   const sections = new Map();
   let current = null;
-  let fence = null;
-  for (const line of body.split('\n')) {
-    const marker = line.match(/^\s{0,3}(`{3,}|~{3,})/);
-    if (marker) {
-      if (!fence) fence = marker[1];
-      else if (marker[1][0] === fence[0] && marker[1].length >= fence.length) fence = null;
-      continue;
-    }
-    if (fence) continue;
+  for (const line of visibleMarkdown(body).split('\n')) {
     const heading = line.match(/^## (.+?)\s*$/)?.[1];
     if (heading) {
       if (sections.has(heading)) fail(`duplicate guidance heading: ${heading}`);
@@ -88,18 +157,43 @@ function validateGuidance(body) {
   }
 }
 
+// Deliberately bounded literal functions, not a browser CSS grammar. Unknown
+// functions fail closed so new resource-loading syntax cannot bypass locality.
+const literalFunctions = new Set([
+  'rgb', 'rgba', 'hsl', 'hsla', 'hwb', 'lab', 'lch', 'oklab', 'oklch', 'color', 'color-mix', 'light-dark',
+  'calc', 'min', 'max', 'clamp', 'round', 'mod', 'rem', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan',
+  'atan2', 'pow', 'sqrt', 'hypot', 'log', 'exp', 'abs', 'sign',
+  'linear-gradient', 'radial-gradient', 'conic-gradient',
+  'repeating-linear-gradient', 'repeating-radial-gradient', 'repeating-conic-gradient',
+  'cubic-bezier', 'steps', 'linear', 'repeat', 'minmax', 'fit-content',
+  'translate', 'translatex', 'translatey', 'translatez', 'translate3d',
+  'scale', 'scalex', 'scaley', 'scalez', 'scale3d', 'rotate', 'rotatex', 'rotatey', 'rotatez', 'rotate3d',
+  'skew', 'skewx', 'skewy', 'matrix', 'matrix3d', 'perspective',
+  'blur', 'brightness', 'contrast', 'drop-shadow', 'grayscale', 'hue-rotate', 'invert', 'opacity', 'saturate', 'sepia',
+]);
+
 function validateLiteral(value, id) {
-  if (/[;{}<>\\\x00-\x1f@!]/.test(value) || /\/\*|\*\/|(?:var|url|env|attr)\s*\(/i.test(value) ||
+  if (/[;{}<>\\\x00-\x1f@!]/.test(value) || /\/\*|\*\//.test(value) ||
       /^(?:initial|inherit|unset|revert|revert-layer)$/i.test(value.trim())) {
     fail(`token ${id} requires a literal CSS value or a tracked token reference`);
   }
   const stack = [];
   let quote = null;
-  for (const character of value) {
+  for (let index = 0; index < value.length; index += 1) {
+    const character = value[index];
     if (quote) {
       if (character === quote) quote = null;
     } else if (character === '"' || character === "'") quote = character;
-    else if (character === '(' || character === '[') stack.push(character);
+    else if (character === '(' || character === '[') {
+      if (character === '(') {
+        const name = value.slice(0, index).match(/(-?[a-zA-Z_][-a-zA-Z0-9_]*|--[-a-zA-Z0-9_]+)\s*$/)?.[1].toLowerCase();
+        if ((name && !literalFunctions.has(name)) ||
+            (name === 'color' && /^\s*--/.test(value.slice(index + 1)))) {
+          fail(`token ${id} requires a literal CSS value or a tracked token reference`);
+        }
+      }
+      stack.push(character);
+    }
     else if (character === ')' || character === ']') {
       if (stack.pop() !== (character === ')' ? '(' : '[')) fail(`unbalanced CSS value: ${id}`);
     }
@@ -295,7 +389,7 @@ export function checkDesignAuthorityParity(markdown, consumers) {
       add('invalid-consumer', 'skillDesign', error.message);
     }
   }
-  if (typeof consumers.skillIndex === 'string' && !/\]\((?:\.\/)?DESIGN\.md(?:#[^)]*)?\)/.test(consumers.skillIndex)) {
+  if (typeof consumers.skillIndex === 'string' && !hasAuthorityLink(consumers.skillIndex)) {
     add('authority-pointer-missing', 'skillIndex', 'The generated skill index must link to its portable DESIGN.md copy');
   }
   for (const [link, key] of [['designDna', 'designDna'], ['documentVisualContract', 'documentVisualContract']]) {

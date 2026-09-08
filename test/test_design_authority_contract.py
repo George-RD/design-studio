@@ -63,7 +63,7 @@ class DesignAuthorityContractTests(unittest.TestCase):
         codify = steps["codify"]
         self.assertNotIn("next", codify)
         self.assertEqual(
-            [{"when": "designAuthorityParity.status == verified-parity", "next": "report"},
+            [{"when": "designAuthorityParity.status == verified-parity", "next": "publish_codification"},
              {"when": "default", "next": "halt"}],
             codify["branches"],
         )
@@ -73,6 +73,31 @@ class DesignAuthorityContractTests(unittest.TestCase):
         self.assertEqual("halted", steps["halt"]["termination"])
         self.assertEqual("report", steps["complete_extension"]["next"],
                          "Expand-stage verification must not migrate extension authority")
+
+    def test_codification_stages_consumers_before_any_accepted_output_is_replaced(self):
+        """Parity failure cannot reach the only step allowed to publish outputs."""
+        workflow = yaml.safe_load((SKILL / "workflow.yaml").read_text(encoding="utf-8"))["workflow"]
+        steps = {step["id"]: step for step in workflow["steps"]}
+        self.assertEqual("harness-output/runs/{runId}/finish/design-authority-stage/",
+                         workflow["paths"]["designAuthorityStage"])
+        self.assertEqual({"designAuthorityStage", "designAuthorityParity"}, set(steps["codify"]["outputs"]))
+        publish = steps["publish_codification"]
+        self.assertNotIn("next", publish)
+        self.assertEqual(
+            [{"when": "designAuthorityPublication.status == published", "next": "report"},
+             {"when": "default", "next": "halt"}],
+            publish["branches"],
+        )
+        self.assertIn("designAuthorityPublication", publish["outputs"])
+        self.assertEqual("harness-output/runs/{runId}/finish/design-authority-publication.json",
+                         workflow["paths"]["designAuthorityPublication"])
+        stage_actions = "\n".join(steps["codify"]["actions"])
+        publish_actions = "\n".join(publish["actions"])
+        self.assertIn("only inside designAuthorityStage", stage_actions)
+        self.assertIn("accepted outputs untouched", stage_actions)
+        self.assertIn("rollback", publish_actions)
+        self.assertIn("check_design_authority_parity", publish_actions)
+        self.assertIn("halt before writing", publish_actions)
 
     def test_generated_skill_links_profile_and_keeps_separate_dna_and_page_rules(self):
         template = (SKILL / "assets/design-system-skill/SKILL.md.template").read_text(encoding="utf-8")
