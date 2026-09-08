@@ -4,7 +4,7 @@ This directory is a template for an installable, harness-portable design-system 
 
 ## What it is
 
-The template produces a self-contained skill carrying a project's visual DNA (`design-dna.md`), canonical tokens (`assets/tokens.css`), and, when Design Studio has accepted a paginated-artifact system, its renderer-neutral `document-visual-contract.json`. `SKILL.md` is an INDEX that routes to these authorities rather than restating them.
+The template produces a self-contained skill carrying a project's visual DNA (`design-dna.md`), token CSS (`assets/tokens.css`), and, when Design Studio has accepted a paginated-artifact system, its renderer-neutral `document-visual-contract.json`. For profiled systems, `DESIGN.md` owns token values, semantic roles, aliases, themes and provenance; the CSS is derived. Legacy unprofiled systems retain CSS token-value authority. `SKILL.md` is an INDEX that routes to these authorities rather than restating them.
 
 ## How codification instantiates it
 
