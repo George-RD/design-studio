@@ -66,6 +66,22 @@
       ],
       "currentDisposition": "observe",
       "attribution": "Emil Kowalski's design-engineering skills; retain the MIT copyright and permission notice for copied or substantial adapted material."
+    },
+    {
+      "id": "google-labs-code/design.md",
+      "repository": "https://github.com/google-labs-code/design.md",
+      "revision": "9bf8eae67128b6cc55ad9bf86665767deb4c11cd",
+      "observedRelease": "0.4.0",
+      "license": "Apache-2.0",
+      "role": "research-input",
+      "runtimeDependency": false,
+      "relevantMethods": [
+        "one document with structured tokens and human application guidance",
+        "typed token roles and brace-reference relationships",
+        "explicitly named component variants"
+      ],
+      "currentDisposition": "adapt-local",
+      "attribution": "Google Labs DESIGN.md format, reviewed README.md, docs/spec.md and LICENSE at the pinned revision. Conceptual format adaptation only: no upstream code or specification prose copied. The local JSON-front-matter subset, provenance and parity runtime are independently implemented; no upstream tooling is executed."
     }
   ]
 }

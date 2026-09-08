@@ -99,6 +99,11 @@ class MethodKernelRoutingTests(unittest.TestCase):
         router = self.load(ROUTER_PATH)
         scenarios = [
             (
+                "accepted codification",
+                {"task": {"studio-codify"}},
+                {"design-authority"},
+            ),
+            (
                 "greenfield direction",
                 {"task": {"studio-direction"}, "surface": {"persuade"}},
                 {"studio-direction"},

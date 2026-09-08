@@ -415,6 +415,21 @@
         "extensionResult records escalated and systemEffect none with no accepted surface or proposed delta",
         "Global authority and compatibility site are not published by the halted extension"
       ]
+    },
+    {
+      "id": 34,
+      "prompt": "Codify the accepted archive design with a dark theme and reusable action aliases. The generated project skill has a changed token role and a stale DNA copy. An older accepted project has no structured DESIGN.md profile.",
+      "expected_output": "New codification validates the local DESIGN.md profile and blocks on actual consumer role/provenance drift. After corrected exports, parity is verified without claiming new acceptance. The older project remains readable without retroactive migration.",
+      "assertions": [
+        "The profile stays inside DESIGN.md and loads only for codification/parity or deliberate migration",
+        "Token aliases are acyclic and type-compatible in base and effective themes",
+        "Each theme emits its complete effective token set, preserving alias behavior across theme boundaries",
+        "Actual generated-skill role and DNA provenance drift blocks completion even when CSS values match",
+        "The generated skill links to portable DESIGN.md, design DNA, CSS and optional Document contract without duplicating their content",
+        "Legacy-unprofiled is not profile validation and does not authorize exports or invalidate prior evidence",
+        "Parity never manufactures accepted-tree evidence or promotes proposed lifecycle changes",
+        "No upstream DESIGN.md CLI, format library or network operation is required"
+      ]
     }
   ]
 }

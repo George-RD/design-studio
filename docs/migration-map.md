@@ -110,3 +110,7 @@ The Impeccable availability branch itself is **not** a behavior to preserve. Its
 - **#52:** requires `#45`, `#50` and `#51`; only then contract Claude compatibility surfaces.
 
 This ordering avoids three second-order failures: accidentally shipping the historical research harness as the product, preserving v1.5's environment-dependent Impeccable behavior while claiming portability, or deleting useful local methods merely because an upstream project covers a similar topic.
+
+## Portable authority expand stage (#92)
+
+The existing design-system-codification concept gains a portable profile inside `DESIGN.md`, with format provenance in the method-source registry. `skills/design-studio/references/design-authority/profile.md` owns its local subset and migration procedure. New accepted codification validates the profile and actual consumers together; historical unprofiled systems remain readable and no historical acceptance evidence is rewritten. This is additive validation, not the lifecycle migration or authority contraction planned in #93.

@@ -17,6 +17,12 @@
   ],
   "routes": [
     {
+      "id": "design-authority",
+      "signals": {"task": ["studio-codify", "design-authority-check"], "surface": [], "interaction": [], "evidence": []},
+      "leaves": ["references/design-authority/profile.md"],
+      "handoff": "Validate the portable profile and deterministic consumers without approving or promoting design authority; codification still requires final-tree acceptance."
+    },
+    {
       "id": "extend",
       "signals": {"task": ["studio-extend"], "surface": ["persuade", "operate", "read", "experience"], "interaction": [], "evidence": []},
       "leaves": ["references/extend.md"],
@@ -100,6 +106,7 @@
     }
   ],
   "leaves": [
+    {"path": "references/design-authority/profile.md", "authorityRole": "supporting", "conceptIds": ["design-system-codification"]},
     {"path": "references/extend.md", "authorityRole": "canonical", "conceptIds": ["accepted-world-extension"]},
     {"path": "references/rationale.md", "authorityRole": "canonical", "conceptIds": ["source-blind-direction-and-evaluation"]},
     {"path": "references/generation.md", "authorityRole": "canonical", "conceptIds": ["implementation-fidelity"]},
@@ -114,6 +121,7 @@
     {"path": "references/review/interaction.md", "authorityRole": "canonical", "conceptIds": ["interaction-state-and-affordance", "motion-craft-and-perceptibility"]}
   ],
   "adoptedExternalMethods": [
+    {"conceptId": "design-system-codification", "sourceId": "google-labs-code/design.md", "methodName": "portable token and application-guidance profile", "leaf": "references/design-authority/profile.md"},
     {"conceptId": "source-blind-direction-and-evaluation", "sourceId": "emilkowalski/skills", "methodName": "genuinely divergent prototypes compared in realistic context", "leaf": "references/rationale.md"},
     {"conceptId": "mechanical-source-and-browser-evidence", "sourceId": "pbakaus/impeccable", "methodName": "deterministic source/browser audit checks with explicit finding severity", "leaf": "references/quality-gates.md"},
     {"conceptId": "review-orchestration", "sourceId": "emilkowalski/skills", "methodName": "read-only expert audit followed by an executable improvement plan", "leaf": "references/review/polish.md"},

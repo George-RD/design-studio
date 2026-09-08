@@ -76,6 +76,8 @@ A Growth Arsenal repository-internal `DESIGN.md` or token file is not project vi
 
 ## DESIGN.md: proven visual system
 
+For machine-readable accepted tokens or explicit migration of a legacy system, load `references/design-authority/profile.md` only at codification/parity checking. The profile stays inside `DESIGN.md`; design DNA and the optional Document Visual Contract retain their wider and paginated concerns. Its absence does not invalidate historical accepted evidence.
+
 `DESIGN.md` records the visual system demonstrated by an accepted build.
 
 - **Extension or refinement**: existing project-scoped accepted `DESIGN.md` is authority unless the user changes it.

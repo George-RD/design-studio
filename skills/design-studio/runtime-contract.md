@@ -26,6 +26,10 @@ The seam describes **what must happen**, not which language or renderer performs
 | `prepare_direction_assignment` | run identity, iteration, candidate IDs, pinned/user-selection mode | committed assignment before candidate generation, with hidden unattended seed/index |
 | `mechanical_preflight` | current source, browser and/or page-artifact facts plus applicable constraints and optional comparison snapshot | one complete current `mechanical-findings.json` snapshot from the supported local rule set; history never keeps an absent finding open |
 | `publish_document_visual_contract` | accepted proposed Document Visual Contract plus output path | validate the v1 renderer-neutral contract and write the actual accepted JSON artifact; never synthesize visual values or renderer code |
+| `inspect_design_authority` | supplied DESIGN.md text | valid local profile or explicit legacy-unprofiled reading; never promotes old evidence |
+| `validate_design_authority` | proposed profiled DESIGN.md | validated shape, semantic relationships and human guidance; no inferred values or acceptance |
+| `derive_design_authority` | validated profiled DESIGN.md and new receipt path | deterministic CSS, normalized document, role metadata and provenance; never overwrites existing evidence |
+| `check_design_authority_parity` | profiled DESIGN.md, actual CSS and generated skill files | verified parity or explicit drift/missing-consumer findings; never substitutes for acceptance |
 | `decide` | current observation, mechanical snapshot, score history, budget/pivot state and selection mode | ordered lane decision recorded through `append_event`; visual judgement remains Evaluator evidence |
 | `finish_select` | eligible immutable evaluated iterations/artifacts and current mechanical evidence | final selection plus copied/identified accepted candidate and fresh required rendered evidence |
 | `finish_correction_decide` | selected evidence plus correction verdict, mechanical snapshot and required rendered evidence | deterministic choice of accepted correction or retained selected candidate |
@@ -99,3 +103,9 @@ An adapter may not own workflow decisions, artifact schemas, intent classificati
 blind comparison, lane matrix generation, fixture validation, model probing, preference transactions and other historical Milestone 0 research behavior are excluded from the runtime seam.
 
 Repository research tooling may call a genuinely shared helper later, but a supported installed run must not import or shell into benchmark/research tooling merely because similar machinery exists there. The shipped-runtime/research separation from #49 remains authoritative.
+
+## Portable design authority
+
+`runtime/design-authority/index.mjs` binds the four design-authority operations above. The disclosed `references/design-authority/profile.md` owns the profile and migration rules; its schema describes the JSON front matter. The helper validates supplied values, emits deterministic derivations and compares actual consumer content, without publishing a new accepted system.
+
+Shape/semantic failures and parity drift are invalid input. Missing consumers are incomplete evidence, not clean parity. I/O failures are runtime failures. A failed validation creates no export directory or receipt; an export refuses to overwrite an existing receipt. All successful results still state `acceptanceVerified: false`: only the existing `accept` operation and acceptance owner can authorize codification. The helper does not follow provenance paths or interpret another project's files as authority.

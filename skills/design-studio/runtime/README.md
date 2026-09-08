@@ -52,3 +52,20 @@ The helper requires `surface: paginated-artifact`, `rendererNeutral: true`, a de
 Design Intent validation is additive to the stable runtime seam and does not replace lane execution. The page-artifact extension remains additive to mechanical schema version 1: existing source/browser snapshots remain unchanged when no page passes are supplied. The publication helper is a separate operation and does not turn a renderer into installed runtime or alter the frozen historical benchmark harness.
 
 Issue #42 remains separate repository-research reliability work. Future helpers should exist only for bounded deterministic behavior required by supported runtime operations.
+
+## Portable design authority binding
+
+The internal helper implements `inspect_design_authority`, `validate_design_authority`, `derive_design_authority`, and `check_design_authority_parity`. These are runtime bindings, not a public Design Studio CLI.
+
+```sh
+node runtime/design-authority/index.mjs inspect /project/DESIGN.md
+node runtime/design-authority/index.mjs validate /project/DESIGN.md
+node runtime/design-authority/index.mjs export /project/DESIGN.md /run/new-design-authority-exports.json
+node runtime/design-authority/index.mjs check /project/DESIGN.md /project/tokens.css /project/generated-skill
+```
+
+Resolve the helper relative to the installed skill. `export` creates a new receipt only; the acceptance-owning host materializes its `design` and `tokensCss` fields through existing codification. The receipt is a derived view, never a second canonical authority. `check` reads `DESIGN.md`, `SKILL.md`, `assets/tokens.css`, `design-dna.md`, and any linked `document-visual-contract.json` from the given skill directory. It does not follow original project paths from the profile.
+
+Exit `0` means a valid inspection, validation, export or parity result. Inspection may explicitly return `legacy-unprofiled`; that is not validation. Exit `2` means invalid shape/semantics or failed/incomplete parity. Exit `1` means an I/O or unexpected runtime error, including an existing export path. JSON results are written to stdout; validation/runtime errors go to stderr. Parity failures include stable finding IDs such as `token-value-drift`, `semantic-role-drift` and `provenance-drift`.
+
+CSS comparison is exact deterministic text after LF normalization, not arbitrary CSS equivalence. Regenerate differently formatted consumers rather than treating unparsed CSS as proven. See `references/design-authority/profile.md` for the supported literal subset, ownership and legacy migration boundary. No network or third-party package is used.

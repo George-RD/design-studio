@@ -68,7 +68,9 @@ class MethodAuthorityMapTests(unittest.TestCase):
 
                 expected_sources = {item["source"] for item in before["externalOverlaps"]}
                 mapped_sources = {item["sourceId"] for item in concept["externalOverlaps"]}
-                self.assertEqual(expected_sources, mapped_sources)
+                # The migration inventory is frozen historical evidence. Current
+                # concept ownership may adopt additional pinned sources later.
+                self.assertTrue(expected_sources.issubset(mapped_sources))
 
                 for supporting in concept.get("supportingReferences", []):
                     self.assertTrue((ROOT / supporting).is_file(), supporting)

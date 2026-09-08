@@ -1,0 +1,162 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://design-studio.local/design-authority-v1.schema.json",
+  "title": "Design Studio portable DESIGN.md profile v1",
+  "$comment": "Schema describes JSON front matter only. The stable operation additionally checks duplicate keys, unique CSS names, alias existence/type/cycles in each effective theme, safe CSS literals, and required Markdown guidance. A provenance claim is not verified acceptance.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "profile",
+    "schemaVersion",
+    "name",
+    "tokens",
+    "provenance",
+    "links"
+  ],
+  "properties": {
+    "profile": {
+      "const": "design-studio/design-authority"
+    },
+    "schemaVersion": {
+      "const": 1
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S"
+    },
+    "tokens": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/token"
+      }
+    },
+    "themes": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9-]*$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "minProperties": 1,
+        "propertyNames": {
+          "pattern": "^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*$"
+        },
+        "additionalProperties": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "runId",
+        "acceptedIteration",
+        "sourceTokenPaths",
+        "acceptance"
+      ],
+      "properties": {
+        "runId": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "acceptedIteration": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "sourceTokenPaths": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^(?!/)(?!.*[\\\\:\\u0000-\\u001f])(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)[^/]+(?:/[^/]+)*$"
+          }
+        },
+        "acceptance": {
+          "$ref": "#/$defs/evidence"
+        }
+      }
+    },
+    "links": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "designDna"
+      ],
+      "properties": {
+        "designDna": {
+          "$ref": "#/$defs/evidence"
+        },
+        "documentVisualContract": {
+          "$ref": "#/$defs/evidence"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^(?!/)(?!.*[\\\\:\\u0000-\\u001f])(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)[^/]+(?:/[^/]+)*$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "token": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "role",
+        "css",
+        "value"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "color",
+            "dimension",
+            "number",
+            "font-family",
+            "duration",
+            "css"
+          ]
+        },
+        "role": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:[.-][a-z0-9]+)*$"
+        },
+        "css": {
+          "type": "string",
+          "pattern": "^--[a-z][a-z0-9-]*$"
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        }
+      }
+    }
+  }
+}

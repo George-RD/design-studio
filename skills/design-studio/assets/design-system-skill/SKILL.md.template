@@ -5,7 +5,7 @@ description: >-
   It carries design DNA, tokens, and optional accepted document rules.
 ---
 
-> **Canonical master:** `assets/tokens.css` is the upstream source of truth for shared {{PROJECT_NAME}} visual values. When present, `document-visual-contract.json` is the additional source of truth for paginated page geometry, furniture, pagination and print rules. Consuming copies are vendored consumers; edit accepted authorities first, then re-sync.
+> **Canonical master:** For a profiled system, [DESIGN.md](DESIGN.md) owns token values, semantic roles, aliases, theme overrides and provenance; `assets/tokens.css` is a derived consumer. For legacy unprofiled systems, `assets/tokens.css` remains the canonical token-value authority. When present, `document-visual-contract.json` is the additional source of truth for paginated page geometry, furniture, pagination and print rules. Consuming copies are vendored consumers; edit accepted authorities first, then re-sync.
 
 # {{PROJECT_NAME}} Design System
 
@@ -21,6 +21,8 @@ description: >-
 4. **Respect reduced motion** on interactive surfaces; every animation needs a static equivalent.
 5. **For paginated artifacts, follow `document-visual-contract.json` when present.** It overrides generic assumptions about page size, margins, furniture, pagination and document component recipes, but never invents business/content truth.
 
+For a profiled system, token edits belong to the accepted authority, not generated CSS or DNA. Update the accepted project `DESIGN.md` first, then regenerate and re-sync consumers after acceptance. Do not independently edit this skill's copied authority or derived CSS. Legacy systems without a profile retain their existing authorities. DNA owns visual reasoning, motifs and motion; the document contract owns page rules.
+
 ## Routing table
 
 | Task | Go to |
@@ -28,8 +30,11 @@ description: >-
 | Name & essence | `design-dna.md` `#Name-and-essence` |
 | Principles | `design-dna.md` `#Principles` |
 | Aesthetic & creative tension | `design-dna.md` `#Aesthetic-and-creative-tension` |
-| Colour / theming / semantic roles | `design-dna.md` `#Colour-language` |
-| Tokens / canonical values | `assets/tokens.css` |
+| Colour language / visual reasoning | `design-dna.md` `#Colour-language` |
+| Token values / semantic roles / aliases / theme overrides (profiled) | [DESIGN.md](DESIGN.md) |
+| Token values (legacy unprofiled) | `assets/tokens.css` |
+| Implementation token consumption | `assets/tokens.css` |
+| Token lineage (profiled) | [DESIGN.md](DESIGN.md) |
 | Typography | `design-dna.md` `#Typography` plus `document-visual-contract.json` for page roles when present |
 | Spatial rhythm | `design-dna.md` `#Spatial-rhythm` |
 | Paginated document / PDF / print | `document-visual-contract.json` when present |
