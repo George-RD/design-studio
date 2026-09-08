@@ -21,11 +21,12 @@ RETIRED_POST_BASELINE_REFERENCES = {
     "skills/design-studio/references/iteration.md",
 }
 # Milestone 0 is frozen evidence for BASELINE_REVISION, not the current inventory.
-# Extend additions are owned by the current method-authority map and workflow;
+# Post-baseline additions are owned by the current method-authority map and workflow;
 # explicitly enumerate them here so unknown additions still fail coverage.
 ADDED_POST_BASELINE_STEPS = {
     "extension_preflight", "explore_extension", "check_extension_direction",
     "escalate_extension", "complete_extension", "reject_extension",
+    "publish_codification",
 }
 ADDED_POST_BASELINE_SCHEMAS = {
     "extensionScope", "extensionAuthorityManifest", "extensionConstraintEvidence",
