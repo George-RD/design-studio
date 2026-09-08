@@ -1,7 +1,8 @@
 import { createHash } from 'node:crypto';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
+import { realpathSync } from 'node:fs';
 import { dirname, resolve, join } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 
 export class DesignAuthorityInputError extends Error {
   constructor(message) {
@@ -180,22 +181,40 @@ export function validateDesignAuthority(markdown) {
   return { profile, guidance: match[2].trim() };
 }
 
+function declaresProfile(header) {
+  if (header === undefined) return false;
+  try {
+    const parsed = JSON.parse(header);
+    return !!parsed && typeof parsed === 'object' && !Array.isArray(parsed) && Object.hasOwn(parsed, 'profile');
+  } catch { /* Recognize damaged declarations without accepting malformed JSON. */ }
+  // Tokenize complete strings so prose values cannot masquerade as keys. Decode
+  // escaped JSON key spellings even when the surrounding header is damaged.
+  const lexemes = header.match(/"(?:\\.|[^"\\])*"|'[^']*'|[{}\[\]:,]|[^\s{}\[\]:,]+/g) ?? [];
+  const containers = [];
+  for (let i = 0; i < lexemes.length; i += 1) {
+    const item = lexemes[i];
+    if (item === '{' || item === '[') { containers.push(item); continue; }
+    if (item === '}' || item === ']') { containers.pop(); continue; }
+    if (containers.length > 1 || containers[0] === '[') continue;
+    const previous = lexemes[i - 1];
+    const keyPosition = i === 0 || previous === '{' || previous === ',' || lexemes[i + 1] === ':';
+    if (!keyPosition) continue;
+    let key = item;
+    if (item.startsWith('"')) {
+      try { key = JSON.parse(item); } catch { continue; }
+    } else if (item.startsWith("'")) key = item.slice(1, -1);
+    if (key === 'profile') return true;
+  }
+  return false;
+}
+
 export function inspectDesignAuthority(markdown) {
   string(markdown, 'DESIGN.md');
   const text = normalise(markdown);
-  const header = text.match(/^---\n([\s\S]*?)\n---(?:\n|$)/)?.[1];
-  let declared = false;
-  if (header) {
-    try {
-      const parsed = JSON.parse(header);
-      declared = !!parsed && typeof parsed === 'object' && Object.hasOwn(parsed, 'profile');
-    } catch { /* A damaged declaration is checked by the marker guard below. */ }
-  }
-  // Inspection preserves older documents. It does not certify external formats.
-  // Any declared profile, or a damaged local marker, must validate rather than
-  // silently becoming a legacy success.
-  if (declared || (header && /["']?profile["']?\s*:/.test(header)) ||
-      (text.startsWith('---\n') && text.includes('design-studio/design-authority'))) {
+  // A missing closing delimiter still leaves a header to inspect. Never scan
+  // the Markdown body of a closed header for profile names or examples.
+  const header = text.match(/^---\n([\s\S]*?)(?:\n---(?:\n|$)|$)/)?.[1];
+  if (declaresProfile(header)) {
     const { profile } = validateDesignAuthority(markdown);
     return { status: 'valid-profile', provenance: profile.provenance,
       tokenCount: Object.keys(profile.tokens).length, acceptanceVerified: false };
@@ -313,7 +332,10 @@ async function main(argv) {
     const derived = deriveDesignAuthority(await readFile(inputPath, 'utf8'));
     await mkdir(dirname(outputPath), { recursive: true });
     await writeFile(outputPath, `${JSON.stringify(derived, null, 2)}\n`, { encoding: 'utf8', flag: 'wx' });
-    process.stdout.write(`${JSON.stringify({ status: 'derived', authorityDigest: derived.authorityDigest })}\n`);
+    process.stdout.write(`${JSON.stringify({
+      status: 'derived', authorityDigest: derived.authorityDigest,
+      acceptanceVerified: derived.acceptanceVerified,
+    })}\n`);
   } else if (command === 'check' && argv.length === 4) {
     const skill = argv[3];
     const consumers = {};
@@ -330,8 +352,19 @@ async function main(argv) {
   }
 }
 
-const isCli = process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href;
-if (isCli) {
+function isCliEntryPoint() {
+  if (!process.argv[1]) return false;
+  try {
+    // Node resolves module symlinks, including macOS /var -> /private/var.
+    // Compare physical paths while keeping imports from eval/stdin inert.
+    return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(resolve(process.argv[1]));
+  } catch (error) {
+    if (error.code === 'ENOENT' || error.code === 'ENOTDIR') return false;
+    throw error;
+  }
+}
+
+if (isCliEntryPoint()) {
   main(process.argv.slice(2)).catch((error) => {
     process.stderr.write(`ERROR ${error.message}\n`);
     process.exitCode = error instanceof DesignAuthorityInputError || error instanceof SyntaxError ? 2 : 1;

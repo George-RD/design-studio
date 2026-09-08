@@ -113,4 +113,4 @@ This ordering avoids three second-order failures: accidentally shipping the hist
 
 ## Portable authority expand stage (#92)
 
-The existing design-system-codification concept gains a portable profile inside `DESIGN.md`, with format provenance in the method-source registry. `references/design-authority/profile.md` owns its local subset and migration procedure. New accepted codification validates the profile and actual consumers together; historical unprofiled systems remain readable and no historical acceptance evidence is rewritten. This is additive validation, not the lifecycle migration or authority contraction planned in #93.
+The existing design-system-codification concept gains a portable profile inside `DESIGN.md`, with format provenance in the method-source registry. `skills/design-studio/references/design-authority/profile.md` owns its local subset and migration procedure. New accepted codification validates the profile and actual consumers together; historical unprofiled systems remain readable and no historical acceptance evidence is rewritten. This is additive validation, not the lifecycle migration or authority contraction planned in #93.

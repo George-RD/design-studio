@@ -92,6 +92,7 @@ workflow:
     finishCorrectedServeConfig: harness-output/runs/{runId}/finish/corrected-serve.json
     finishFinalTree: harness-output/runs/{runId}/finish/final-tree.json
     finishAcceptance: harness-output/runs/{runId}/finish/acceptance.json
+    designAuthorityParity: harness-output/runs/{runId}/finish/design-authority-parity.json
     finishSelectedConstraintEvidence: harness-output/runs/{runId}/finish/selected-extension-constraints.json
     finishCorrectedConstraintEvidence: harness-output/runs/{runId}/finish/corrected-extension-constraints.json
     compatibilitySite: harness-output/site/
@@ -617,9 +618,12 @@ workflow:
         - Ask Builder for canonical tokens from final source; write or update DESIGN.md with accepted provenance.
         - Load references/design-authority/profile.md only for accepted codification; add the portable profile inside DESIGN.md beside existing outputs without deleting legacy authority.
         - Use validate_design_authority and derive_design_authority; materialize consumers only through this accepted codify step and retain the new derived receipt in run-local evidence.
-        - Use check_design_authority_parity against actual token and generated-skill files; any drift or missing evidence blocks codification completion without replacing the acceptance receipt.
-      outputs: [compatibilitySite, designDna, tokens, designSystemSkill, DESIGN.md]
-      next: report
+        - Use check_design_authority_parity against actual token and generated-skill files; retain its current result as designAuthorityParity without replacing the acceptance receipt. Never reuse a prior parity result.
+        - On validation, derivation, materialization or parity failure, retain the concrete failure evidence and leave designAuthorityParity unverified; missing evidence must take the halt branch.
+      outputs: [compatibilitySite, designDna, tokens, designSystemSkill, DESIGN.md, designAuthorityParity]
+      branches:
+        - { when: designAuthorityParity.status == verified-parity, next: report }
+        - { when: default, next: halt }
 
     - id: report
       agent: Orchestrator

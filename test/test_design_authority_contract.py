@@ -56,6 +56,24 @@ class DesignAuthorityContractTests(unittest.TestCase):
         self.assertNotIn("references/design-authority/profile.md", contract["coreAuthorities"])
         self.assertNotIn("runtime/design-authority", (PROFILE / "profile.md").read_text(encoding="utf-8"))
 
+    def test_codification_requires_verified_parity_before_completion(self):
+        """No failure, missing receipt, or unknown parity state may reach report."""
+        workflow = yaml.safe_load((SKILL / "workflow.yaml").read_text(encoding="utf-8"))["workflow"]
+        steps = {step["id"]: step for step in workflow["steps"]}
+        codify = steps["codify"]
+        self.assertNotIn("next", codify)
+        self.assertEqual(
+            [{"when": "designAuthorityParity.status == verified-parity", "next": "report"},
+             {"when": "default", "next": "halt"}],
+            codify["branches"],
+        )
+        self.assertIn("designAuthorityParity", codify["outputs"])
+        self.assertEqual("harness-output/runs/{runId}/finish/design-authority-parity.json",
+                         workflow["paths"]["designAuthorityParity"])
+        self.assertEqual("halted", steps["halt"]["termination"])
+        self.assertEqual("report", steps["complete_extension"]["next"],
+                         "Expand-stage verification must not migrate extension authority")
+
     def test_generated_skill_links_profile_and_keeps_separate_dna_and_page_rules(self):
         template = (SKILL / "assets/design-system-skill/SKILL.md.template").read_text(encoding="utf-8")
         for reference in ["[DESIGN.md](DESIGN.md)", "assets/tokens.css", "design-dna.md", "document-visual-contract.json"]:

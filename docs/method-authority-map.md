@@ -24,7 +24,6 @@ No upstream repository is required at runtime. Pinned external repositories are 
 | --- | --- | --- | --- |
 | https://github.com/pbakaus/impeccable | `63b04e2530f5c7b41ea83c133daab24f34912456` | Apache-2.0 | Research/provenance only; selected methods are re-expressed in local leaves |
 | https://github.com/emilkowalski/skills | `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7` | MIT | Research/provenance only; selected methods are re-expressed in local leaves |
-
 | https://github.com/google-labs-code/design.md | `9bf8eae67128b6cc55ad9bf86665767deb4c11cd` | Apache-2.0 | Layered token/prose format inspiration only; no upstream code or prose copied |
 
 `docs/method-sources.json` owns source metadata. Repository-level `currentDisposition: observe` means an upstream project is not promoted wholesale. Concept-level entries decide the smallest useful method slice.

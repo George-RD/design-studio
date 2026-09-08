@@ -48,6 +48,34 @@ class DesignAuthorityProfileTests(unittest.TestCase):
         shutil.copy2(FIXTURE / "design-dna.md", skill / "design-dna.md")
         return tokens, skill
 
+    def test_export_stdout_and_receipt_explicitly_leave_acceptance_unverified(self):
+        """Successful derivation is not an acceptance decision in either interface."""
+        output = self.root / "receipt.json"
+        result = self.invoke("export", self.design, output)
+        self.assertEqual(0, result.returncode, result.stderr)
+        summary = json.loads(result.stdout)
+        receipt = json.loads(output.read_text(encoding="utf-8"))
+        self.assertIs(False, summary.get("acceptanceVerified"))
+        self.assertIs(False, receipt["acceptanceVerified"])
+        self.assertEqual(receipt["authorityDigest"], summary["authorityDigest"])
+
+    def test_imported_runtime_does_not_execute_cli_for_eval_or_stdin(self):
+        """The portable public API remains importable without CLI side effects."""
+        program = (
+            f"import {{ inspectDesignAuthority }} from {json.dumps(RUNTIME.as_uri())}; "
+            "console.log(JSON.stringify(inspectDesignAuthority('# Legacy')));"
+        )
+        for args, source in [(["--eval", program], None), (["-"], program)]:
+            with self.subTest(args=args[0]):
+                result = subprocess.run(
+                    ["node", "--input-type=module", *args], input=source,
+                    text=True, encoding="utf-8", capture_output=True, timeout=15,
+                )
+                self.assertEqual(0, result.returncode, result.stderr)
+                self.assertEqual("", result.stderr)
+                self.assertEqual({"status": "legacy-unprofiled", "acceptanceVerified": False},
+                                 json.loads(result.stdout))
+
     def test_actual_exported_files_and_linked_dna_match_the_profile(self):
         tokens, skill = self.materialize_consumers()
         result = self.invoke("check", self.design, tokens, skill)
@@ -106,6 +134,41 @@ class DesignAuthorityProfileTests(unittest.TestCase):
         self.assertEqual(2, result.returncode, result.stderr)
         self.assertEqual("", result.stdout)
 
+    def test_inspection_checks_header_declarations_without_scanning_legacy_guidance(self):
+        """Damaged declarations fail; profile examples in legacy prose do not."""
+        cases = [
+            ('{"pro\\u0066ile":"design-studio\\/design-authority",', True),
+            ('{"profile" "unknown/authority"}', True),
+            ('{"pro\\u0066ile" "unknown/authority"}', True),
+            ('profile: unknown/authority', True),
+            ('{"name":"Legacy"}', False),
+            ('name: Legacy', False),
+            ('{"name":"Legacy",', False),
+            ('{"notes":"design-studio/design-authority"}', False),
+            ('{"metadata":{"profile":"user"}}', False),
+            ('{"name":"profile",', False),
+            ('{"notes":"Mention {profile in a string",', False),
+        ]
+        body = '\n# Legacy guidance\nAn optional design-studio/design-authority profile is documented here.\n'
+        for header, declared in cases:
+            with self.subTest(header=header):
+                guidance = '\n# Existing guidance\n' if declared else body
+                self.design.write_text('---\n' + header + '\n---' + guidance, encoding="utf-8")
+                before = self.design.read_bytes()
+                result = self.invoke("inspect", self.design)
+                self.assertEqual(2 if declared else 0, result.returncode, result.stderr)
+                if declared:
+                    self.assertEqual("", result.stdout)
+                else:
+                    self.assertEqual("legacy-unprofiled", json.loads(result.stdout)["status"])
+                    self.assertFalse(json.loads(result.stdout)["acceptanceVerified"])
+                self.assertEqual(before, self.design.read_bytes())
+        # A missing closing delimiter cannot hide even an unknown declaration.
+        self.design.write_text('---\n{"pro\\u0066ile":"unknown/authority"}\n', encoding="utf-8")
+        result = self.invoke("inspect", self.design)
+        self.assertEqual(2, result.returncode, result.stderr)
+        self.assertEqual("", result.stdout)
+
     def test_installed_runtime_is_self_contained_and_accepts_portable_newlines(self):
         isolated = self.root / "installed-skill"
         shutil.copytree(ROOT / "skills/design-studio", isolated)
@@ -114,9 +177,34 @@ class DesignAuthorityProfileTests(unittest.TestCase):
         result = subprocess.run(["node", str(runtime), "export", str(self.design), str(self.root / "crlf.json")],
                                 cwd=self.root, capture_output=True, text=True, encoding="utf-8", timeout=15)
         self.assertEqual(0, result.returncode, result.stderr)
+        self.assertTrue((self.root / "crlf.json").is_file(), result.stdout)
         output = json.loads((self.root / "crlf.json").read_text(encoding="utf-8"))
         self.assertNotIn("\r", output["tokensCss"])
         self.assertNotIn("\r", output["design"])
+
+    def test_export_runs_when_installed_directory_has_a_filesystem_alias(self):
+        """A symlink or Windows junction must not turn a CLI run into a no-op."""
+        installed = self.root / "installed skill"
+        shutil.copytree(ROOT / "skills/design-studio", installed)
+        alias = self.root / "aliased skill"
+        link = subprocess.run(
+            ["node", "--input-type=module", "-e",
+             "import { symlinkSync } from 'node:fs'; "
+             "symlinkSync(process.argv[1], process.argv[2], 'junction');",
+             str(installed), str(alias)],
+            capture_output=True, text=True, encoding="utf-8", timeout=15,
+        )
+        self.assertEqual(0, link.returncode, link.stderr)
+        output = self.root / "aliased-export.json"
+        result = subprocess.run(
+            ["node", str(alias / "runtime/design-authority/index.mjs"),
+             "export", str(self.design), str(output)],
+            cwd=self.root, capture_output=True, text=True, encoding="utf-8", timeout=15,
+        )
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertTrue(output.is_file(), "Successful export must create the requested receipt")
+        self.assertEqual("derived", json.loads(result.stdout)["status"])
+        self.assertFalse(json.loads(output.read_text(encoding="utf-8"))["acceptanceVerified"])
 
     def test_export_does_not_overwrite_an_existing_evidence_file(self):
         output = self.root / "existing.json"
