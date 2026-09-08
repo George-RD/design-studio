@@ -1,0 +1,20 @@
+name: Temporary implementation source snapshot
+on:
+  push:
+    branches: ['agent/92-portable-design-authority']
+    paths: ['.github/workflows/agent-source-snapshot.yml']
+permissions:
+  contents: read
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - run: git archive --format=tar HEAD > /tmp/design-studio-source.tar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: design-studio-source
+          path: /tmp/design-studio-source.tar
+          retention-days: 1
