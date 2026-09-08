@@ -106,6 +106,24 @@ class DesignAuthorityContractTests(unittest.TestCase):
         self.assertNotIn('"tokens":', template)
         self.assertNotIn('"provenance":', template)
 
+    def test_generated_skill_routes_profiled_token_edits_to_design_authority(self):
+        """Profiled CSS is a consumer; legacy token ownership stays explicit."""
+        template = (SKILL / "assets/design-system-skill/SKILL.md.template").read_text(encoding="utf-8")
+        rows = {}
+        for line in template.splitlines():
+            if line.startswith("| "):
+                task, target = line.strip("|").split("|")
+                rows[task.strip()] = target.strip()
+        self.assertEqual("[DESIGN.md](DESIGN.md)",
+                         rows.get("Token values / semantic roles / aliases / theme overrides (profiled)"))
+        self.assertEqual("`assets/tokens.css`", rows.get("Token values (legacy unprofiled)"))
+        self.assertIn("derived consumer", template)
+        self.assertIn("Update the accepted project `DESIGN.md` first", template)
+        self.assertNotIn("is the upstream source of truth", template)
+        readme = (SKILL / "assets/design-system-skill/README.md").read_text(encoding="utf-8")
+        self.assertIn("derived CSS", readme)
+        self.assertNotIn("canonical tokens (`assets/tokens.css`)", readme)
+
     def test_external_format_is_exactly_pinned_and_locally_owned(self):
         registry = json.loads((ROOT / "docs/method-sources.json").read_text(encoding="utf-8"))
         source = next(item for item in registry["sources"] if item["id"] == "google-labs-code/design.md")
