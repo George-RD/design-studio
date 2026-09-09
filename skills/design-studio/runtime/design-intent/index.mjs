@@ -2,11 +2,13 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { isDeepStrictEqual } from 'node:util';
+import { CompositionInputError, resolveCompositionReadiness } from './composition.mjs';
 
 const CONTRACT = JSON.parse(
   readFileSync(new URL('../../design-intent-contract.json', import.meta.url), 'utf8'),
 );
-const REQUIRED_FIELDS = new Set(CONTRACT.requiredFields);
+const ALLOWED_FIELDS = new Set([...CONTRACT.requiredFields, ...CONTRACT.optionalFields]);
 const LANE_PROCEDURES = new Set(CONTRACT.laneProcedures);
 const PRECEDENCE_RULES = new Map(CONTRACT.precedence.map((rule) => [rule.id, rule]));
 
@@ -54,7 +56,7 @@ function requireFields(record) {
   }
 
   const unexpected = Object.keys(record)
-    .filter((field) => !REQUIRED_FIELDS.has(field))
+    .filter((field) => !ALLOWED_FIELDS.has(field))
     .sort();
   if (unexpected.length) {
     throw new DesignIntentInputError(
@@ -188,6 +190,23 @@ export function validateDesignIntent(input) {
     );
   }
 
+  if (Object.hasOwn(intent, 'composition')) {
+    let readiness;
+    try {
+      readiness = resolveCompositionReadiness(intent.composition, intent);
+    } catch (error) {
+      if (!(error instanceof CompositionInputError)) throw error;
+      throw new DesignIntentInputError(`composition: ${error.message}`);
+    }
+    if (intent.compositionState !== readiness.state) {
+      throw new DesignIntentInputError(`compositionState must be ${readiness.state} for supplied evidence`);
+    }
+    if (Object.hasOwn(intent.composition, 'readiness') &&
+        !isDeepStrictEqual(intent.composition.readiness, readiness)) {
+      throw new DesignIntentInputError('composition readiness does not match supplied evidence');
+    }
+    return {...intent, composition: {...intent.composition, readiness}};
+  }
   return intent;
 }
 

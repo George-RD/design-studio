@@ -1,0 +1,101 @@
+{
+  "project": "fixture-project",
+  "strategySensitive": true,
+  "growthArsenal": "absent",
+  "artifacts": [
+    {
+      "path": "PRODUCT.md",
+      "role": "product-truth",
+      "scope": "project",
+      "state": "confirmed",
+      "provenance": {
+        "project": "fixture-project",
+        "revision": "product-1",
+        "evidence": [{"kind": "user-confirmation", "ref": "brief/confirmation-1"}],
+        "dependencies": []
+      }
+    },
+    {
+      "path": "PRODUCT.md#Users-and-situation",
+      "role": "audience-context",
+      "scope": "project",
+      "state": "confirmed",
+      "provenance": {
+        "project": "fixture-project",
+        "revision": "audience-1",
+        "evidence": [{"kind": "research", "ref": "research/interviews-1"}],
+        "dependencies": [],
+        "audience": [
+          {
+            "category": "jobs",
+            "text": "Compare stock across warehouses before placing an order.",
+            "kind": "researched",
+            "confidence": "high",
+            "evidence": [{"kind": "research", "ref": "research/interviews-1#finding-2"}]
+          },
+          {
+            "category": "objections",
+            "text": "The reporting setup may feel expensive.",
+            "kind": "hypothesis",
+            "confidence": "low",
+            "evidence": []
+          },
+          {
+            "category": "vocabulary",
+            "text": "I would call this a stock cockpit.",
+            "kind": "simulated",
+            "confidence": "unknown",
+            "evidence": [{"kind": "simulation", "ref": "reviews/persona-1"}]
+          }
+        ]
+      }
+    },
+    {
+      "path": "approved/positioning.md",
+      "role": "offer-copy",
+      "scope": "project",
+      "state": "approved",
+      "producer": "user",
+      "provenance": {
+        "project": "fixture-project",
+        "revision": "offer-1",
+        "facets": ["offer-positioning"],
+        "evidence": [{"kind": "user-approval", "ref": "brief/offer-approval-1"}],
+        "dependencies": [
+          {"facet": "product-truth", "path": "PRODUCT.md", "revision": "product-1"},
+          {"facet": "audience-context", "path": "PRODUCT.md#Users-and-situation", "revision": "audience-1"}
+        ]
+      }
+    },
+    {
+      "path": "approved/home-copy.md",
+      "role": "offer-copy",
+      "scope": "project",
+      "state": "approved",
+      "producer": "user",
+      "provenance": {
+        "project": "fixture-project",
+        "revision": "copy-1",
+        "facets": ["commercial-copy"],
+        "evidence": [{"kind": "user-approval", "ref": "brief/copy-approval-1"}],
+        "dependencies": [
+          {"facet": "product-truth", "path": "PRODUCT.md", "revision": "product-1"},
+          {"facet": "audience-context", "path": "PRODUCT.md#Users-and-situation", "revision": "audience-1"},
+          {"facet": "offer-positioning", "path": "approved/positioning.md", "revision": "offer-1"}
+        ]
+      }
+    },
+    {
+      "path": "DESIGN.md",
+      "role": "visual-design",
+      "scope": "project",
+      "state": "accepted",
+      "provenance": {
+        "project": "fixture-project",
+        "revision": "visual-1",
+        "evidence": [{"kind": "system-publication", "ref": "runs/system-1/publication-receipt.json"}],
+        "dependencies": []
+      }
+    }
+  ]
+}
