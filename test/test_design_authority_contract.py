@@ -1,4 +1,4 @@
-"""Installed authority boundary and schema contracts for #92; no lifecycle migration."""
+"""Portable authority boundary and schema contracts; #93 adds a separate lifecycle gate."""
 from __future__ import annotations
 
 import copy
@@ -63,7 +63,7 @@ class DesignAuthorityContractTests(unittest.TestCase):
         codify = steps["codify"]
         self.assertNotIn("next", codify)
         self.assertEqual(
-            [{"when": "designAuthorityParity.status == verified-parity", "next": "publish_codification"},
+            [{"when": "designAuthorityParity.status == verified-parity", "next": "verify_system_transition"},
              {"when": "default", "next": "halt"}],
             codify["branches"],
         )
@@ -71,8 +71,8 @@ class DesignAuthorityContractTests(unittest.TestCase):
         self.assertEqual("harness-output/runs/{runId}/finish/design-authority-parity.json",
                          workflow["paths"]["designAuthorityParity"])
         self.assertEqual("halted", steps["halt"]["termination"])
-        self.assertEqual("report", steps["complete_extension"]["next"],
-                         "Expand-stage verification must not migrate extension authority")
+        self.assertNotIn("next", steps["complete_extension"])
+        self.assertNotIn("publish_codification", [row["next"] for row in steps["complete_extension"]["branches"]])
 
     def test_codification_stages_consumers_before_any_accepted_output_is_replaced(self):
         """Parity failure cannot reach the only step allowed to publish outputs."""
@@ -137,7 +137,7 @@ class DesignAuthorityContractTests(unittest.TestCase):
         profile = (PROFILE / "profile.md").read_text(encoding="utf-8")
         self.assertIn(source["revision"], profile)
         self.assertIn("legacy-unprofiled", profile)
-        self.assertIn("no lifecycle migration or authority deletion", profile)
+        self.assertIn("no automatic migration or authority deletion", profile)
 
     def test_runtime_and_schema_contracts_have_existing_ci_owners(self):
         portability = (ROOT / ".github/workflows/runtime-portability.yml").read_text(encoding="utf-8")

@@ -38,6 +38,15 @@
   ],
   "concepts": [
     {
+      "conceptId": "accepted-design-system-lifecycle",
+      "domain": "orchestration-runtime",
+      "authority": {"owner": "design-studio", "kind": "canonical-local", "canonicalPath": "skills/design-studio/references/design-authority/lifecycle.md"},
+      "supportingReferences": ["skills/design-studio/references/design-authority/lifecycle.schema.json", "skills/design-studio/workflow.yaml"],
+      "routing": {"mode": "routed", "triggers": ["Completing accepted local work or applying an explicitly accepted reusable system transition"]},
+      "upstreamRuntimeRequired": false,
+      "externalOverlaps": []
+    },
+    {
       "conceptId": "source-blind-direction-and-evaluation",
       "domain": "design-engineering",
       "authority": {"owner": "design-studio", "kind": "canonical-local", "canonicalPath": "skills/design-studio/references/rationale.md"},

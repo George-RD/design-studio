@@ -66,6 +66,7 @@
       "finalise",
       "accept",
       "complete_extension",
+      "verify_system_transition",
       "report"
     ]
   }

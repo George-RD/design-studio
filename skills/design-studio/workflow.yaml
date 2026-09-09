@@ -14,7 +14,7 @@ workflow:
     - Mechanical findings are complete current snapshots, not an accumulated open cache.
     - No visual winner is selected without a runnable target and both required browser viewports.
     - No accepted tree is codified until finish/acceptance.json proves its postconditions.
-    - Extend preserves incumbent global authority, never pivots, and emits reusable deltas only as proposals after accepted surface proof.
+    - Extend never pivots; surface acceptance emits only proposals. Shared changes additionally require the accepted system transition and verified publication.
     - No agent self-commits; version-control actions belong to the calling harness or user.
 
   capabilities:
@@ -92,6 +92,9 @@ workflow:
     finishCorrectedServeConfig: harness-output/runs/{runId}/finish/corrected-serve.json
     finishFinalTree: harness-output/runs/{runId}/finish/final-tree.json
     finishAcceptance: harness-output/runs/{runId}/finish/acceptance.json
+    systemAcceptance: harness-output/runs/{runId}/finish/system-acceptance.json
+    designSystemTransition: harness-output/runs/{runId}/finish/design-system-transition.json
+    designAuthorityJournal: harness-output/runs/{runId}/finish/design-authority-journal.json
     designAuthorityStage: harness-output/runs/{runId}/finish/design-authority-stage/
     designAuthorityParity: harness-output/runs/{runId}/finish/design-authority-parity.json
     designAuthorityPublication: harness-output/runs/{runId}/finish/design-authority-publication.json
@@ -601,7 +604,9 @@ workflow:
         - For systemEffect extend, write a proposed reusable delta tied to the accepted surface and incumbent authority revision, then extensionResult with publicationState proposed-only; never apply the delta here.
         - Record requested effect, accepted surface effect, before/after authority manifests and acceptance provenance; applying reusable deltas is the separately acceptance-controlled lifecycle boundary.
       outputsFrom: modePolicies.extend.completion[finishAcceptance.systemEffect].outputs
-      next: report
+      branches:
+        - { when: finishAcceptance.systemEffect == extend, next: codify }
+        - { when: default, next: verify_system_transition }
 
     - id: reject_extension
       agent: Orchestrator
@@ -616,6 +621,7 @@ workflow:
       agent: Orchestrator
       actions:
         - Require the current accepted final-tree receipt; leave all accepted outputs untouched throughout this staging step, including harness-output/site, DESIGN.md, DNA, tokens and the generated skill.
+        - For extend, stage from the unchanged incumbent authority and proposedSystemDelta; apply only the proposed reusable rule and keep the visual world. Full replacement DNA or token identity removal requires a new intent.
         - Load references/design-authority/profile.md only for accepted codification; create a fresh run-local designAuthorityStage and initialize designAuthorityParity as unverified. Never reuse a prior stage or parity result.
         - Ask Visual Director for design DNA from final screenshots and the selected source-free contract; ask Builder for canonical tokens from the accepted final source.
         - Assemble the proposed site, DESIGN.md profile, DNA, tokens and complete generated skill only inside designAuthorityStage; preserve the acceptance receipt and record the current incumbent output digests or absence without changing them.
@@ -624,18 +630,36 @@ workflow:
         - On validation, derivation, materialization or parity failure, retain the concrete failure evidence and leave designAuthorityParity unverified; missing evidence must take the halt branch.
       outputs: [designAuthorityStage, designAuthorityParity]
       branches:
-        - { when: designAuthorityParity.status == verified-parity, next: publish_codification }
+        - { when: designAuthorityParity.status == verified-parity, next: verify_system_transition }
+        - { when: default, next: halt }
+
+    - id: verify_system_transition
+      agent: Orchestrator
+      procedure: references/design-authority/lifecycle.md
+      inputs: [designIntent, finishAcceptance, frozen incumbent authority, designAuthorityStage when mutating, designAuthorityParity when mutating]
+      actions:
+        - Read the actual final-surface proof and current incumbent outputs; the before manifest must match the authority frozen at intent resolution, not a newly chosen baseline.
+        - Write a separate immutable systemAcceptance binding the intent, final-surface receipt, actual evidence and complete proposed output manifest. Preserve the surface receipt that the candidate profile hashes. Accept extend only with a specific reusable rule and rendered continuity; missing or rejected approval stays candidate or rejected.
+        - For preserve or none, supply no candidate and make no global writes. Otherwise require verified staged parity before verifying the requested system transition.
+        - Invoke verify_design_system_transition and retain designSystemTransition. A verified mutation still has actual effect none until publication readback succeeds; an unchanged result records preserve or none without codification.
+      outputs: [systemAcceptance, designSystemTransition]
+      branches:
+        - { when: designSystemTransition.status == unchanged, next: report }
+        - { when: designSystemTransition.status == verified-transition, next: publish_codification }
         - { when: default, next: halt }
 
     - id: publish_codification
       agent: Orchestrator
       actions:
+        - Require designSystemTransition.status == verified-transition from the separately accepted system effect; parity or surface acceptance alone cannot authorize publication. Follow references/design-authority/lifecycle.md for the shared transition contract.
         - Initialize designAuthorityPublication as unpublished; require the current accepted receipt, verified staged parity and unchanged staged output digests before publication.
         - Acquire exclusive access to the output set, verify incumbent digests or absence still match, and prepare complete run-local rollback copies plus a publication journal before replacing anything. If exclusive access or recoverable publication cannot be guaranteed, halt before writing any accepted output.
         - Publish the verified staged output set, including the accepted final site, without mutating immutable acceptance evidence or deleting legacy authority. Keep rollback copies and the journal until every output has been checked.
-        - Use check_design_authority_parity against the actual published consumers and verify all published output digests match the staged set; mark designAuthorityPublication published only when both postconditions pass.
-        - On any write, digest or parity failure, restore all incumbent outputs from rollback copies, remove newly created outputs that were previously absent, retain the failure and recovery evidence, and keep publication unpublished. An incomplete rollback remains an explicit halted recovery obligation, never completion.
-        - Release exclusive access only after publication or recovery is recorded. A resumed interrupted publication must recover from its journal before a new attempt.
+        - Use check_design_authority_parity against the actual published consumers and verify all published output digests and directory membership match the staged set; these postconditions alone do not mark lifecycle publication successful.
+        - While holding exclusive access, invoke verify_design_system_publication with the frozen transition request, fresh output readback and retained designAuthorityJournal. Only its verified receipt supplies designAuthorityPublication.
+        - On any write, digest, parity or lifecycle verification failure, restore all incumbent outputs from rollback copies, remove newly created outputs that were previously absent, and verify the restored readback through verify_design_system_publication with the failed journal. Retain failure and recovery evidence. Incomplete rollback or failed restoration verification remains an explicit halted recovery obligation, never completion.
+        - Release exclusive access only after verified publication or verified recovery is recorded. A resumed interrupted publication must recover from its journal before a new attempt; do not release a partially restored set as usable authority.
+        - Append actual effect, before/after revisions, provenance, derived outputs and scoped invalidations only from the verified lifecycle receipt; preserve original surface acceptance and extension proposal evidence.
       outputs: [compatibilitySite, designDna, tokens, designSystemSkill, DESIGN.md, designAuthorityPublication]
       branches:
         - { when: designAuthorityPublication.status == published, next: report }
@@ -644,6 +668,7 @@ workflow:
     - id: report
       agent: Orchestrator
       actions:
+        - Report the actual durable system effect from verified designAuthorityPublication or an unchanged designSystemTransition. Distinguish it from the immutable accepted surface/proposed extension result. Pending, rejected or rolled-back changes never count as applied; product and offer/copy authority remain untouched.
         - Write report.md with roots, capabilities, assumptions, assignment, iteration history, decisions, selection, finish verdict, acceptance, open items and design-system outputs.
         - For extend, report extensionResult and distinguish accepted local surface from unchanged global authority and any unapplied reusable proposal.
         - Set run status complete, append the final completion event and record final paths.

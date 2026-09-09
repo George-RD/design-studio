@@ -26,13 +26,14 @@ RETIRED_POST_BASELINE_REFERENCES = {
 ADDED_POST_BASELINE_STEPS = {
     "extension_preflight", "explore_extension", "check_extension_direction",
     "escalate_extension", "complete_extension", "reject_extension",
-    "publish_codification",
+    "publish_codification", "verify_system_transition",
 }
 ADDED_POST_BASELINE_SCHEMAS = {
     "extensionScope", "extensionAuthorityManifest", "extensionConstraintEvidence",
     "extensionResult", "proposedSystemDelta", "extensionEscalation",
 }
 ADDED_POST_BASELINE_REFERENCES = {
+    "skills/design-studio/references/design-authority/lifecycle.md",
     "skills/design-studio/references/design-authority/profile.md",
     "skills/design-studio/references/extend.md",
     "skills/design-studio/references/composition-contract.md",

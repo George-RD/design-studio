@@ -66,8 +66,8 @@
       "finish_correct_or_finalise",
       "finalise",
       "accept",
-      "complete_extension",
-      "report"
-    ]
+      "complete_extension"
+    ],
+    "handoff": "accepted-system-lifecycle"
   }
 }

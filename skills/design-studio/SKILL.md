@@ -8,8 +8,6 @@ version: 1.7.0
 
 # Design Studio
 
-Design Studio is a portable design-engineering kernel with shared guards and progressively disclosed lane procedures and methods.
-
 ## Role boundaries
 
 | Role | Source | Prior scores | Owns |
@@ -49,6 +47,7 @@ For Studio, Review and Document requests:
 - Conditional Studio procedure: `workflow.yaml`
 - Conditional Review procedure: `references/review/polish.md`
 - Conditional Document procedure: `references/document/document.md`
+- Conditional accepted-system boundary: `references/design-authority/lifecycle.md`
 
 The first seven entries plus this index form the universal hot path. Lane procedures and methods are conditional; naming their paths does not load them.
 
@@ -66,7 +65,7 @@ Design Intent owns Studio/Review/Document disambiguation. Meta maintenance uses 
 
 ## Studio
 
-For a validated Studio intent, execute `workflow.yaml` end to end. It owns planning, precommitted unattended assignment, source-blind direction, source-aware building, mechanical evidence, blind evaluation, immutable iteration and final-tree acceptance before codification. Its specialist leaves load by current stage, not all at activation. For `extend`, use the routed `references/extend.md`: inherit accepted authority, explore only the local addition and finish without global codification. Create and overhaul retain divergent direction work.
+For a validated Studio intent, execute `workflow.yaml` end to end. It owns planning, precommitted unattended assignment, source-blind direction, source-aware building, mechanical evidence, blind evaluation, immutable iteration and final-tree acceptance before codification. Its specialist leaves load by current stage, not all at activation. For `extend`, use the routed `references/extend.md`: inherit accepted authority and explore only the local addition. Local completion preserves authority; reusable deltas enter separately accepted system codification through `references/design-authority/lifecycle.md`. Create and overhaul retain divergent direction work.
 
 ## Document
 

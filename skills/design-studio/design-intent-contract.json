@@ -144,9 +144,15 @@
       ],
       "systemEffects": [
         "preserve",
+        "extend",
         "extract",
         "none"
       ],
+      "systemEffectsByAuthority": {
+        "none": ["preserve", "extract", "none"],
+        "accepted-design-system": ["preserve", "extend", "extract", "none"],
+        "selected-direction": ["preserve", "extract", "none"]
+      },
       "requiredProcedure": "references/review/polish.md",
       "requiredCapabilities": [
         "file_io",
@@ -219,6 +225,7 @@
       ],
       "systemEffects": [
         "preserve",
+        "extract",
         "none"
       ],
       "requiredProcedure": "references/document/document.md",

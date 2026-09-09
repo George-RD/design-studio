@@ -54,7 +54,9 @@ This is not a license for a higher-ranked domain to absorb the methods of a lowe
 - **Approved copy changes:** invalidate surface briefs/layout assumptions that depended on superseded wording. The accepted visual system remains authoritative unless the user explicitly reopens it.
 - **Copy does not fit the chosen composition:** Design Studio may change layout within its visual authority, but it must not silently truncate or weaken strategic copy. If both domains cannot be satisfied, return the trade-off to the copy authority or user.
 - **Design and copy disagree about the solution:** Growth Arsenal owns wording/claims; Design Studio owns visual expression. If no compatible solution exists, the user resolves the cross-domain trade-off.
-- **Accepted visual system changes:** invalidate dependent visual assumptions only. Product truth and approved offer/copy remain intact.
+- **Accepted visual system changes:** invalidate dependent visual assumptions only after a verified system-publication receipt records the new revision and old manifest. Candidate, staged, preserve, none, rejected and rolled-back transitions invalidate nothing. Product truth and approved offer/copy remain intact.
+
+A newly profiled system is accepted only with its verified lifecycle publication provenance, not merely a profile that points to accepted surface evidence. Historical accepted systems retain their original provenance; candidate stage directories never acquire project authority from their filenames.
 
 A stale artifact may remain useful evidence, but it is not current authority until re-approved or re-accepted.
 

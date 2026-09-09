@@ -6,6 +6,14 @@
   "additionalProperties": true,
   "required": ["schemaVersion", "surface", "rendererNeutral", "page", "typography", "colour", "spacing", "furniture", "components", "pagination", "qa"],
   "properties": {
+    "sharedTokenBindings": {
+      "type": "object",
+      "description": "Document field path to portable token ID. Bound values are symbolic {token.id} references, verified against the separately accepted DESIGN.md profile during system publication.",
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
     "schemaVersion": {"const": 1},
     "surface": {"const": "paginated-artifact"},
     "rendererNeutral": {"const": true},

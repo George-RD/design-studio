@@ -5,7 +5,7 @@ description: >-
   It carries design DNA, tokens, and optional accepted document rules.
 ---
 
-> **Canonical master:** For a profiled system, [DESIGN.md](DESIGN.md) owns token values, semantic roles, aliases, theme overrides and provenance; `assets/tokens.css` is a derived consumer. For legacy unprofiled systems, `assets/tokens.css` remains the canonical token-value authority. When present, `document-visual-contract.json` is the additional source of truth for paginated page geometry, furniture, pagination and print rules. Consuming copies are vendored consumers; edit accepted authorities first, then re-sync.
+> **Authority:** For a profiled system, [DESIGN.md](DESIGN.md) owns shared token/guidance decisions; this index and `assets/tokens.css` are derived consumers. Legacy unprofiled systems retain their existing CSS token authority. Document-specific rules remain in the accepted `document-visual-contract.json` when present.
 
 # {{PROJECT_NAME}} Design System
 
@@ -15,13 +15,13 @@ description: >-
 
 ## Non-negotiables
 
-1. **Use canonical tokens.** Do not hardcode a value already represented in `assets/tokens.css`.
+1. **Use the accepted tokens.** Do not hardcode a value already represented in `assets/tokens.css`.
 2. **One motif, one meaning.** Do not overload recurring shapes, glyphs or motion patterns.
 3. **Colour is never the only cue.** Status/state/category needs a redundant channel.
 4. **Respect reduced motion** on interactive surfaces; every animation needs a static equivalent.
 5. **For paginated artifacts, follow `document-visual-contract.json` when present.** It overrides generic assumptions about page size, margins, furniture, pagination and document component recipes, but never invents business/content truth.
 
-For a profiled system, token edits belong to the accepted authority, not generated CSS or DNA. Update the accepted project `DESIGN.md` first, then regenerate and re-sync consumers after acceptance. Do not independently edit this skill's copied authority or derived CSS. Legacy systems without a profile retain their existing authorities. DNA owns visual reasoning, motifs and motion; the document contract owns page rules.
+For a profiled system, token edits belong to the accepted authority, not generated CSS or DNA. Update the accepted project `DESIGN.md` first through a verified system transition, then regenerate and re-sync consumers from that revision. Local fixes preserve the system; reusable changes need explicit acceptance. Do not independently edit this skill's copied authority or derived CSS. Legacy systems without a profile retain their existing authorities. DNA owns visual reasoning, motifs and motion; the document contract owns page rules.
 
 ## Routing table
 

@@ -67,7 +67,8 @@
       "authorityEvidence": [
         "explicit-current-user-designation",
         "declared-composition-role-and-scope",
-        "design-studio-finish-acceptance-provenance"
+        "design-studio-finish-acceptance-provenance",
+        "design-studio-system-publication-provenance"
       ],
       "whenOwnerAbsent": "Growth Arsenal remains fully usable without Design Studio. It may format its own reports, but those internal presentation assets do not become project visual-design authority."
     }
@@ -151,6 +152,8 @@
     },
     {
       "trigger": "accepted-visual-system-changes",
+      "activation": "verified-system-publication",
+      "pendingRule": "Candidate, staged, rejected, preserve, none and rolled-back transitions invalidate nothing. New profiled authority requires a verified publication receipt; historical accepted systems retain their recorded evidence.",
       "invalidates": ["surface-specific visual assumptions tied to the superseded system"],
       "preserves": ["confirmed product truth", "approved offer/copy"]
     }

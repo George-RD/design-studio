@@ -46,6 +46,8 @@ When the user explicitly reopens the world, or evidence identifies a required ou
 
 Use overhaul for replacement within the governed project. Create is appropriate only when the new intent records a separately scoped world without governing visual authority. Do not relabel accepted project authority as absent to pass validation. The extension terminates halted with `extensionResult.status: escalated`, `systemEffect: none`, null acceptance/delta and the next-intent handoff. The next run, not an in-place mode flip, owns any replacement exploration. This gate is available before building and after rendered evaluation; Evaluator supplies evidence, never the escalation decision.
 
+After the immutable surface/proposal result, load `references/design-authority/lifecycle.md`. Preserve completes with an unchanged system receipt. A reusable delta stages from the incumbent, then requires separate system acceptance and verified publication before becoming a shared rule. Rejected or pending reuse is not silently recast as preserve. The surface result itself never applies the global delta.
+
 ## Authority boundary
 
 This leaf owns extension preservation, local alternatives and its bounded handoff. `workflow.yaml` owns paths, schemas, budgets and transitions. `references/context.md` owns authority precedence; `references/runtime-integrity.md` owns immutable evidence and final-tree proof. Builder follows `references/generation.md`. Portable token profiles and applying reusable system deltas remain separate lifecycle work; extension does not redefine token authority or import another skill's methods.

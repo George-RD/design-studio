@@ -17,6 +17,12 @@
   ],
   "routes": [
     {
+      "id": "system-lifecycle",
+      "signals": {"task": ["system-lifecycle"], "surface": [], "interaction": [], "evidence": []},
+      "leaves": ["references/design-authority/lifecycle.md"],
+      "handoff": "At accepted-surface completion, verify the explicit system effect and publish only through separately accepted, recoverable codification."
+    },
+    {
       "id": "design-authority",
       "signals": {"task": ["studio-codify", "design-authority-check"], "surface": [], "interaction": [], "evidence": []},
       "leaves": ["references/design-authority/profile.md"],
@@ -106,6 +112,7 @@
     }
   ],
   "leaves": [
+    {"path": "references/design-authority/lifecycle.md", "authorityRole": "canonical", "conceptIds": ["accepted-design-system-lifecycle"]},
     {"path": "references/design-authority/profile.md", "authorityRole": "supporting", "conceptIds": ["design-system-codification"]},
     {"path": "references/extend.md", "authorityRole": "canonical", "conceptIds": ["accepted-world-extension"]},
     {"path": "references/rationale.md", "authorityRole": "canonical", "conceptIds": ["source-blind-direction-and-evaluation"]},
