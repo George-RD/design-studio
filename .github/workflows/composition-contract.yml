@@ -11,6 +11,8 @@ on:
       - "skills/design-studio/**"
       - "test/fixtures/composition-contract.json"
       - "test/test_composition_contract.py"
+      - "test/test_composition_readiness.py"
+      - "test/fixtures/composition-readiness.json"
       - ".github/workflows/composition-contract.yml"
   push:
     branches: [main]
@@ -22,6 +24,8 @@ on:
       - "skills/design-studio/**"
       - "test/fixtures/composition-contract.json"
       - "test/test_composition_contract.py"
+      - "test/test_composition_readiness.py"
+      - "test/fixtures/composition-readiness.json"
       - ".github/workflows/composition-contract.yml"
 
 permissions:
@@ -38,9 +42,15 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
 
+      - name: Set up the supported Node runtime
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
       - name: Validate portable composition boundary
         run: |
-          python3 -m unittest discover -s test -p 'test_composition_contract.py' -v
+          python3 -m unittest discover -s test -p 'test_composition_*.py' -v
           python3 -m json.tool skills/design-studio/composition-contract.json > /dev/null
           python3 -m json.tool test/fixtures/composition-contract.json > /dev/null
-          python3 -m py_compile test/test_composition_contract.py
+          python3 -m py_compile test/test_composition_contract.py test/test_composition_readiness.py
+          python3 -m json.tool test/fixtures/composition-readiness.json > /dev/null
