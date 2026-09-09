@@ -84,3 +84,5 @@ Do not reopen broad upstream comparisons by default. A proposed method names one
 ## Additive portable authority
 
 Issue #92 keeps codification under its existing concept owner and discloses `references/design-authority/profile.md` only for accepted codification, parity checks or explicit legacy migration. The local JSON-front-matter profile is embedded in `DESIGN.md`, not a new competing canonical file. Token/CSS/generated-skill parity is deterministic; DNA and document-specific rules remain linked concerns. Legacy unprofiled evidence stays readable. Lifecycle transitions and deletion of redundant authority claims remain #93.
+
+The locally owned accepted-system lifecycle is canonical in `skills/design-studio/references/design-authority/lifecycle.md`. It is disclosed at accepted-surface completion; the portable profile and Document contract retain their distinct token and page-rule ownership. No external method is adopted by this transition contract.

@@ -25,6 +25,8 @@ Resolve one target and its primary goal. Load roots/capabilities, `PRODUCT.md`, 
 
 Write review evidence under the review output path defined by the runtime contract, including findings, mechanical evidence, screenshots and final verdict.
 
+At accepted completion, load `references/design-authority/lifecycle.md` without loading Studio. Default polish to preserve (or none where no system is affected). The host freezes the confirmed surface as one immutable snapshot and supplies its real final-acceptance evidence; a Review verdict alone cannot approve global changes. Explicit reusable polish requires a validated `extend` effect, an accepted incumbent, a named reusable rule and separate system approval. Extraction requires verified source inspection plus rendered evidence and acceptance; inferred conventions stay candidate. Keep operational/source proof with the host/Builder, not the read-only visual lenses.
+
 ## Authority boundary
 
 Lens agents are read-only and do not edit, accept, redesign or choose workflow transitions. `method-router.json` alone decides which specialist leaves are loaded. Mechanical facts come from the local deterministic gate. `DESIGN.md` is visual authority in Review. Orchestrator/host owns whether the bounded fix plan is executed; Review owns the final ready/hold/unverified verdict for this lane only.

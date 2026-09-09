@@ -67,7 +67,9 @@ Evaluator returns evidence/scores only. Orchestrator applies REFINE/PIVOT/SHIP/H
 
 A visual winner requires complete rendered-page evidence, a current mechanical snapshot, no unresolved blocking page defect and an acceptance receipt naming the immutable artifact/tree used.
 
-After acceptance, Visual Director/Orchestrator assemble the proposed renderer-neutral contract from accepted evidence. Publish it through the stable runtime operation `publish_document_visual_contract`, supplying the accepted proposed contract and target output path. The operation validates the required v1 shape and writes the actual downstream artifact. A validation failure blocks publication.
+After acceptance, load `references/design-authority/lifecycle.md` without loading Studio. Preserve/none completes with an unchanged system receipt and does not rewrite the project contract. For an explicit system mutation, Visual Director/Orchestrator assemble the proposed renderer-neutral contract from accepted evidence. Use `publish_document_visual_contract` only to validate/materialize it inside the run-local candidate stage. A v1 validation failure blocks publication. Its shared token bindings reference the candidate portable profile symbolically; document geometry, furniture and pagination remain Document-owned.
+
+Record medium-specific final proof with `artifactValidated` and complete page evidence, not a browser serve assertion. Verify the separate system acceptance, staged profile, both copies of the linked contract and all derived consumers through the shared lifecycle. Only the accepted, recoverable publication and verified actual readback may replace global outputs. An unprofiled incumbent remains readable for local review; a new reusable delta first requires an explicitly accepted extraction, not an invented portable predecessor.
 
 `document-visual-contract.schema.json` remains the declarative schema authority. The runtime implementation enforces its required operational subset without synthesizing design values; concrete helper language/path mapping belongs to the runtime implementation layer, not this procedure authority.
 
@@ -77,7 +79,7 @@ Optional implementation adapters may sit beside the contract but are subordinate
 
 ## Outputs and handoff
 
-Creation/review produces durable page evidence, lens findings and acceptance result. Accepted work additionally publishes `harness-output/design-system/document-visual-contract.json`. Handoff is that contract plus approved structured content and referenced assets/tokens, not internal critique or renderer implementation.
+Creation/review produces durable page evidence, lens findings and acceptance result. A separately accepted system mutation publishes `harness-output/design-system/document-visual-contract.json` through the lifecycle; accepted local review preserves the current contract. Handoff is that contract plus approved structured content and referenced assets/tokens, not internal critique or renderer implementation.
 
 ## Authority boundary
 

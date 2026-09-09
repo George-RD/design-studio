@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "evidenceKind": "synthetic-contract-proof",
+  "scenarios": [
+    {"id": "create-establish", "mode": "create", "effect": "establish", "incumbent": "absent", "approval": "accepted", "publication": "published", "expectedEffect": "establish"},
+    {"id": "local-preserve", "mode": "extend", "effect": "preserve", "incumbent": "profiled", "approval": "accepted", "publication": null, "expectedEffect": "preserve"},
+    {"id": "reusable-extension", "mode": "extend", "effect": "extend", "incumbent": "profiled", "approval": "accepted", "publication": "published", "expectedEffect": "extend"},
+    {"id": "accepted-overhaul", "mode": "overhaul", "effect": "replace", "incumbent": "profiled", "approval": "accepted", "publication": "published", "expectedEffect": "replace"},
+    {"id": "legacy-extraction", "mode": "polish", "effect": "extract", "incumbent": "legacy", "approval": "accepted", "publication": "published", "expectedEffect": "extract"},
+    {"id": "rejected-delta", "mode": "polish", "effect": "extend", "incumbent": "profiled", "approval": "rejected", "publication": null, "expectedEffect": "none"},
+    {"id": "failed-overhaul", "mode": "overhaul", "effect": "replace", "incumbent": "profiled", "approval": "accepted", "publication": "rolled-back", "expectedEffect": "none"}
+  ]
+}

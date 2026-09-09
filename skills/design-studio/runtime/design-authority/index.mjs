@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { parseStrictJson } from '../json.mjs';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { realpathSync } from 'node:fs';
 import { dirname, resolve, join } from 'node:path';
@@ -44,23 +45,6 @@ function evidence(value, at) {
   portablePath(value.path, `${at}.path`);
   if (typeof value.sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(value.sha256)) {
     fail(`${at}.sha256 must be a lowercase SHA-256 digest`);
-  }
-}
-
-// JSON.parse validates syntax first. This small lexical pass only rejects duplicate
-// keys, including escaped spellings, instead of silently choosing the last value.
-function rejectDuplicateKeys(json) {
-  const lexemes = json.match(/"(?:\\.|[^"\\])*"|[{}\[\]:,]/g) ?? [];
-  const stack = [];
-  for (let i = 0; i < lexemes.length; i += 1) {
-    const item = lexemes[i];
-    if (item === '{' || item === '[') stack.push(item === '{' ? new Set() : null);
-    else if (item === '}' || item === ']') stack.pop();
-    else if (item.startsWith('"') && lexemes[i + 1] === ':') {
-      const key = JSON.parse(item);
-      if (stack.at(-1)?.has(key)) fail(`duplicate JSON key: ${key}`);
-      stack.at(-1)?.add(key);
-    }
   }
 }
 
@@ -230,8 +214,9 @@ export function validateDesignAuthority(markdown) {
   const match = normalise(markdown).match(/^---\n([\s\S]*?)\n---(?:\n|$)([\s\S]*)$/);
   if (!match) fail('DESIGN.md requires JSON front matter');
   let profile;
-  try { profile = JSON.parse(match[1]); } catch { fail('DESIGN.md front matter must be valid JSON'); }
-  rejectDuplicateKeys(match[1]);
+  try { profile = parseStrictJson(match[1]); } catch (error) {
+    fail(error.message.startsWith('duplicate JSON key:') ? error.message : 'DESIGN.md front matter must be valid JSON');
+  }
   object(profile, 'profile', ['profile', 'schemaVersion', 'name', 'tokens', 'provenance', 'links'], ['themes']);
   if (profile.profile !== 'design-studio/design-authority' || profile.schemaVersion !== 1) {
     fail('unsupported design authority profile');

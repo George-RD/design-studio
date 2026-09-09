@@ -45,6 +45,8 @@ Stable finding identity derives from rule ID, target, normalized location and re
 node runtime/document-contract/index.mjs proposed-contract.json harness-output/design-system/document-visual-contract.json
 ```
 
+During accepted-system lifecycle work, its output path is inside staging; only the acceptance-owning caller may publish the full verified system/contract set. A successful helper write is not system acceptance.
+
 The helper requires `surface: paginated-artifact`, `rendererNeutral: true`, a defined default page size, typography/colour/spacing/furniture/component objects, pagination rules and QA arrays. It does not generate design values, inspect business content or embed renderer code. Exit `0` means the artifact was published; exit `2` means invalid contract/JSON.
 
 ## Migration boundary
@@ -69,3 +71,16 @@ Resolve the helper relative to the installed skill. `export` creates a new recei
 Exit `0` means a valid inspection, validation, export or parity result. Inspection may explicitly return `legacy-unprofiled`; that is not validation. Exit `2` means invalid shape/semantics or failed/incomplete parity. Exit `1` means an I/O or unexpected runtime error, including an existing export path. JSON results are written to stdout; validation/runtime errors go to stderr. Parity failures include stable finding IDs such as `token-value-drift`, `semantic-role-drift` and `provenance-drift`.
 
 CSS comparison is exact deterministic text after LF normalization, not arbitrary CSS equivalence. Regenerate differently formatted consumers rather than treating unparsed CSS as proven. See `references/design-authority/profile.md` for the supported literal subset, ownership and legacy migration boundary. No network or third-party package is used.
+
+## Accepted design-system lifecycle
+
+`system-lifecycle/index.mjs` implements `verify_design_system_transition` and `verify_design_system_publication`.
+
+```text
+node runtime/system-lifecycle/index.mjs verify < transition-request.json
+node runtime/system-lifecycle/index.mjs publication < publication-readback.json
+```
+
+Both operations read one JSON value from standard input and write a schema-versioned receipt to standard output. They do not read the supplied evidence paths or write project files. The host captures actual files, rendered measurements and independent approval, then performs recoverable publication; these operations deterministically verify that supplied chain and fresh readback. Exit `0` means a valid receipt, not necessarily accepted/published: callers must check `status`. Exit `2` means invalid arguments, supplied JSON, proof or parity; exit `1` is an unexpected runtime error.
+
+`references/design-authority/lifecycle.md` owns effect preconditions, bundle/proof conventions, host publication/rollback duties and lane integration. Its `lifecycle.schema.json` defines the shared receipt and system-acceptance sidecar. Logical manifests hash LF-normalized UTF-8 content; null means observed absence. Intent/transition digests hash compact JSON with recursively sorted object keys and unescaped Unicode. No new public CLI, network dependency or second visual authority is introduced.

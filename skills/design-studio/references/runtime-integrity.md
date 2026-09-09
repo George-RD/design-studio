@@ -50,6 +50,8 @@ For Studio extend, `workflow.yaml` instead uses `extend-bounded`: one candidate 
 
 For interactive acceptance also verify: the rewritten serve contract starts from it; claimed viewports match measured widths. For Document acceptance verify the complete ordered artifact, page images and physical sizes from that same immutable candidate under the selected Document procedure. These are medium-specific postconditions, not reasons to load another lane.
 
-For extend, acceptance also requires unchanged incumbent authority (including absent outputs and directory membership) and no material violation of inherited visual constraints. The selected extend completion writes a surface result and, when requested, a proposed reusable delta; it bypasses global codification.
+For extend, acceptance also requires unchanged incumbent authority (including absent outputs and directory membership) and no material violation of inherited visual constraints. The selected extend completion writes a surface result and, when requested, a proposed reusable delta. Applying that delta additionally requires the separately accepted system lifecycle.
 
 Directory existence is not acceptance. If a postcondition fails, halt and preserve evidence rather than publishing/codifying the tree.
+
+The accepted system lifecycle in `references/design-authority/lifecycle.md` binds a separate system-acceptance sidecar to this immutable surface receipt. It records actual authority revisions and staleness only after verified publication; local preserve/none never writes shared authority.

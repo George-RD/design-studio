@@ -65,7 +65,7 @@ class ExtendWorkflowTests(unittest.TestCase):
         self.assertEqual("references/extend.md", steps["explore_extension"]["procedure"])
         self.assertIn("extend-bounded", workflow["schemas"]["directionAssignment"]["properties"]["mode"]["enum"])
 
-    def test_accepted_extension_cannot_enter_global_codification(self):
+    def test_surface_completion_cannot_publish_a_global_delta(self):
         workflow = workflow_contract()
         steps = {step["id"]: step for step in workflow["steps"]}
         self.assertEqual(
@@ -83,7 +83,8 @@ class ExtendWorkflowTests(unittest.TestCase):
         )
         for policy in workflow["modePolicies"]["extend"]["completion"].values():
             self.assertTrue(preserved.isdisjoint(policy["outputs"]))
-        self.assertEqual("report", steps["complete_extension"]["next"])
+        self.assertEqual([{"when": "finishAcceptance.systemEffect == extend", "next": "codify"},
+                          {"when": "default", "next": "verify_system_transition"}], steps["complete_extension"]["branches"])
         self.assertEqual("halt", steps["reject_extension"]["next"])
         self.assertEqual(["extensionResult"], steps["reject_extension"]["outputs"])
         effects = workflow["modePolicies"]["extend"]["completion"]
@@ -122,8 +123,8 @@ class ExtendWorkflowTests(unittest.TestCase):
         self.assertIn("implementation effort", steps["evaluate"]["explicitlyExcluded"])
         self.assertIn("prior scores", steps["evaluate"]["explicitlyExcluded"])
 
-    def test_end_to_end_scenarios_preserve_authority_and_bound_the_handoff(self):
-        """Validate supplied intents and declared complete paths, not generated UI quality."""
+    def test_surface_scenarios_preserve_authority_and_bound_the_handoff(self):
+        """Preserve completes; reuse stops at the surface proposal before the #93 boundary."""
         fixture_root = ROOT / "test/fixtures/extend"
         cases = sorted(fixture_root.glob("*/fixture.json"))
         self.assertEqual(4, len(cases))
@@ -165,7 +166,11 @@ class ExtendWorkflowTests(unittest.TestCase):
                     destinations.update(step.get("transitions", {}).values())
                     destinations.update(branch["next"] for branch in step.get("branches", []))
                     self.assertIn(after, destinations, (case["id"], before, after))
-                self.assertIn(steps[route[-1]]["termination"], ("complete", "halted"))
+                if expected.get("handoff") == "accepted-system-lifecycle":
+                    self.assertEqual("complete_extension", route[-1])
+                    self.assertEqual("proposed-only", expected["publicationState"])
+                else:
+                    self.assertIn(steps[route[-1]]["termination"], ("complete", "halted"))
                 if expected["status"] == "accepted":
                     self.assertIn("evaluate", route)
                     self.assertIn("accept", route)
@@ -254,7 +259,8 @@ class ExtendWorkflowTests(unittest.TestCase):
             "Publication needs a current entry guard, not only an earlier accepted receipt",
         )
         self.assertEqual("reject_extension", publication["otherwise"])
-        self.assertEqual("report", publication["next"])
+        self.assertNotIn("next", publication)
+        self.assertNotIn("publish_codification", [row["next"] for row in publication["branches"]])
         self.assertEqual(["extensionResult"], steps[publication["otherwise"]]["outputs"])
 
     def test_extension_authority_is_checked_before_resuming_or_publishing(self):

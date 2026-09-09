@@ -1,0 +1,355 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://design-studio.local/schemas/system-lifecycle.schema.json",
+  "title": "Accepted design-system transition receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "status",
+    "requestedEffect",
+    "plannedEffect",
+    "systemEffect",
+    "authorityBefore",
+    "authorityAfter",
+    "authorityRevisionBefore",
+    "authorityRevisionAfter",
+    "derivedOutputs",
+    "invalidatedDownstream",
+    "provenance"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "status": {
+      "enum": [
+        "candidate",
+        "rejected",
+        "unchanged",
+        "verified-transition",
+        "published",
+        "rolled-back"
+      ]
+    },
+    "requestedEffect": {
+      "type": "string"
+    },
+    "plannedEffect": {
+      "type": "string"
+    },
+    "systemEffect": {
+      "type": "string"
+    },
+    "authorityBefore": {
+      "$ref": "#/$defs/manifest"
+    },
+    "authorityAfter": {
+      "$ref": "#/$defs/manifest"
+    },
+    "authorityRevisionBefore": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "authorityRevisionAfter": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "derivedOutputs": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/manifest"
+        },
+        {
+          "const": {}
+        }
+      ]
+    },
+    "invalidatedDownstream": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "role",
+          "authorityBefore",
+          "replacementRevision"
+        ],
+        "properties": {
+          "role": {
+            "const": "visual-design"
+          },
+          "authorityBefore": {
+            "$ref": "#/$defs/manifest"
+          },
+          "replacementRevision": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "runId",
+        "intentDigest",
+        "systemAcceptance",
+        "surfaceAcceptance"
+      ],
+      "properties": {
+        "runId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "intentDigest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "systemAcceptance": {
+          "$ref": "#/$defs/reference"
+        },
+        "surfaceAcceptance": {
+          "$ref": "#/$defs/reference"
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/reference"
+          }
+        },
+        "publication": {
+          "$ref": "#/$defs/reference"
+        }
+      }
+    },
+    "failure": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "$defs": {
+    "reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "design",
+        "designDna",
+        "tokensCss",
+        "skillDesign",
+        "skillTokensCss",
+        "skillIndex",
+        "skillDesignDna",
+        "documentVisualContract",
+        "skillDocumentVisualContract"
+      ],
+      "properties": {
+        "design": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "designDna": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "tokensCss": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "skillDesign": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "skillTokensCss": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "skillIndex": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "skillDesignDna": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "documentVisualContract": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "skillDocumentVisualContract": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "systemAcceptance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "status",
+        "runId",
+        "intentDigest",
+        "systemEffect",
+        "before",
+        "candidate",
+        "surfaceAcceptance",
+        "evidence",
+        "reusableRule",
+        "retainsVisualWorld"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "status": {
+          "enum": [
+            "candidate",
+            "rejected",
+            "accepted"
+          ]
+        },
+        "runId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "intentDigest": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "systemEffect": {
+          "type": "string",
+          "description": "Validated against Design Intent, which owns effect vocabulary."
+        },
+        "before": {
+          "$ref": "#/$defs/manifest"
+        },
+        "candidate": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/manifest"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "surfaceAcceptance": {
+          "$ref": "#/$defs/reference"
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/reference"
+          }
+        },
+        "reusableRule": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1
+        },
+        "retainsVisualWorld": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

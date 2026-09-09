@@ -17,6 +17,14 @@ EXPECTED_DOMAINS = {
     "orchestration-runtime": "design-studio",
     "copy-offer": "growth-arsenal",
 }
+# New locally owned concepts do not rewrite the frozen migration inventory.
+POST_BASELINE_CONCEPTS = {
+    "accepted-design-system-lifecycle": {
+        "canonicalOwner": "design-studio",
+        "localAuthorities": ["skills/design-studio/references/design-authority/lifecycle.md"],
+        "externalOverlaps": [],
+    },
+}
 RETIRED_DUPLICATE_PATHS = {"references/methodology.md"}
 
 
@@ -44,6 +52,8 @@ class MethodAuthorityMapTests(unittest.TestCase):
         record = self.load(MAP_PATH)
         migration = self.load(MIGRATION_PATH)
         baseline = {item["id"]: item for item in migration["conceptMap"]}
+        self.assertFalse(set(baseline) & set(POST_BASELINE_CONCEPTS))
+        baseline.update(POST_BASELINE_CONCEPTS)
         concepts = {item["conceptId"]: item for item in record["concepts"]}
         self.assertEqual(len(concepts), len(record["concepts"]))
         self.assertEqual(set(baseline), set(concepts))

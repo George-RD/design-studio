@@ -8,7 +8,7 @@ The template produces a self-contained skill carrying a project's visual DNA (`d
 
 ## How codification instantiates it
 
-For newly profiled Studio systems, assemble this skill inside the run-local `designAuthorityStage`, not in the accepted output directory. Follow `references/design-authority/profile.md` for validation, staged parity and recoverable publication. Historical unprofiled systems remain readable.
+For newly profiled Studio systems, assemble this skill inside the run-local `designAuthorityStage`, not in the accepted output directory. Follow `references/design-authority/profile.md` for validation/parity and `references/design-authority/lifecycle.md` for separate system acceptance and recoverable publication. Historical unprofiled systems remain readable.
 
 During codification the orchestrator:
 
@@ -24,9 +24,9 @@ During codification the orchestrator:
 4. Copies the candidate profile's derived CSS into staged `assets/tokens.css`, after comparing it with accepted source token values.
 5. If an accepted Document run produced `harness-output/design-system/document-visual-contract.json`, copies it into the skill root unchanged. Do not synthesize one for interactive-only systems.
 6. For profiled systems, copies accepted `DESIGN.md` into the skill root without independently editing its profile or guidance. Use `check_design_authority_parity` against the actual CSS and generated skill, including linked DNA and optional Document contract hashes. New codification follows `references/design-authority/profile.md`; historical unprofiled systems remain readable without synthesized provenance.
-7. Publishes the verified staged skill to `harness-output/design-system/skill/<project-slug>-design/` only through `publish_codification`, after staged parity passes. Failed publication restores incumbent outputs and halts rather than completing with a partial skill.
+7. Publishes the verified staged skill to `harness-output/design-system/skill/<project-slug>-design/` only through the accepted lane's recoverable publication, after staged parity and `verify_design_system_transition` pass; Studio uses `publish_codification`. Confirm actual readback through `verify_design_system_publication` before reporting success. Failed publication restores incumbent outputs and halts rather than completing with a partial skill.
 
-For paginated work, `document-visual-contract.json` owns page geometry, furniture, pagination, document component recipes and print QA. `design-dna.md` and tokens still own the wider visual system. Renderer adapters are subordinate examples, never canonical design authority.
+For paginated work, `document-visual-contract.json` owns page geometry, furniture, pagination, document component recipes and print QA. DNA owns visual reasoning/motifs/motion. The portable `DESIGN.md` owns shared tokens and guidance; generated CSS and this index do not add canonical rules. Renderer adapters are subordinate examples, never canonical design authority.
 
 ## Install paths per harness
 

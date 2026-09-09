@@ -9,6 +9,7 @@ This file defines the **host-neutral deterministic seam** used by the Design Stu
 - `references/document/document.md` owns the progressively disclosed paginated-artifact procedure without creating a second copy of the Studio graph.
 - `references/runtime-integrity.md` owns the integrity invariants for roots, capability evidence, resume, append-only events, unattended assignment and final acceptance.
 - This contract owns deterministic operation names, inputs/outputs and failure semantics used by supported lanes.
+- `references/design-authority/lifecycle.md` and its receipt schema own lane-neutral accepted system transitions; profile validation alone never publishes authority.
 - This contract does not restate those schemas. Callers obey the intent/lane authority plus `references/runtime-integrity.md`.
 - Source-blind Visual Director/Evaluator boundaries and immutable completed iterations are preconditions. No adapter or renderer may weaken them.
 
@@ -18,6 +19,8 @@ The seam describes **what must happen**, not which language or renderer performs
 
 | Operation | Inputs | Result / durable evidence |
 |---|---|---|
+| `verify_design_system_transition` | validated intent, frozen/current incumbent, staged consumers and separately bound system/surface approval with actual captured evidence | unchanged result, verified staging transition or explicit candidate/rejection/error; never writes global authority |
+| `verify_design_system_publication` | frozen transition request, freshly read outputs and host publication/restoration journal | applied effect and before/after revision, provenance, output digests and scoped staleness only when readback verifies; incomplete recovery blocks completion |
 | `validate_design_intent` | supplied Design Intent result after host input mapping and authority resolution | validated lane/mode/surface/authority/capability/procedure result, or explicit invalid input; this is the highest behavioural test seam before lane execution |
 | `initialise` | prompt identity, mode, requested budget, optional run ID | create/reopen run contract; write `run.json`, initialise scores/evidence and record completion through `append_event` |
 | `resume_validate` | run identity plus recorded manifests/events/immutable iteration evidence | first incomplete valid step/procedure action or explicit invalid/blocked result; never overwrite completed evidence |
