@@ -39,3 +39,4 @@ jobs:
           python3 -m unittest discover -s test -p 'test_design_intent*.py' -v
           python3 -m unittest discover -s test -p 'test_extend_workflow.py' -v
           python3 -m unittest discover -s test -p 'test_design_authority_contract.py' -v
+          python3 -m unittest discover -s test -p 'test_system_lifecycle_contract.py' -v
