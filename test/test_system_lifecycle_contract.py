@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 import unittest
 
@@ -16,6 +17,27 @@ LEAF = 'references/design-authority/lifecycle.md'
 
 
 class SystemLifecycleContractTests(unittest.TestCase):
+    def test_rolled_back_receipt_requires_a_nonempty_failure(self):
+        schema = json.loads((SKILL / 'references/design-authority/lifecycle.schema.json').read_text())
+        validator = Draft202012Validator(schema)
+        receipt = json.loads(invoke(request_for()).stdout)
+        receipt['status'] = 'rolled-back'
+        self.assertTrue(list(validator.iter_errors(receipt)), 'A rollback must retain its concrete failure')
+        receipt['failure'] = ''
+        self.assertTrue(list(validator.iter_errors(receipt)))
+        receipt['failure'] = 'Write failed; incumbent restored and readback verified.'
+        validator.validate(receipt)
+
+    def test_runtime_viewport_policy_matches_workflow(self):
+        workflow = yaml.safe_load((SKILL / 'workflow.yaml').read_text())['workflow']
+        script = 'import {SYSTEM_ACCEPTANCE_VIEWPORTS} from ' + json.dumps((SKILL / 'runtime/system-lifecycle/index.mjs').as_uri()) + ';'
+        script += 'console.log(JSON.stringify(SYSTEM_ACCEPTANCE_VIEWPORTS));'
+        result = subprocess.run(['node', '--input-type=module', '-e', script], text=True,
+                                capture_output=True, check=True, timeout=15)
+        actual = json.loads(result.stdout)
+        expected = [dict(width=size[0], height=size[1]) for size in workflow['defaults']['viewports'].values()]
+        self.assertEqual(expected, actual)
+
     def test_schema_validates_runtime_receipt_and_system_acceptance(self):
         schema = json.loads((SKILL / 'references/design-authority/lifecycle.schema.json').read_text())
         Draft202012Validator.check_schema(schema)

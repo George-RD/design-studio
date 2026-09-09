@@ -48,26 +48,10 @@
       "$ref": "#/$defs/manifest"
     },
     "authorityRevisionBefore": {
-      "anyOf": [
-        {
-          "type": "string",
-          "pattern": "^[a-f0-9]{64}$"
-        },
-        {
-          "type": "null"
-        }
-      ]
+      "$ref": "#/$defs/optionalDigest"
     },
     "authorityRevisionAfter": {
-      "anyOf": [
-        {
-          "type": "string",
-          "pattern": "^[a-f0-9]{64}$"
-        },
-        {
-          "type": "null"
-        }
-      ]
+      "$ref": "#/$defs/optionalDigest"
     },
     "derivedOutputs": {
       "anyOf": [
@@ -178,103 +162,31 @@
       ],
       "properties": {
         "design": {
-          "anyOf": [
-            {
-              "type": "string",
-              "pattern": "^[a-f0-9]{64}$"
-            },
-            {
-              "type": "null"
-            }
-          ]
+          "$ref": "#/$defs/optionalDigest"
         },
         "designDna": {
-          "anyOf": [
-            {
-              "type": "string",
-              "pattern": "^[a-f0-9]{64}$"
-            },
-            {
-              "type": "null"
-            }
-          ]
+          "$ref": "#/$defs/optionalDigest"
         },
         "tokensCss": {
-          "anyOf": [
-            {
-              "type": "string",
-              "pattern": "^[a-f0-9]{64}$"
-            },
-            {
-              "type": "null"
-            }
-          ]
+          "$ref": "#/$defs/optionalDigest"
         },
         "skillDesign": {
-          "anyOf": [
-            {
-              "type": "string",
-              "pattern": "^[a-f0-9]{64}$"
-            },
-            {
-              "type": "null"
-            }
-          ]
+          "$ref": "#/$defs/optionalDigest"
         },
         "skillTokensCss": {
-          "anyOf": [
-            {
-              "type": "string",
-              "pattern": "^[a-f0-9]{64}$"
-            },
-            {
-              "type": "null"
-            }
-          ]
+          "$ref": "#/$defs/optionalDigest"
         },
         "skillIndex": {
-          "anyOf": [
-            {
-              "type": "string",
-              "pattern": "^[a-f0-9]{64}$"
-            },
-            {
-              "type": "null"
-            }
-          ]
+          "$ref": "#/$defs/optionalDigest"
         },
         "skillDesignDna": {
-          "anyOf": [
-            {
-              "type": "string",
-              "pattern": "^[a-f0-9]{64}$"
-            },
-            {
-              "type": "null"
-            }
-          ]
+          "$ref": "#/$defs/optionalDigest"
         },
         "documentVisualContract": {
-          "anyOf": [
-            {
-              "type": "string",
-              "pattern": "^[a-f0-9]{64}$"
-            },
-            {
-              "type": "null"
-            }
-          ]
+          "$ref": "#/$defs/optionalDigest"
         },
         "skillDocumentVisualContract": {
-          "anyOf": [
-            {
-              "type": "string",
-              "pattern": "^[a-f0-9]{64}$"
-            },
-            {
-              "type": "null"
-            }
-          ]
+          "$ref": "#/$defs/optionalDigest"
         }
       }
     },
@@ -350,6 +262,36 @@
           "type": "boolean"
         }
       }
+    },
+    "optionalDigest": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "rolled-back"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "required": [
+          "failure"
+        ]
+      }
+    }
+  ]
 }

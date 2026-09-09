@@ -9,3 +9,5 @@ These fixtures prove acceptance binding, deterministic parity and publication or
 restoration readback. They are not screenshots, client design defaults, live host
 acceptance, or fault-injected filesystem transactions. Host execution and rendered
 dogfood remain the #97 release-proof boundary.
+
+Mechanical snapshots are emitted by the installed detector from synthetic source/view/page observations and bound to the supplied tree manifest. They are not fabricated clean IDs, but remain synthetic contract proof, not real browser or page inspection. Regression tests also cover effective shared Document aliases/themes, exact required viewports, current mechanical targets, content-derived IDs and split UTF-8 input.

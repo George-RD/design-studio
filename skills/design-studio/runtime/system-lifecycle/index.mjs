@@ -3,6 +3,7 @@ import { parseStrictJson } from '../json.mjs';
 import { realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { validateDesignIntent } from '../design-intent/index.mjs';
+import { evaluateMechanicalSnapshot } from '../mechanical/index.mjs';
 import { validateDesignAuthority, inspectDesignAuthority, checkDesignAuthorityParity } from '../design-authority/index.mjs';
 import { validateDocumentVisualContract } from '../document-contract/index.mjs';
 
@@ -14,6 +15,10 @@ export class SystemLifecycleInputError extends Error {
 // its proven project paths and supplies null for an observed absent output.
 const OUTPUTS = ['design', 'designDna', 'tokensCss', 'skillDesign', 'skillTokensCss',
   'skillIndex', 'skillDesignDna', 'documentVisualContract', 'skillDocumentVisualContract'];
+// Runtime mirror of workflow.defaults.viewports; the integration contract checks parity.
+export const SYSTEM_ACCEPTANCE_VIEWPORTS = Object.freeze([
+  Object.freeze({ width: 1440, height: 900 }), Object.freeze({ width: 390, height: 844 }),
+]);
 const normalise = (text) => text.replace(/\r\n?/g, '\n');
 const digest = (text) => createHash('sha256').update(normalise(text)).digest('hex');
 const canonical = (value) => JSON.stringify(value, (_key, item) =>
@@ -86,6 +91,7 @@ function verifySurfaceProof(request, acceptance, rows) {
       (request.intent.lane === 'Document' ? accepted.artifactValidated !== true : accepted.serveValidated !== true) ||
       accepted.iterationIntegrity !== true ||
       !Number.isInteger(accepted.sourceIteration) || accepted.sourceIteration < 1) fail('current final-tree acceptance is required');
+  path(accepted.selectedTree);
   const byPath = new Map(rows.map((item) => [item.reference.path, item]));
   const tree = byPath.get(accepted.treeManifest);
   if (!tree || tree.data.treePath !== accepted.selectedTree || !Object.keys(object(tree.data.files, 'tree files')).length) {
@@ -95,16 +101,34 @@ function verifySurfaceProof(request, acceptance, rows) {
     path(name);
     if (typeof hash !== 'string' || !/^[a-f0-9]{64}$/.test(hash)) fail('tree file requires SHA-256');
   }
-  const mechanical = rows.find((item) => item.data.snapshotId === accepted.mechanicalSnapshotId);
-  if (!mechanical || !Array.isArray(mechanical.data.passes) || !mechanical.data.passes.length ||
-      mechanical.data.passes.some((pass) => !pass || pass.completed !== true) || !Array.isArray(mechanical.data.findings)) {
-    fail('accepted mechanical snapshot must be current and complete');
-  }
   const kind = request.intent.lane === 'Document' ? 'page-artifact' : 'browser';
-  if (!mechanical.data.passes.some((pass) => pass.kind === kind)) fail('mechanical evidence has the wrong medium');
-  for (const finding of mechanical.data.findings) object(finding, 'mechanical finding');
+  string(accepted.mechanicalSnapshotId, 'acceptance.mechanicalSnapshotId');
+  if (!/^sha256:[a-f0-9]{64}$/.test(accepted.mechanicalSnapshotId)) fail('mechanical snapshot ID must be content-addressed');
+  const captures = rows.filter((item) => item.data.kind === 'mechanical-evidence' &&
+    item.data.snapshot?.snapshotId === accepted.mechanicalSnapshotId);
+  if (captures.length !== 1) fail('one bound current mechanical capture is required');
+  const capture = captures[0].data;
+  if (!equal(capture.treeManifest, tree.reference)) fail('mechanical capture is not bound to the accepted tree');
+  object(capture.observations, 'mechanical observations');
+  object(capture.snapshot, 'mechanical snapshot');
+  string(capture.snapshot.generatedAt, 'mechanical snapshot generatedAt');
+  const mechanical = evaluateMechanicalSnapshot({ ...capture.observations, generatedAt: capture.snapshot.generatedAt });
+  if (!equal(mechanical, capture.snapshot)) fail('mechanical snapshot does not match its captured observations and content-derived ID');
+  if (capture.observations.source.target !== accepted.selectedTree || mechanical.passes.some((pass) => pass.completed !== true) ||
+      !mechanical.passes.some((pass) => pass.kind === kind)) fail('current complete source and rendered mechanical evidence for the accepted tree is required');
+  if (kind === 'browser') {
+    for (const viewport of SYSTEM_ACCEPTANCE_VIEWPORTS) {
+      const passes = capture.observations.browser.filter((pass) => pass.target === `${viewport.width}x${viewport.height}`);
+      if (passes.length !== 1 || !equal(passes[0].requestedViewport, viewport) || !equal(passes[0].actualViewport, viewport)) {
+        fail('mechanical capture must measure each required browser viewport exactly once');
+      }
+    }
+  } else if (capture.observations.browser.length ||
+      !mechanical.passes.some((pass) => pass.kind === kind && pass.target === accepted.selectedTree)) {
+    fail('Document mechanical capture must inspect the accepted page artifact rather than browser viewports');
+  }
   const acknowledged = accepted.acknowledgedPrimaryFindings ?? [];
-  if (!Array.isArray(acknowledged) || mechanical.data.findings.some((finding) =>
+  if (!Array.isArray(acknowledged) || mechanical.findings.some((finding) =>
     finding.status === 'open' && finding.severity === 'primary' && !acknowledged.includes(finding.signature))) {
     fail('unacknowledged primary mechanical finding');
   }
@@ -122,6 +146,36 @@ function verifySurfaceProof(request, acceptance, rows) {
       !size || dimensions.some((key) => !Number.isFinite(size[key]) || size[key] <= 0))) fail('measured rendered dimensions are required');
     if (kind === 'page-artifact' ? !Number.isInteger(rendered.pageCount) || rendered.pageCount !== sizes.length : sizes.length < 2) {
       fail('complete ordered pages or both interactive viewports are required');
+    }
+    if (kind === 'browser' && SYSTEM_ACCEPTANCE_VIEWPORTS.some((viewport) =>
+      sizes.filter((size) => size.width === viewport.width && size.height === viewport.height).length !== 1)) {
+      fail('rendered evidence must include 1440x900 and 390x844 exactly once');
+    }
+  }
+}
+
+function checkDocumentTokenContinuity(before, candidateProfile) {
+  if (before.documentVisualContract === null) return;
+  const contract = object(parseStrictJson(before.documentVisualContract), 'incumbent Document contract');
+  const bindings = object(contract.sharedTokenBindings ?? {}, 'incumbent sharedTokenBindings');
+  if (!Object.keys(bindings).length) return;
+  if (inspectDesignAuthority(before.design).status !== 'valid-profile') {
+    fail('Document acceptance is required when incumbent shared token values cannot be verified');
+  }
+  const previous = validateDesignAuthority(before.design).profile;
+  const themes = new Set([null, ...Object.keys(previous.themes ?? {}), ...Object.keys(candidateProfile.themes ?? {})]);
+  function value(profile, id, theme) {
+    const token = profile.tokens[id];
+    if (!token) fail(`unresolved Document binding: ${id}`);
+    const literal = (theme === null ? undefined : profile.themes?.[theme]?.[id]) ?? token.value;
+    const alias = literal.match(/^\{([^{}]+)\}$/)?.[1];
+    return { type: token.type, value: alias ? value(profile, alias, theme).value : literal };
+  }
+  for (const id of Object.values(bindings)) {
+    for (const theme of themes) {
+      if (!equal(value(previous, id, theme), value(candidateProfile, id, theme))) {
+        fail('Document acceptance is required when a shared binding changes effective value, including aliases and themes');
+      }
     }
   }
 }
@@ -170,6 +224,7 @@ export function verifyDesignSystemTransition(request) {
   if (!candidate) fail('a system mutation requires a candidate');
   if (candidate.design === before.design) fail('a system mutation requires a new canonical authority revision');
   const profile = verifyBundle(request.candidate);
+  if (intent.lane !== 'Document') checkDocumentTokenContinuity(request.before, profile);
   if (intent.systemEffect === 'extend') {
     if (request.before.design === null || inspectDesignAuthority(request.before.design).status !== 'valid-profile') {
       fail('a reusable extension requires profiled authority; explicitly extract legacy conventions first');
@@ -248,8 +303,9 @@ async function main() {
   if (process.argv.length !== 3 || !Object.hasOwn(operations, process.argv[2])) {
     fail('usage: node index.mjs verify|publication < request.json');
   }
-  let input = '';
-  for await (const chunk of process.stdin) input += chunk;
+  const chunks = [];
+  for await (const chunk of process.stdin) chunks.push(chunk);
+  const input = Buffer.concat(chunks).toString('utf8');
   const result = operations[process.argv[2]](parseStrictJson(input));
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }

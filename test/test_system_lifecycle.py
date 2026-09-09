@@ -83,13 +83,40 @@ def seal(request, status='accepted', reusable=None):
     return request
 
 
+def mechanical_proof(tree, document=False, change=None):
+    target = json.loads(tree['content'])['treePath']
+    source = dict(target=target, completed=True, pageTitle='Accepted surface', language='en',
+                  headingOrderValid=True, primaryHeadingCount=1, motionPresent=False, reducedMotionHandled=True)
+    for field in ['semanticControlFailures', 'accessibleNameFailures', 'altTextFailures', 'landmarkFailures',
+                  'focusVisibilityFailures', 'placeholderLinkFailures', 'debugControlFailures']:
+        source[field] = []
+    observations = dict(schemaVersion=1, generatedAt='2026-09-09T00:00:00Z', source=source, browser=[])
+    if document:
+        observations['pageArtifacts'] = [dict(target=target, completed=True, pageCount=2,
+            pageSize=dict(name='A4', widthMm=210, heightMm=297), printableAreaOverflowFailures=[],
+            clippedContentFailures=[], furnitureFailures=[], printContrastFailures=[])]
+    else:
+        for width, height in [(1440, 900), (390, 844)]:
+            view = dict(width=width, height=height)
+            browser = dict(target=f'{width}x{height}', completed=True, requestedViewport=view, actualViewport=view,
+                           scrollWidth=width, clientWidth=width, motionPresent=False, reducedMotionVerified=True)
+            for field in ['contrastFailures', 'clippedContentFailures', 'keyboardFailures', 'focusFailures',
+                          'touchTargetFailures', 'resourceFailures', 'fatalConsoleErrors']:
+                browser[field] = []
+            observations['browser'].append(browser)
+    if change:
+        change(observations)
+    run = subprocess.run(['node', str(SKILL / 'runtime/mechanical/index.mjs')], input=json.dumps(observations),
+                         text=True, encoding='utf-8', capture_output=True, check=True, timeout=15)
+    return artifact('harness-output/runs/lifecycle/finish/mechanical-capture.json', dict(
+        kind='mechanical-evidence', treeManifest=reference(tree), observations=observations, snapshot=json.loads(run.stdout)))
+
+
 def request_for(mode='create', effect='establish'):
     tree = artifact('harness-output/runs/lifecycle/finish/tree-manifest.json',
                     {'treePath': 'harness-output/runs/lifecycle/finish/selected-site',
                      'files': {'index.html': 'b' * 64}})
-    mechanical = artifact('harness-output/runs/lifecycle/finish/mechanical.json',
-                          {'snapshotId': 'c' * 64, 'passes': [{'kind': 'source', 'completed': True},
-                           {'kind': 'browser', 'completed': True}], 'findings': []})
+    mechanical = mechanical_proof(tree)
     rendered = artifact('harness-output/runs/lifecycle/finish/rendered.json',
                         {'kind': 'browser', 'treeManifest': reference(tree), 'status': 'verified',
                          'viewports': [{'width': 1440, 'height': 900}, {'width': 390, 'height': 844}],
@@ -97,7 +124,7 @@ def request_for(mode='create', effect='establish'):
     acceptance = artifact('harness-output/runs/lifecycle/finish/acceptance.json',
                            dict(status='accepted', selectedTree=json.loads(tree['content'])['treePath'],
                                 sourceIteration=2, treeManifest=tree['path'], serveValidated=True,
-                                mechanicalSnapshotId='c' * 64, viewportEvidence=[rendered['path']],
+                                mechanicalSnapshotId=json.loads(mechanical['content'])['snapshot']['snapshotId'], viewportEvidence=[rendered['path']],
                                 iterationIntegrity=True))
     request = dict(schemaVersion=1, intent=intent_for(mode, effect),
                    before={key: None for key in KEYS}, candidate=bundle_for(acceptance),
@@ -105,15 +132,14 @@ def request_for(mode='create', effect='establish'):
     return seal(request)
 
 
-def document_request():
+def document_request(binding="color.ink"):
     request = request_for('document-create', 'establish')
     accepted = json.loads(request['acceptance']['content'])
     accepted.pop('serveValidated')
     accepted['artifactValidated'] = True
+    request['evidence'][1] = mechanical_proof(request['evidence'][0], document=True)
+    accepted['mechanicalSnapshotId'] = json.loads(request['evidence'][1]['content'])['snapshot']['snapshotId']
     request['acceptance'] = artifact(request['acceptance']['path'], accepted)
-    mechanical = json.loads(request['evidence'][1]['content'])
-    mechanical['passes'][1]['kind'] = 'page-artifact'
-    request['evidence'][1] = artifact(request['evidence'][1]['path'], mechanical)
     rendered = json.loads(request['evidence'][2]['content'])
     rendered.pop('viewports')
     rendered.update(kind='page-artifact', pageCount=2,
@@ -121,8 +147,8 @@ def document_request():
                     evidence=['page-1.png', 'page-2.png'])
     request['evidence'][2] = artifact(request['evidence'][2]['path'], rendered)
     document = json.loads((ROOT / 'test/fixtures/document-artifact/horaxon-foundation-sprint/document-visual-contract.json').read_text())
-    document['sharedTokenBindings'] = {'colour.roles.ink': 'color.ink'}
-    document['colour']['roles']['ink'] = '{color.ink}'
+    document['sharedTokenBindings'] = {'colour.roles.ink': binding}
+    document['colour']['roles']['ink'] = '{' + binding + '}'
     document_text = text(document)
     request['candidate'] = bundle_for(request['acceptance'], lambda p: p['links'].update(documentVisualContract={
         'path': 'harness-output/design-system/document-visual-contract.json', 'sha256': digest(document_text)}))
@@ -132,6 +158,155 @@ def document_request():
 
 
 class SystemLifecycleTests(unittest.TestCase):
+    def test_cli_decodes_split_utf8_without_changing_bound_approval(self):
+        request = seal(request_for(), reusable='Café — 文字')
+        payload = json.dumps(request, ensure_ascii=False).encode('utf-8')
+        split = payload.index('é'.encode('utf-8')) + 1
+        script = """
+        import { readFileSync } from 'node:fs';
+        const data = readFileSync(0);
+        const split = Number(process.argv[1]);
+        Object.defineProperty(process, 'stdin', { value: {
+          async *[Symbol.asyncIterator]() {
+            yield data.subarray(0, split);
+            await new Promise(setImmediate);
+            yield data.subarray(split);
+          }
+        }});
+        const file = process.argv[2];
+        const url = process.argv[3];
+        process.argv = [process.execPath, file, 'verify'];
+        await import(url);
+        """
+        result = subprocess.run(['node', '--input-type=module', '-e', script, str(split), str(RUNTIME), RUNTIME.as_uri()],
+                                input=payload, capture_output=True, timeout=15)
+        self.assertEqual(0, result.returncode, result.stderr.decode())
+        self.assertEqual('verified-transition', json.loads(result.stdout)['status'])
+        self.assertEqual(reference(request['approval']), json.loads(result.stdout)['provenance']['systemAcceptance'])
+
+    def test_missing_or_non_content_addressed_mechanical_ids_fail_closed(self):
+        for invalid in [None, '', 0, 'claimed-snapshot']:
+            request = request_for()
+            accepted = json.loads(request['acceptance']['content'])
+            capture = json.loads(request['evidence'][1]['content'])
+            if invalid is None:
+                accepted.pop('mechanicalSnapshotId')
+                capture['snapshot'].pop('snapshotId')
+            else:
+                accepted['mechanicalSnapshotId'] = capture['snapshot']['snapshotId'] = invalid
+            request['acceptance'] = artifact(request['acceptance']['path'], accepted)
+            request['candidate'] = bundle_for(request['acceptance'])
+            request['evidence'][1] = artifact(request['evidence'][1]['path'], capture)
+            seal(request)
+            self.assertEqual(2, invoke(request).returncode)
+
+    def test_valid_mechanical_snapshots_still_require_current_targets_and_measured_views(self):
+        changes = [
+            lambda row: row['source'].update(target='harness-output/runs/old/selected-site'),
+            lambda row: row['source'].update(completed=False, reason='source unavailable'),
+            lambda row: row['browser'][0].update(target='other view'),
+            lambda row: row['browser'][1].update(requestedViewport={'width': 800, 'height': 600},
+                                                actualViewport={'width': 800, 'height': 600}),
+            lambda row: row['browser'].append(copy.deepcopy(row['browser'][0])),
+        ]
+        for change in changes:
+            request = request_for()
+            request['evidence'][1] = mechanical_proof(request['evidence'][0], change=change)
+            accepted = json.loads(request['acceptance']['content'])
+            accepted['mechanicalSnapshotId'] = json.loads(request['evidence'][1]['content'])['snapshot']['snapshotId']
+            request['acceptance'] = artifact(request['acceptance']['path'], accepted)
+            request['candidate'] = bundle_for(request['acceptance'])
+            seal(request)
+            self.assertEqual(2, invoke(request).returncode)
+
+    def test_recomputed_primary_findings_need_exact_current_acceptance(self):
+        request = request_for()
+        request['evidence'][1] = mechanical_proof(request['evidence'][0],
+                                                 change=lambda row: row['source'].update(pageTitle=''))
+        snapshot = json.loads(request['evidence'][1]['content'])['snapshot']
+        accepted = json.loads(request['acceptance']['content'])
+        accepted['mechanicalSnapshotId'] = snapshot['snapshotId']
+        for acknowledged, expected in [([], 2), (['old-signature'], 2), ([snapshot['findings'][0]['signature']], 0)]:
+            accepted['acknowledgedPrimaryFindings'] = acknowledged
+            request['acceptance'] = artifact(request['acceptance']['path'], accepted)
+            request['candidate'] = bundle_for(request['acceptance'])
+            seal(request)
+            result = invoke(request)
+            self.assertEqual(expected, result.returncode, result.stderr)
+
+    def test_unrelated_browser_token_delta_and_document_accepted_shared_delta_remain_supported(self):
+        for document in [False, True]:
+            request = document_request('color.action') if document else request_for('extend', 'extend')
+            request['intent']['systemEffect'] = 'extend'
+            if document:
+                request['intent']['visualAuthority'] = 'document-visual-contract'
+            request['before'] = document_request('color.action')['candidate']
+            contract = request['before']['documentVisualContract']
+            def update(profile):
+                profile['links']['documentVisualContract'] = {
+                    'path': 'harness-output/design-system/document-visual-contract.json', 'sha256': digest(contract)}
+                if document:
+                    profile['tokens']['color.ink']['value'] = '#222222'
+                else:
+                    profile['tokens']['space.unit']['value'] = '8px'
+            request['candidate'] = bundle_for(request['acceptance'], update)
+            request['candidate'].update(documentVisualContract=contract, skillDocumentVisualContract=contract)
+            seal(request, reusable='Accepted reusable delta')
+            result = invoke(request)
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertEqual('verified-transition', json.loads(result.stdout)['status'])
+
+    def test_browser_changes_to_effective_document_tokens_require_page_acceptance(self):
+        for binding, change in [
+            ('color.ink', lambda p: p['tokens']['color.ink'].update(value='#222222')),
+            ('color.action', lambda p: p['tokens']['color.ink'].update(value='#222222')),
+            ('color.action', lambda p: p['themes']['dark'].update({'color.ink': '#dddddd'})),
+        ]:
+            with self.subTest(binding=binding, change=change):
+                request = request_for('overhaul', 'replace')
+                request['before'] = document_request(binding)['candidate']
+                document = request['before']['documentVisualContract']
+                def update(profile):
+                    profile['links']['documentVisualContract'] = {
+                        'path': 'harness-output/design-system/document-visual-contract.json', 'sha256': digest(document)}
+                    change(profile)
+                request['candidate'] = bundle_for(request['acceptance'], update)
+                request['candidate'].update(documentVisualContract=document, skillDocumentVisualContract=document)
+                seal(request)
+                self.assertEqual(2, invoke(request).returncode, 'Unchanged contract bytes do not mean unchanged page styling')
+
+    def test_mechanical_snapshot_identity_and_tree_binding_are_verified(self):
+        request = request_for()
+        mechanical = json.loads(request['evidence'][1]['content'])
+        snapshot = mechanical.get('snapshot', mechanical)
+        snapshot['snapshotId'] = 'sha256:' + 'f' * 64
+        accepted = json.loads(request['acceptance']['content'])
+        accepted['mechanicalSnapshotId'] = snapshot['snapshotId']
+        request['acceptance'] = artifact(request['acceptance']['path'], accepted)
+        request['candidate'] = bundle_for(request['acceptance'])
+        request['evidence'][1] = artifact(request['evidence'][1]['path'], mechanical)
+        seal(request)
+        self.assertEqual(2, invoke(request).returncode, 'A claimed ID cannot replace the runtime content-derived ID')
+        request = request_for()
+        mechanical = json.loads(request['evidence'][1]['content'])
+        mechanical['treeManifest'] = {'path': request['evidence'][0]['path'], 'sha256': 'f' * 64}
+        request['evidence'][1] = artifact(request['evidence'][1]['path'], mechanical)
+        seal(request)
+        self.assertEqual(2, invoke(request).returncode, 'Mechanical observations must bind to the accepted tree')
+
+    def test_browser_acceptance_requires_each_configured_viewport_once(self):
+        for sizes in [
+            [{'width': 800, 'height': 600}, {'width': 801, 'height': 600}],
+            [{'width': 1440, 'height': 900}, {'width': 1440, 'height': 900}],
+            [{'width': 390, 'height': 844}, {'width': 390, 'height': 844}],
+        ]:
+            request = request_for()
+            rendered = json.loads(request['evidence'][2]['content'])
+            rendered['viewports'] = sizes
+            request['evidence'][2] = artifact(request['evidence'][2]['path'], rendered)
+            seal(request)
+            self.assertEqual(2, invoke(request).returncode)
+
     def test_establish_requires_surface_and_system_acceptance_for_the_exact_candidate(self):
         request = request_for()
         result = invoke(request)
@@ -402,10 +577,10 @@ class SystemLifecycleTests(unittest.TestCase):
         request = request_for()
         cases = [
             (0, lambda row: row.update(treePath='another-tree')),
-            (1, lambda row: row['passes'][0].update(completed=False)),
-            (1, lambda row: row.update(passes=[None])),
-            (1, lambda row: row.update(findings=[None])),
-            (1, lambda row: row.update(findings=[{'status': 'open', 'severity': 'primary', 'signature': 'unacknowledged'}])),
+            (1, lambda row: row['snapshot']['passes'][0].update(completed=False)),
+            (1, lambda row: row['snapshot'].update(passes=[None])),
+            (1, lambda row: row['snapshot'].update(findings=[None])),
+            (1, lambda row: row['snapshot'].update(findings=[{'status': 'open', 'severity': 'primary', 'signature': 'unacknowledged'}])),
             (2, lambda row: row.update(evidence=[])),
             (2, lambda row: row['viewports'][0].update(width=0)),
             (2, lambda row: row['treeManifest'].update(sha256='e' * 64)),
