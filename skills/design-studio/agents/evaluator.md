@@ -104,6 +104,16 @@ Interactive: report concrete interaction evidence and realistic edge cases.
 
 Document: follow the expected reading path from first page through continuation/table/signature/final-page cases. Record what remains clear across page boundaries. Do not invent interaction evidence for static pages.
 
+## Pass 3.5: label and metadata integrity
+
+Before scoring, inspect visible microcopy that appears to organise or annotate the design.
+
+Flag labels, numbers, badges, indexes, eyebrows or status markers when they look meaningful but do not correspond to real navigation, state, sequence/order, source/provenance or necessary comprehension. Typical failures include pseudo-system labels such as `MODEL / CURRENT POSITION`, `FRAMEWORK / 01`, `SECTION / 03`, fake IDs, arbitrary A/B/C markers, unexplained counters, gratuitous slash-separated metadata and repetitive all-caps eyebrows.
+
+Do not penalise a real date, service number, process step, product state, data label or source category merely because it is small or uppercase. The test is semantic: would removing this element reduce the user's understanding or ability to orient? If not, treat it as decorative metadata and record the affected zone.
+
+Repeated decorative metadata is evidence against Design Quality and Originality because it adds noise and can make otherwise distinct work feel templated.
+
 ## Pass 4: score
 
 Score 1–10. Most competent first builds are 4–6. A 7 is clearly designed and professionally complete; 9 is rare.

@@ -266,6 +266,17 @@ class MethodKernelRoutingTests(unittest.TestCase):
         self.assertIn("Visual Director never receives HTML", skill)
         self.assertIn("Evaluator never receives source", skill)
 
+    def test_visible_labels_must_carry_semantic_information(self) -> None:
+        director = (SKILL_ROOT / "agents" / "design-agent.md").read_text(encoding="utf-8")
+        evaluator = (SKILL_ROOT / "agents" / "evaluator.md").read_text(encoding="utf-8")
+
+        self.assertIn("Do not manufacture hierarchy with decorative metadata", director)
+        self.assertIn("If removing it does not reduce understanding, remove it", director)
+        self.assertIn("fake system IDs", director)
+        self.assertIn("label and metadata integrity", evaluator)
+        self.assertIn("would removing this element reduce the user's understanding", evaluator)
+        self.assertIn("decorative metadata", evaluator)
+
     def test_growth_arsenal_stays_outside_the_method_kernel(self) -> None:
         authority_map = self.load(AUTHORITY_MAP_PATH)
         boundaries = {
