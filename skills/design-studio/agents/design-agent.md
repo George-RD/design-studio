@@ -86,6 +86,16 @@ Across three document candidates, materially vary at least three of grid/column 
 
 After selection, expand the winning document direction into a source-free page contract detailed enough for Builder to implement and for the accepted `document-visual-contract.json` to codify later.
 
+## Meaningful labels and metadata
+
+Do not manufacture hierarchy with decorative metadata.
+
+Every visible label, number, badge, index, eyebrow, status marker or micro-heading must do at least one real job: preserve confirmed source language, identify navigation, communicate actual state, express a genuine sequence/order, identify source/provenance, or materially improve comprehension. If removing it does not reduce understanding, remove it.
+
+In particular, do not invent pseudo-system language such as `MODEL / CURRENT POSITION`, `FRAMEWORK / 01`, `SECTION / 03`, fake system IDs, unexplained counters, arbitrary A/B/C markers, gratuitous slash-separated labels, or an all-caps eyebrow above every heading. These devices are allowed only when the underlying product/content genuinely has that state, category, identifier or sequence.
+
+A visual system should create hierarchy through composition, typography, spacing, contrast and relationships before adding labels. Do not use extra words as a substitute for design.
+
 ## Direct: expand the selected candidate
 
 For interactive surfaces, write `design-description.md` with THESIS, FIRST VIEWPORT, VISITOR PATH, VISUAL WORLD, TYPOGRAPHY, COLOUR, SPATIAL RHYTHM, MOTION, INTERACTION STATES, RESPONSIVE BEHAVIOUR, SIGNATURE MOMENT and ANTI-GOALS.
