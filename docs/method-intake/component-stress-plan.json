@@ -1,0 +1,26 @@
+{
+  "component": "ResultCard",
+  "purpose": "Synthetic evidence-production test, not a product-quality benchmark",
+  "includedAxes": {
+    "content": "title is supplied by a caller and may contain long words or sentences",
+    "state": "the component accepts ready, empty, loading and error states",
+    "container": "the component is used in both full and constrained columns",
+    "viewport": "the application stylesheet contains a viewport media query"
+  },
+  "droppedAxes": {
+    "quantity": "one result summary, not a collection renderer",
+    "theme": "this fixture application has no theme switch",
+    "image": "the component accepts no image",
+    "motion": "the fixture has no animated behavior"
+  },
+  "cases": [
+    {"id": "ordinary", "viewport": 1280, "container": 480, "props": {"title": "Survey results", "state": "ready"}},
+    {"id": "long-title", "viewport": 1280, "container": 480, "props": {"title": "Survey results awaiting quality review before the final delivery package can be released to the project team", "state": "ready"}},
+    {"id": "unbreakable", "viewport": 1280, "container": 480, "props": {"title": "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWX", "state": "ready"}},
+    {"id": "empty", "viewport": 1280, "container": 480, "props": {"title": "Survey results", "state": "empty"}},
+    {"id": "loading", "viewport": 1280, "container": 480, "props": {"title": "Survey results", "state": "loading"}},
+    {"id": "error", "viewport": 1280, "container": 480, "props": {"title": "Survey results", "state": "error"}},
+    {"id": "narrow-container", "viewport": 1280, "container": 240, "props": {"title": "Survey results", "state": "ready"}},
+    {"id": "narrow-viewport", "viewport": 320, "container": 288, "props": {"title": "Survey results", "state": "ready"}}
+  ]
+}

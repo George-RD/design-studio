@@ -82,6 +82,25 @@
       ],
       "currentDisposition": "adapt-local",
       "attribution": "Google Labs DESIGN.md format, reviewed README.md, docs/spec.md and LICENSE at the pinned revision. Conceptual format adaptation only: no upstream code or specification prose copied. The local JSON-front-matter subset, provenance and parity runtime are independently implemented; no upstream tooling is executed."
+    },
+    {
+      "id": "jakubkrehel/skills",
+      "repository": "https://github.com/jakubkrehel/skills",
+      "revision": "267330e1adfc66a718fb65fa6918c1f06d0a689e",
+      "observedRelease": "reviewed-revision-at-2026-09-29",
+      "reviewedAt": "2026-09-29",
+      "license": "MIT",
+      "role": "research-input",
+      "runtimeDependency": false,
+      "relevantMethods": [
+        "bounded component stress evidence",
+        "change-aware interface review scope and causal attribution",
+        "one-axis comparison for a concrete local design question",
+        "mechanism-first reference analysis with explicit evidence tiers"
+      ],
+      "currentDisposition": "observe",
+      "intakeRecord": "docs/method-intake/2026-09-29-jakub-krehel.md",
+      "attribution": "Copyright (c) 2026 Jakub Krehel. Source and licence reviewed at the pinned revision. No upstream code or method prose is copied or adopted by this observation record; retain the MIT copyright and permission notice if a later ratified slice copies or substantially adapts material."
     }
   ]
 }
