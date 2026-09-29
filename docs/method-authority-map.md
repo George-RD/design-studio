@@ -25,6 +25,7 @@ No upstream repository is required at runtime. Pinned external repositories are 
 | https://github.com/pbakaus/impeccable | `63b04e2530f5c7b41ea83c133daab24f34912456` | Apache-2.0 | Research/provenance only; selected methods are re-expressed in local leaves |
 | https://github.com/emilkowalski/skills | `d23d7f88a2e21c9e4b1418c7abe420f5c1052ba7` | MIT | Research/provenance only; selected methods are re-expressed in local leaves |
 | https://github.com/google-labs-code/design.md | `9bf8eae67128b6cc55ad9bf86665767deb4c11cd` | Apache-2.0 | Layered token/prose format inspiration only; no upstream code or prose copied |
+| https://github.com/jakubkrehel/skills | `267330e1adfc66a718fb65fa6918c1f06d0a689e` | MIT | Observation only; bounded experiments in #113, no adopted runtime method |
 
 `docs/method-sources.json` owns source metadata. Repository-level `currentDisposition: observe` means an upstream project is not promoted wholesale. Concept-level entries decide the smallest useful method slice.
 
@@ -70,6 +71,8 @@ Each adopted leaf contains the exact source ID, revision, licence and local modi
 ## Observe and reject
 
 Impeccable accessibility, hierarchy/responsive, interaction, generic motion and design-system guidance remain comparison-only because Design Studio already has local authorities. Impeccable lifecycle/review command taxonomies remain rejected as parallel routing systems. External mechanical-versus-visual separation is also rejected as a second authority because Design Studio already owns that boundary.
+
+The [Jakub Krehel intake record](./method-intake/2026-09-29-jakub-krehel.md) maps three bounded experiments to existing owners under #113. All remain observation-only until their evidence gates pass. No installed instruction, machine-readable concept authority or runtime route changes in this intake.
 
 ## Duplicate retirement
 
