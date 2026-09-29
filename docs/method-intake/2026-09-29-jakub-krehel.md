@@ -6,7 +6,7 @@ This is a research and work-planning record, not installed method authority. The
 
 ## Reviewed sources
 
-Design Studio baseline: `a82b9270d6a3d2c40431abcc6ad46a9feacdd3b3`.
+Initial reviewed baseline: `a82b9270d6a3d2c40431abcc6ad46a9feacdd3b3`. The intake PR also incorporates current main `62c71eef8d8c7284e09cf989d7d67fbd4667bf76`, preserving its later meaningful-label rules and tests; the existing intake-related documents are unchanged between those revisions.
 
 Upstream: https://github.com/jakubkrehel/skills at `267330e1adfc66a718fb65fa6918c1f06d0a689e`. Licence: MIT, Copyright (c) 2026 Jakub Krehel. Reviewed `skills/break/SKILL.md`, `skills/interface-review/SKILL.md`, `skills/better-interface/SKILL.md`, `skills/variant/SKILL.md`, `skills/explain-interface/SKILL.md`, `skills/better-ui/SKILL.md` and `LICENSE`.
 
@@ -18,10 +18,12 @@ Paths below are relative to `skills/design-studio/`. They identify existing owne
 
 | Candidate | Existing owner | Disposition and next evidence |
 | --- | --- | --- |
-| Reproducible component stress evidence | `references/review/interaction.md`, with mechanical facts owned by `references/quality-gates.md` | Observe. [#114](https://github.com/George-RD/design-studio/issues/114) tests an applicable scenario plan, actual component reuse, adverse cases and healthy controls. |
+| Reproducible component stress evidence | `references/review/interaction.md` for state/affordance, `references/review/hierarchy.md` for responsive composition, and `references/quality-gates.md` for measured geometry | Observe. [#114](https://github.com/George-RD/design-studio/issues/114) tests an applicable scenario plan, actual component reuse, adverse cases and healthy controls. |
 | Change-aware review and causal attribution | `references/review/polish.md` | Observe. [#115](https://github.com/George-RD/design-studio/issues/115) tests base/head scope, affected consumers, regressions, equivalent replacements and uncertain attribution. |
 | One primary axis for a local comparison | `references/extend.md` | Observe. [#116](https://github.com/George-RD/design-studio/issues/116) tests a concrete local question within accepted authority; create/overhaul divergence stays unchanged. |
 | Mechanism-first reference analysis and evidence tiers | Existing implementation/evidence boundaries | Observe only. No separate implementation ticket without a demonstrated gap. |
+
+The experiment uses the existing router-selected lenses: the source-aware producer supplies component scenarios; interaction and hierarchy reviewers interpret their respective rendered states; mechanical measurements do not substitute for either visual judgement. This record adds no second lens-selection rule.
 
 The useful hypothesis is more reproducible evidence and narrower decisions, not a new orchestration system. Existing state coverage, realistic-context comparisons, source-blind evaluation and bounded fixes already cover much of the source material.
 
