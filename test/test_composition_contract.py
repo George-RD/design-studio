@@ -44,6 +44,7 @@ class CompositionContractTests(unittest.TestCase):
         self.assertEqual(
             {
                 "product-truth": "shared-product-context",
+                "audience-context": "shared-product-context",
                 "offer-copy": "growth-arsenal",
                 "visual-design": "design-studio",
             },
@@ -56,6 +57,8 @@ class CompositionContractTests(unittest.TestCase):
         self.assertEqual(["OFFER.md", "COPY.md"], roles["offer-copy"]["defaultPaths"])
         self.assertEqual(["DESIGN.md"], roles["visual-design"]["defaultPaths"])
         self.assertEqual("confirmed", roles["product-truth"]["requiredState"])
+        self.assertEqual(["PRODUCT.md", "AUDIENCE.md"], roles["audience-context"]["defaultPaths"])
+        self.assertEqual(["confirmed", "approved"], roles["audience-context"]["compatibleStates"])
         self.assertEqual("approved", roles["offer-copy"]["requiredState"])
         self.assertEqual("accepted", roles["visual-design"]["requiredState"])
         for role in roles.values():
@@ -76,15 +79,17 @@ class CompositionContractTests(unittest.TestCase):
         self.assertIs(resolution["basenameAloneAuthoritative"], False)
         self.assertIs(resolution["promptOrderAuthoritative"], False)
         self.assertIs(resolution["mtimeAuthoritative"], False)
+        self.assertIs(resolution["simulatedPersonaOutputAuthoritative"], False)
         self.assertEqual("unresolved", resolution["ambiguousSameRole"])
 
-    def test_precedence_conflicts_and_staleness_cover_the_three_authority_domains(self) -> None:
+    def test_precedence_conflicts_and_staleness_cover_the_four_authority_domains(self) -> None:
         contract = self.load(CONTRACT_PATH)
         precedence = [item["authority"] for item in sorted(contract["precedence"], key=lambda item: item["rank"])]
         self.assertEqual(
             [
                 "explicit-current-user-instruction",
                 "confirmed-product-truth",
+                "confirmed-or-researched-audience-context",
                 "approved-growth-arsenal-offer-copy",
                 "current-surface-brief",
                 "accepted-design-system-or-selected-direction",
@@ -94,6 +99,7 @@ class CompositionContractTests(unittest.TestCase):
         conflicts = {item["id"]: item for item in contract["conflicts"]}
         self.assertEqual(
             {
+                "audience-vs-product-truth",
                 "copy-vs-product-truth",
                 "product-change-vs-downstream",
                 "copy-vs-visual-capacity",
@@ -108,6 +114,7 @@ class CompositionContractTests(unittest.TestCase):
         staleness = {item["trigger"]: item for item in contract["stalenessRules"]}
         self.assertEqual(
             {
+                "audience-evidence-changes",
                 "confirmed-product-truth-changes",
                 "approved-offer-copy-changes",
                 "accepted-visual-system-changes",

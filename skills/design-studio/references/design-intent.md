@@ -12,6 +12,8 @@ Load for Studio, Review and Document invocation. Host commands, buttons and free
 
 Use the current user request, target kind, confirmed product/copy inputs, current accepted visual authority and available host capabilities. Resolve artifact authority through `composition-contract.json`; do not recreate its domains, artifact roles, provenance rules or conflict precedence here. Use the capability needs declared by `design-intent-contract.json` and the operation/failure semantics in `runtime-contract.md`. No lane procedure is a prerequisite for classification. Evaluation-plan downgrade policy remains owned by `runtime-contract.md`.
 
+For website work, load `references/composition-contract.md` for audience normalization and readiness. Attach its `composition` snapshot before validation; retain the derived readiness and public next actions before visual direction. Required unresolved facets block dependent direction. Non-website requests keep this branch unloaded.
+
 ## Outputs and handoff
 
 Produce one validated `design-intent-contract.json` result with these modes:
@@ -47,7 +49,7 @@ Prompt order, filename and file modification time do not break ties. Record equa
 
 ## Authority boundary
 
-This reference owns request classification vocabulary and precedence. `composition-contract.json` owns product, offer/copy and visual artifact authority. `runtime-contract.md` owns deterministic operations, capability downgrade and failure semantics. Lane procedures own execution after classification. `method-router.json` consumes mapped signals; it is routing data rather than another classification authority.
+This reference owns request classification vocabulary and precedence. `composition-contract.json` owns product, audience, offer/copy and visual artifact authority. `runtime-contract.md` owns deterministic operations, capability downgrade and failure semantics. Lane procedures own execution after classification. `method-router.json` consumes mapped signals; it is routing data rather than another classification authority.
 
 Design Intent records requested `systemEffect`; it does not apply durable design-system state transitions. Extension completion records accepted surface effects and proposed reusable deltas; applying durable changes remains lifecycle work under #93.
 

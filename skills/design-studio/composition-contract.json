@@ -21,6 +21,11 @@
       "scope": "Confirmed audience, business outcome, capabilities, constraints, proof, terminology and settled product facts. Neither skill may silently rewrite these facts to satisfy its own output."
     },
     {
+      "id": "audience-context",
+      "owner": "shared-product-context",
+      "scope": "Researched or explicitly confirmed audience facts, situations, jobs, motivations, objections, decision criteria and vocabulary, with evidence, confidence and provenance. Hypotheses and simulated persona reactions remain separate review evidence."
+    },
+    {
       "id": "offer-copy",
       "owner": "growth-arsenal",
       "scope": "Offer, positioning, persuasion strategy, claims, authoritative commercial copy and the constraints attached to that copy."
@@ -44,6 +49,20 @@
         "design-studio-product-schema-in-current-context-root"
       ],
       "whenOwnerAbsent": "Use confirmed project or user product truth. Missing facts stay unresolved; neither skill may invent them."
+    },
+    {
+      "role": "audience-context",
+      "owner": "shared-product-context",
+      "defaultPaths": ["PRODUCT.md", "AUDIENCE.md"],
+      "requiredState": "confirmed",
+      "compatibleStates": ["confirmed", "approved"],
+      "scope": "project",
+      "authorityEvidence": [
+        "explicit-current-user-confirmation",
+        "declared-composition-role-and-scope",
+        "research-provenance"
+      ],
+      "whenOwnerAbsent": "Normalize existing PRODUCT.md audience facts with their evidence; no new file is required. Unknowns and hypotheses stay unresolved. Simulated reactions cannot supply missing research or confirmation."
     },
     {
       "role": "offer-copy",
@@ -82,37 +101,48 @@
     "basenameAloneAuthoritative": false,
     "promptOrderAuthoritative": false,
     "mtimeAuthoritative": false,
+    "simulatedPersonaOutputAuthoritative": false,
     "ambiguousSameRole": "unresolved"
   },
   "precedence": [
     {
       "rank": 1,
       "authority": "explicit-current-user-instruction",
-      "appliesTo": ["product-truth", "offer-copy", "visual-design"]
+      "appliesTo": ["product-truth", "audience-context", "offer-copy", "visual-design"]
     },
     {
       "rank": 2,
       "authority": "confirmed-product-truth",
-      "appliesTo": ["product-truth", "offer-copy", "visual-design"]
+      "appliesTo": ["product-truth", "audience-context", "offer-copy", "visual-design"]
     },
     {
       "rank": 3,
+      "authority": "confirmed-or-researched-audience-context",
+      "appliesTo": ["audience-context", "offer-copy", "surface-strategy"]
+    },
+    {
+      "rank": 4,
       "authority": "approved-growth-arsenal-offer-copy",
       "appliesTo": ["offer-copy", "surface-copy-coordination"]
     },
     {
-      "rank": 4,
+      "rank": 5,
       "authority": "current-surface-brief",
       "appliesTo": ["surface-strategy"]
     },
     {
-      "rank": 5,
+      "rank": 6,
       "authority": "accepted-design-system-or-selected-direction",
       "appliesTo": ["visual-design"],
       "modeRule": "For preserve-world work, accepted project DESIGN.md governs visual decisions. For greenfield or explicit redesign work, the selected direction governs active visual choices while retained product and brand commitments still apply."
     }
   ],
   "conflicts": [
+    {
+      "id": "audience-vs-product-truth",
+      "winner": "confirmed-product-truth",
+      "effect": "Record the contradiction as stale or unresolved audience evidence and return it to the user. Simulated personas and audience hypotheses cannot rewrite confirmed product facts."
+    },
     {
       "id": "copy-vs-product-truth",
       "winner": "confirmed-product-truth",
@@ -141,6 +171,11 @@
   ],
   "stalenessRules": [
     {
+      "trigger": "audience-evidence-changes",
+      "invalidates": ["offer/copy and visual assumptions that depend on superseded audience evidence"],
+      "preserves": ["unrelated confirmed product truth", "independent accepted visual-system rules"]
+    },
+    {
       "trigger": "confirmed-product-truth-changes",
       "invalidates": ["offer-copy assumptions that depend on the changed fact", "visual assumptions that depend on the changed fact"],
       "preserves": ["unrelated confirmed product truth"]
@@ -158,6 +193,109 @@
       "preserves": ["confirmed product truth", "approved offer/copy"]
     }
   ],
+  "compositionReadiness": {
+    "inputField": "composition",
+    "runtimeOperation": "validate_design_intent",
+    "requiredInputFields": [
+      "project",
+      "strategySensitive",
+      "growthArsenal",
+      "artifacts"
+    ],
+    "optionalInputFields": [
+      "designations",
+      "readiness"
+    ],
+    "states": [
+      "ready",
+      "missing",
+      "stale",
+      "conflicting",
+      "not-applicable"
+    ],
+    "statePrecedence": [
+      "conflicting",
+      "stale",
+      "missing"
+    ],
+    "skillAvailability": [
+      "available",
+      "absent",
+      "unavailable"
+    ],
+    "facets": [
+      {
+        "id": "product-truth",
+        "role": "product-truth"
+      },
+      {
+        "id": "audience-context",
+        "role": "audience-context"
+      },
+      {
+        "id": "offer-positioning",
+        "role": "offer-copy"
+      },
+      {
+        "id": "commercial-copy",
+        "role": "offer-copy"
+      },
+      {
+        "id": "visual-design",
+        "role": "visual-design"
+      }
+    ],
+    "requiredDependencies": {
+      "offer-positioning": ["product-truth", "audience-context"],
+      "commercial-copy": ["product-truth", "audience-context", "offer-positioning"]
+    },
+    "evidenceKinds": {
+      "product-truth": [
+        "user-confirmation"
+      ],
+      "audience-context": [
+        "user-confirmation",
+        "research"
+      ],
+      "offer-copy": [
+        "user-approval"
+      ],
+      "visual-design": [
+        "user-designation",
+        "acceptance",
+        "system-publication"
+      ]
+    },
+    "audienceCategories": [
+      "facts",
+      "situations",
+      "jobs",
+      "motivations",
+      "objections",
+      "decision-criteria",
+      "vocabulary"
+    ],
+    "audienceKinds": [
+      "confirmed",
+      "researched",
+      "hypothesis",
+      "simulated"
+    ],
+    "confidenceLevels": [
+      "high",
+      "medium",
+      "low",
+      "unknown"
+    ],
+    "requirementRule": "Strategy-sensitive website work requires product truth, audience context, offer-positioning and commercial-copy. Accepted-design-system input also requires current visual-design authority. Other facets are not-applicable, not implicitly ready.",
+    "provenanceRule": "The readiness profile uses the existing provenance object: project, immutable role-scoped revision, evidence [{kind, ref}], dependencies [{facet, path, revision}], optional facets for offer-copy and audience entries [{category, text, kind, confidence, evidence}]. Hosts resolve and verify evidence before normalization; a string, producer name or claimed state alone is not proof.",
+    "audienceRule": "At least one researched or explicitly confirmed entry with matching evidence is required for audience authority. Preserve hypotheses and simulations separately and list categories without facts as unresolved. Approval never upgrades a simulated statement without separate research or user confirmation.",
+    "offerCopyRule": "Declare offer-positioning and/or commercial-copy in provenance.facets. Approval of an offer alone does not approve its commercial copy; one approved artifact may explicitly cover both facets.",
+    "dependencyRule": "Record all source revisions used to approve each artifact. Resolve dependencies by facet, path and revision, never mtime. A missing, changed, stale or ambiguous dependency makes dependent authority stale; cycles are stale. A combined offer/copy export may pin its own offer facet as an internal copy dependency. Stale sources retain their evidence but not current authority. Unrelated authority remains intact.",
+    "selectionRule": "Candidates require declared role, project scope, matching project, supported state, revision and authority evidence. Equal-authority candidates remain conflicting unless current user-designation evidence selects an exact facet/path/revision. Neither producer nor input order breaks ties.",
+    "receiptRule": "validate_design_intent derives composition.readiness from the supplied snapshot, checks compositionState, and rejects a supplied readiness receipt that differs. Existing intents without composition remain classification-only records, not evidence that website inputs are ready.",
+    "handoffRule": "Ready facets require no action. Conflicts return to the user. Missing or stale offer/copy and audience inputs may request a public growth-arsenal artifact when available; otherwise request confirmed supplied inputs. No skill is invoked and no adjacent internal method is read."
+  },
   "integrationRules": [
     "Design Studio consumes compatible approved offer/copy artifacts by declared role, project scope and approval evidence; it does not invoke, copy or reimplement Growth Arsenal internal methods.",
     "Growth Arsenal remains independently usable and is not expected to duplicate Design Studio visual direction, implementation or rendered-evaluation methods.",
